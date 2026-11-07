@@ -47,14 +47,14 @@
   function barrido() {
     if (reduce || !document.body) return;
     const b = document.createElement('div'); b.className = 'cb-barrido'; b.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(b); setTimeout(() => b.remove(), 1300);
+    document.body.appendChild(b); setTimeout(() => b.remove(), 450);
   }
   window.UGBarrido = barrido;
 
   /* Entrada de la app: encabezado, chips, portada y navegación llegan a su sitio al cargar */
   function initEntrada() {
     if (reduce) return;
-    const entrar = () => { document.body.classList.add('cb-entra'); setTimeout(() => document.body.classList.remove('cb-entra'), 2200); };
+    const entrar = () => { document.body.classList.add('cb-entra'); setTimeout(() => document.body.classList.remove('cb-entra'), 700); };
     if (document.getElementById('preloader') && typeof window.closePreloader === 'function') {
       const orig = window.closePreloader; let hecho = false;
       window.closePreloader = function () { const r = orig.apply(this, arguments); if (!hecho) { hecho = true; entrar(); } return r; };

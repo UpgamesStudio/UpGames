@@ -25,7 +25,7 @@
   --dur-1: .16s;
   --dur-2: .28s;
   --dur-3: .42s;
-  --dur-4: .6s;
+  --dur-4: .35s;
 
   /* Sin fuente monoespaciada en la interfaz: tipografía única y limpia */
   --ff-mono: 'Manrope', -apple-system, 'Segoe UI', Roboto, sans-serif;

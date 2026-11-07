@@ -61,7 +61,7 @@ html[data-tema="cyber"] body::before {
 }
 /* Rejilla en perspectiva que avanza (suelo de neón) */
 html[data-tema="cyber"] body::after {
-  content: ''; position: fixed; left: -50%; right: -50%; bottom: -10vh; height: 55vh; z-index: -1; pointer-events: none;
+  content: ''; position: fixed; left: -50%; right: -50%; bottom: calc(-10vh - 60px); height: calc(55vh + 60px); z-index: -1; pointer-events: none;
   background-image:
     linear-gradient(rgba(57,255,136,.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(160,170,180,.16) 1px, transparent 1px);
@@ -71,9 +71,12 @@ html[data-tema="cyber"] body::after {
   -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.6) 40%, transparent 85%);
           mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.6) 40%, transparent 85%);
   opacity: .5;
+  /* se mueve con transform (lo compone la GPU): antes animaba background-position y
+     repintaba la capa entera en cada fotograma */
+  will-change: transform;
   animation: cbRejilla 3.2s linear infinite;
 }
-@keyframes cbRejilla { to { background-position: 0 60px, 0 0; } }
+@keyframes cbRejilla { from { transform: perspective(380px) rotateX(62deg) translateY(0); } to { transform: perspective(380px) rotateX(62deg) translateY(60px); } }
 /* Líneas de escaneo (capa superior, sutil) */
 html[data-tema="cyber"] .cb-scan {
   position: fixed; inset: 0; z-index: 9990; pointer-events: none;
@@ -432,11 +435,12 @@ html[data-tema="cyber"] .cb-glitch::after { color: var(--g); animation: cbCorte2
 .ug-tema-btn .ugr-bub { background: linear-gradient(135deg, #39FF88, #FFFFFF) !important; color: #03060C !important; }
 
 
-/* ── 11. MOVIMIENTO: transiciones largas y fluidas (≈1 s) ──────
-   Gama media/alta: transform, opacity, filter y clip-path con curvas
-   de desaceleración larga. Cambiar de pestaña usa la View Transitions
-   API (upgames-motion.js); cambiar de página, la de navegación.        */
-html[data-tema="cyber"] { --cb-sale: cubic-bezier(.16,1,.3,1); --cb-entra-dur: 1.05s; }
+/* ── 11. MOVIMIENTO: transiciones rápidas y fluidas (≈0,35 s) ─────
+   Solo se animan transform y opacity (los mueve la GPU sin repintar):
+   nada de blur, brightness ni clip-path animados, que en móviles dan
+   tirones. Cambiar de pestaña usa la View Transitions API
+   (upgames-motion.js); cambiar de página, la de navegación.            */
+html[data-tema="cyber"] { --cb-sale: cubic-bezier(.22,1,.36,1); --cb-dur: .35s; --cb-entra-dur: .35s; }
 
 /* Cambiar de pestaña (misma página) */
 html[data-tema="cyber"] #app-header { view-transition-name: cb-header; }
@@ -445,93 +449,82 @@ html[data-tema="cyber"] .ugm { view-transition-name: cb-musica; }
 html[data-tema="cyber"]::view-transition-group(cb-header),
 html[data-tema="cyber"]::view-transition-group(cb-nav),
 html[data-tema="cyber"]::view-transition-group(cb-musica) { animation: none; }
-html[data-tema="cyber"]::view-transition-old(root) { animation: cbVtSale .75s cubic-bezier(.55,0,.85,.3) both; }
-html[data-tema="cyber"]::view-transition-new(root) { animation: cbVtEntra 1.15s var(--cb-sale) both; }
-@keyframes cbVtSale { to { opacity: 0; transform: scale(.93) translateY(-14px); filter: blur(8px) brightness(.5); } }
-@keyframes cbVtEntra {
-  0%   { opacity: 0; transform: translateY(46px) scale(1.04); filter: blur(10px) brightness(2.2) saturate(1.6); clip-path: inset(0 0 100% 0); }
-  45%  { opacity: 1; clip-path: inset(0 0 0 0); }
-  100% { opacity: 1; transform: none; filter: none; clip-path: inset(0); }
-}
+html[data-tema="cyber"]::view-transition-old(root) { animation: cbVtSale .2s cubic-bezier(.4,0,1,1) both; }
+html[data-tema="cyber"]::view-transition-new(root) { animation: cbVtEntra var(--cb-dur) var(--cb-sale) both; }
+@keyframes cbVtSale { to { opacity: 0; transform: scale(.98); } }
+@keyframes cbVtEntra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 /* Línea de barrido verde que acompaña cada transición */
 .cb-barrido { position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 9995; pointer-events: none;
   background: linear-gradient(90deg, transparent, #39FF88 20%, #fff 50%, #39FF88 80%, transparent);
-  box-shadow: 0 0 18px 4px rgba(57,255,136,.55), 0 0 60px 10px rgba(57,255,136,.25);
-  animation: cbBarre 1.1s var(--cb-sale, cubic-bezier(.16,1,.3,1)) forwards; }
-@keyframes cbBarre { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
+  box-shadow: 0 0 18px 4px rgba(57,255,136,.55);
+  will-change: transform, opacity;
+  animation: cbBarre .4s var(--cb-sale, cubic-bezier(.22,1,.36,1)) forwards; }
+@keyframes cbBarre { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
 /* Respaldo sin View Transitions: la vista entra igual de suave */
 html[data-tema="cyber"] .ug-view-enter { animation: cbVistaIn var(--cb-entra-dur) var(--cb-sale) both; }
-@keyframes cbVistaIn { from { opacity: 0; transform: translateY(40px) scale(.98); filter: blur(8px) brightness(1.8); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes cbVistaIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
 /* Cambiar de página (biblioteca ↔ perfil ↔ …) */
 @view-transition { navigation: auto; }
 
 /* Entrada de la app al cargar */
-html[data-tema="cyber"] body.cb-entra #app-header, html[data-tema="cyber"] body.cb-entra .top-bar { animation: cbBajaDeArriba 1.1s var(--cb-sale) both; }
-html[data-tema="cyber"] body.cb-entra #category-row { animation: cbDesdeIzq 1.1s var(--cb-sale) .15s both; }
-html[data-tema="cyber"] body.cb-entra #hero-carousel, html[data-tema="cyber"] body.cb-entra .profile-hero { animation: cbAparece 1.3s var(--cb-sale) .25s both; }
-html[data-tema="cyber"] body.cb-entra #bottom-nav { animation: cbSubeDeAbajo 1.1s var(--cb-sale) .3s both; }
-html[data-tema="cyber"] body.cb-entra .ugm { animation: cbAparece 1.2s var(--cb-sale) .6s both; }
-@keyframes cbBajaDeArriba { from { transform: translateY(-110%); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes cbSubeDeAbajo { from { transform: translateY(140%); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes cbDesdeIzq { from { transform: translateX(-40px); opacity: 0; filter: blur(6px); } to { transform: none; opacity: 1; filter: none; } }
-@keyframes cbAparece { from { opacity: 0; transform: scale(.94); filter: blur(12px) brightness(1.8); } to { opacity: 1; transform: none; filter: none; } }
+html[data-tema="cyber"] body.cb-entra #app-header, html[data-tema="cyber"] body.cb-entra .top-bar { animation: cbBajaDeArriba var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] body.cb-entra #category-row { animation: cbDesdeIzq var(--cb-dur) var(--cb-sale) .05s both; }
+html[data-tema="cyber"] body.cb-entra #hero-carousel, html[data-tema="cyber"] body.cb-entra .profile-hero { animation: cbAparece var(--cb-dur) var(--cb-sale) .08s both; }
+html[data-tema="cyber"] body.cb-entra #bottom-nav { animation: cbSubeDeAbajo var(--cb-dur) var(--cb-sale) .1s both; }
+html[data-tema="cyber"] body.cb-entra .ugm { animation: cbAparece var(--cb-dur) var(--cb-sale) .15s both; }
+@keyframes cbBajaDeArriba { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cbSubeDeAbajo { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cbDesdeIzq { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cbAparece { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
 
-/* Tarjetas: se "materializan" en cascada */
-html[data-tema="cyber"] #output, html[data-tema="cyber"] #favs-grid { perspective: 1200px; }
-html[data-tema="cyber"] .ug-reveal { opacity: 0; transform: translateY(38px) scale(.92) rotateX(14deg); filter: blur(8px) brightness(2.2); }
+/* Tarjetas: aparecen en cascada corta */
+html[data-tema="cyber"] .ug-reveal { opacity: 0; transform: translateY(16px) scale(.97); }
 html[data-tema="cyber"] .ug-reveal.ug-in {
-  opacity: 1; transform: none; filter: none;
-  transition: opacity .9s ease calc(var(--i, 0) * 90ms), transform 1.15s var(--cb-sale) calc(var(--i, 0) * 90ms), filter 1s ease calc(var(--i, 0) * 90ms) !important;
+  opacity: 1; transform: none;
+  transition: opacity var(--cb-dur) ease calc(var(--i, 0) * 30ms), transform var(--cb-dur) var(--cb-sale) calc(var(--i, 0) * 30ms) !important;
 }
 
-/* Ficha y ventanas: abren en ~1 s, cierran más rápido */
-html[data-tema="cyber"] #detail-sheet, html[data-tema="cyber"] .modal-sheet, html[data-tema="cyber"] .pf-modal-sheet { transition: transform .6s cubic-bezier(.7,0,.84,0) !important; }
-html[data-tema="cyber"] #detail-sheet.open, html[data-tema="cyber"] .modal-overlay.show .modal-sheet, html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-sheet { transition: transform 1.05s var(--cb-sale) !important; }
-html[data-tema="cyber"] #detail-overlay, html[data-tema="cyber"] .modal-overlay, html[data-tema="cyber"] .pf-modal-overlay { transition: opacity .9s ease, visibility .9s, backdrop-filter .9s !important; }
-/* Contenido de la ficha en cascada */
-html[data-tema="cyber"] #detail-sheet.open .sheet-media { animation: cbMedia 1.2s var(--cb-sale) .1s both; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > * { animation: cbSube .95s var(--cb-sale) both; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(1) { animation-delay: .22s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(2) { animation-delay: .3s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(3) { animation-delay: .38s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(4) { animation-delay: .46s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(5) { animation-delay: .54s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(6) { animation-delay: .62s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(7) { animation-delay: .7s; }
-html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(n+8) { animation-delay: .78s; }
-@keyframes cbSube { from { opacity: 0; transform: translateY(26px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
-@keyframes cbMedia {
-  0% { opacity: 0; transform: scale(1.08); filter: brightness(2.5) saturate(0) blur(6px); }
-  35% { opacity: 1; filter: brightness(1.4) saturate(.6) blur(0); }
-  42% { transform: scale(1.02) translateX(-4px); }
-  48% { transform: scale(1.02) translateX(3px); }
-  100% { opacity: 1; transform: none; filter: none; }
-}
+/* Ficha y ventanas: abren en 0,35 s y cierran en 0,25 s */
+html[data-tema="cyber"] #detail-sheet, html[data-tema="cyber"] .modal-sheet, html[data-tema="cyber"] .pf-modal-sheet { transition: transform .25s cubic-bezier(.4,0,1,1) !important; }
+html[data-tema="cyber"] #detail-sheet.open, html[data-tema="cyber"] .modal-overlay.show .modal-sheet, html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-sheet { transition: transform var(--cb-dur) var(--cb-sale) !important; }
+html[data-tema="cyber"] #detail-overlay, html[data-tema="cyber"] .modal-overlay, html[data-tema="cyber"] .pf-modal-overlay { transition: opacity .3s ease, visibility .3s !important; }
+/* Contenido de la ficha en cascada corta */
+html[data-tema="cyber"] #detail-sheet.open .sheet-media { animation: cbAparece var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > * { animation: cbSube var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(1) { animation-delay: .05s; }
+html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(2) { animation-delay: .08s; }
+html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(3) { animation-delay: .11s; }
+html[data-tema="cyber"] #detail-sheet.open .sheet-scroll > :nth-child(n+4) { animation-delay: .14s; }
+@keyframes cbSube { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 /* Línea de luz que recorre la ficha al abrirse */
 html[data-tema="cyber"] #detail-sheet.open::after {
   content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 6; pointer-events: none;
   background: linear-gradient(90deg, transparent, #39FF88, #fff, #39FF88, transparent); box-shadow: 0 0 16px rgba(57,255,136,.8);
-  animation: cbRecorre 1.3s var(--cb-sale) .15s both;
+  animation: cbRecorre .45s var(--cb-sale) both;
 }
 @keyframes cbRecorre { from { transform: translateY(0); opacity: 1; } to { transform: translateY(95dvh); opacity: 0; } }
 /* Contenido de las ventanas (editar perfil, publicar, editar…) */
-html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > *, html[data-tema="cyber"] .modal-overlay.show .modal-sheet > * { animation: cbSube .9s var(--cb-sale) both; }
-html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(2) { animation-delay: .08s; }
-html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(3) { animation-delay: .16s; }
-html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(4) { animation-delay: .24s; }
-html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(n+5) { animation-delay: .32s; }
+html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > *, html[data-tema="cyber"] .modal-overlay.show .modal-sheet > * { animation: cbSube var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(2) { animation-delay: .03s; }
+html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(3) { animation-delay: .06s; }
+html[data-tema="cyber"] .pf-modal-overlay.show .pf-modal-body > :nth-child(n+4) { animation-delay: .09s; }
 
 /* Carrusel, chips, menú y botones */
-html[data-tema="cyber"] .hero-track { transition: transform 1.15s var(--cb-sale) !important; }
-html[data-tema="cyber"] .ug-nav-pill { transition: transform .9s var(--cb-sale), width .9s var(--cb-sale), opacity .5s !important; }
-html[data-tema="cyber"] #category-row .chip { transition: background .6s ease, color .6s ease, border-color .6s ease, box-shadow .8s ease, transform .5s var(--cb-sale) !important; }
-html[data-tema="cyber"] #category-row .chip.active { animation: cbChip .8s var(--cb-sale); }
-@keyframes cbChip { 0% { transform: scale(.9); filter: brightness(2); } 100% { transform: none; filter: none; } }
-html[data-tema="cyber"] .pf2-publish:not([hidden]) { animation: cbSube 1s var(--cb-sale) both; }
-html[data-tema="cyber"] .nxb-banner, html[data-tema="cyber"] .nxc-res { animation: cbSube .9s var(--cb-sale) both !important; }
-html[data-tema="cyber"] .pub-panel.active, html[data-tema="cyber"] .pf-tab-content.active { animation: cbVistaIn 1s var(--cb-sale) both; }
-html[data-tema="cyber"] .toast { animation: cbSube .7s var(--cb-sale) both; }
+html[data-tema="cyber"] .hero-track { transition: transform .4s var(--cb-sale) !important; }
+html[data-tema="cyber"] .ug-nav-pill { transition: transform var(--cb-dur) var(--cb-sale), width var(--cb-dur) var(--cb-sale), opacity .2s !important; }
+html[data-tema="cyber"] #category-row .chip { transition: background .2s ease, color .2s ease, border-color .2s ease, box-shadow .3s ease, transform .25s var(--cb-sale) !important; }
+html[data-tema="cyber"] #category-row .chip.active { animation: cbChip .3s var(--cb-sale); }
+@keyframes cbChip { 0% { transform: scale(.94); } 100% { transform: none; } }
+html[data-tema="cyber"] .pf2-publish:not([hidden]) { animation: cbSube var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] .nxb-banner, html[data-tema="cyber"] .nxc-res { animation: cbSube var(--cb-dur) var(--cb-sale) both !important; }
+html[data-tema="cyber"] .pub-panel.active, html[data-tema="cyber"] .pf-tab-content.active { animation: cbVistaIn var(--cb-dur) var(--cb-sale) both; }
+html[data-tema="cyber"] .toast { animation: cbSube .3s var(--cb-sale) both; }
+
+/* Rendimiento en móviles: desenfoques de vidrio más ligeros (el blur del fondo es lo más caro al hacer scroll) */
+@media (pointer: coarse) {
+  html[data-tema="cyber"] #app-header, html[data-tema="cyber"] #bottom-nav { backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; }
+}
 
 /* ── 10. MOVIMIENTO REDUCIDO ───────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
