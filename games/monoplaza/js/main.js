@@ -44,6 +44,7 @@ import { iniciarIdioma } from './idioma.js';
 import { PIVOTE_VUELO, MEZCLA_NOMBRES } from './physics/monoplaza.js';
 import { Podio } from './render/podio.js';
 import { SalidaBoxes } from './render/salidaBoxes.js';
+import { RuedaMandos } from './ruedaMandos.js';
 
 const $ = (s) => document.querySelector(s);
 const esTactil = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -77,7 +78,7 @@ const AJ_DEF = {
   control: esTactil ? 'inclinacion' : 'tactil', sensibilidad: 1, anguloInclinacion: 24, invertir: false, vibracion: true,
   tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, trazada: true,
   calidad: 'auto', fps: false, volumen: 0.8, unidades: 'kmh', camara: 'persecucion', radio: true, ambiente: true, averias: true, repeAuto: true, halo: true, motorSonido: 'v10',
-  categoria: 'f1',
+  categoria: 'f1', vozSintetica: false,
 };
 const OPC_CARRERA_DEF = { vueltas: 5, rivales: 7, dificultad: 'normal', posSalida: 0, compuesto: 'medio', clima: 'seco', hora: 'dia', formacion: 0, duracion: 0 };
 function cargar() {
@@ -198,7 +199,7 @@ const radio = new Radio({
   sonido,
   alSubtitulo: (m, on) => {
     const el = $('#hRadio');
-    if (on) { el.innerHTML = `<b>${m.tipo === 'megafonia' ? '📢 MEGAFONÍA' : '📻 JEFE DE MECÁNICOS'}</b>${m.texto}`; el.classList.add('visible'); clearTimeout(tRadio); }
+    if (on) { el.innerHTML = `<b>${m.tipo === 'megafonia' ? '📢 MEGAFONÍA' : m.tipo === 'piloto' ? '🎙️ TÚ (PILOTO)' : '📻 JEFE DE MECÁNICOS'}</b>${m.texto}`; el.classList.toggle('piloto', m.tipo === 'piloto'); el.classList.add('visible'); clearTimeout(tRadio); }
     else tRadio = setTimeout(() => el.classList.remove('visible'), 1200);
   },
 });
@@ -856,7 +857,7 @@ function arrancarSesion(modo) {
   if (modo === 'carrera' && !enRed && !qActual && sesion.estado !== 'formacion' && !momentoActual) iniciarPresentacion();
   if (sesion.estado === 'formacion') { mensaje('VUELTA DE FORMACIÓN', 'Sigue al de delante y vuelve a tu casilla', 3); radio.decir('Vuelta de formación. Calienta neumáticos y frenos, y vuelve a tu casilla.', { clave: 'form', cada: 5 }); }
   estadoRadio = { clima: sesion.clima.agua > 0.13 ? 'mojado' : 'seco', lluvia: sesion.clima.lluvia > 0.05, lider: null, avisoDesg: false, vsc: false, ultimaPos: null };
-  radio.voz = !!ajustes.radio;
+  radio.voz = !!ajustes.radio; radio.sintetica = !!ajustes.vozSintetica; radio.precargar();
   sonido.ponerAmbiente(!!ajustes.ambiente);
   radio.callar();
   $('#hPen').classList.remove('visible');
@@ -1145,8 +1146,9 @@ $('#bReiniciar').addEventListener('click', () => { if (qActual) salirAPistaQ(); 
 $('#bSalir').addEventListener('click', salirAlMenu);
 $('#bProbarVoz').addEventListener('click', () => {
   sonido.iniciar(); radio.voz = true;
-  $('#estadoVoz').textContent = radio.disponible ? (radio.nativa ? 'Voz del sistema Android' : 'Voz del navegador') : 'Este dispositivo no tiene voz: solo subtítulos';
-  radio.decir('Radio comprobada. Te escucho alto y claro, ¿qué tal el coche?', { prioridad: true });
+  radio.sintetica = !!ajustes.vozSintetica;
+  $('#estadoVoz').textContent = radio.grabadas ? 'Voces grabadas del ingeniero y del piloto' : radio.disponible ? (radio.nativa ? 'Voz del sistema Android' : 'Voz del navegador') : 'Este dispositivo no tiene voz: solo subtítulos';
+  radio.decir('Radio comprobada. Te escucho alto y claro, ¿qué tal el coche?', { prioridad: true, voz: ['ing:decimas', 'pil:cambioModo'] });
 });
 $('#bCalibrar').addEventListener('click', () => { entrada.calibrar(); mensaje('CENTRADO', '', 1); });
 $('#bResMenu').addEventListener('click', salirAlMenu);
@@ -1182,6 +1184,40 @@ const menuRapido = (() => {
   addEventListener('touchstart', (e) => { if (panel.classList.contains('abierto') && !e.target.closest?.('#menuRapido, #bMenu')) abrir(false); }, { capture: true, passive: true });
   return { abrir };
 })();
+
+// Rueda de mandos del volante: mantener pulsado el botón y deslizar hacia el ajuste
+const NOMBRES_FM = ['BAJO', 'MEDIO', 'ALTO'];
+const ruedaMandos = new RuedaMandos($('#bRueda'), {
+  opciones: () => {
+    const c = sesion?.jugador?.coche;
+    if (!c || !jugando || pausado) return [];
+    const m = c.mandos, bbBase = c.reglaje.repartoFreno;
+    return [
+      CAT.ers && { id: 'ers', nombre: 'ERS', icono: '⚡', actual: m.ersModo ?? 1, actualTxt: ['RECARGA', 'NORMAL', 'ATAQUE'][m.ersModo ?? 1],
+        valores: [{ v: 0, nombre: 'RECARGA', sub: 'carga la batería' }, { v: 1, nombre: 'NORMAL', sub: 'equilibrado' }, { v: 2, nombre: 'ATAQUE', sub: 'toda la batería' }] },
+      { id: 'mezcla', nombre: 'COMBUSTIBLE', icono: '⛽', actual: m.mezcla ?? 1, actualTxt: MEZCLA_NOMBRES[m.mezcla ?? 1],
+        valores: [{ v: 0, nombre: 'AHORRO', sub: 'menos potencia, gasta menos' }, { v: 1, nombre: 'NORMAL', sub: 'equilibrada' }, { v: 2, nombre: 'RICA', sub: 'más potencia y consumo' }] },
+      { id: 'fm', nombre: 'FRENO MOTOR', icono: '⚙️', actual: m.fm ?? 1, actualTxt: NOMBRES_FM[m.fm ?? 1],
+        valores: [{ v: 0, nombre: 'BAJO', sub: 'rueda más' }, { v: 1, nombre: 'MEDIO', sub: 'normal' }, { v: 2, nombre: 'ALTO', sub: 'retiene y ayuda a girar' }] },
+      { id: 'bb', nombre: 'FRENOS', icono: '🛑', actual: m.bb || 0, actualTxt: `${(bbBase + (m.bb || 0)).toFixed(1)} % del.`,
+        valores: [-2, -1, 0, 1, 2].map(v => ({ v, nombre: `${(bbBase + v).toFixed(1)} %`, sub: v > 0 ? 'más delante: estable' : v < 0 ? 'más detrás: gira mejor' : 'el del reglaje' })) },
+      { id: 'box', nombre: 'BOXES', icono: '🅿️', actualTxt: sesion.jugador.solicitudBox ? 'pedida' : 'suelta = pedir' },
+    ].filter(Boolean);
+  },
+  alMarcar: () => entrada.vibrar?.(8, 0.25),
+  alElegir: (id, v) => {
+    const j = sesion?.jugador?.coche;
+    if (!j) return;
+    // sin valor: lo mismo que el botón de siempre (pasar al siguiente)
+    if (v == null) { entrada.eventos.push({ ers: 'ers', mezcla: 'mezcla', fm: 'frenoMotor', bb: 'bbCiclo', box: 'box' }[id]); if (id !== 'box' && id !== 'bb') radio.decir('Entendido. Cambiando modo de motor.', { clave: 'modo', cada: 45 }); return; }
+    const m = j.mandos;
+    if (id === 'ers') { m.ersModo = v; mensaje(ERS_NOMBRES[v], '', 0.9); pulsarVolante(1); }
+    else if (id === 'mezcla') { m.mezcla = v; mensaje('MEZCLA ' + MEZCLA_NOMBRES[v], ['Menos potencia, gasta menos', 'Equilibrada', 'Más potencia, gasta más y castiga el motor'][v], 1.2); pulsarVolante(-1); }
+    else if (id === 'fm') { m.fm = v; mensaje(`FRENO MOTOR ${NOMBRES_FM[v]}`, '', 1); pulsarVolante(-1); }
+    else if (id === 'bb') { m.bb = v; mensaje(`FRENOS ${(j.reglaje.repartoFreno + v).toFixed(1)} %`, v > 0 ? 'Más delante: estable, bloquea antes delante' : v < 0 ? 'Más detrás: gira mejor, cuidado con el trompo' : 'Reparto del reglaje', 1); pulsarVolante(-1); }
+    if (id !== 'bb') radio.decir('Entendido. Cambiando modo de motor.', { clave: 'modo', cada: 45 });
+  },
+});
 
 // --- Mensajes ---------------------------------------------------------------
 let tMensaje = 0;
@@ -1449,8 +1485,8 @@ function procesarEventos() {
     else if (e === 'salida') { sonido.evento('salida'); sonido.salidaParrilla?.(); sonido.ovacion(1.6); mensaje('¡LUCES FUERA!', '', 1.2); entrada.vibrar(80); }
     else if (e.tipo === 'averia') {
       if (e.p.jugador) {
-        if (e.averia === 'motor') { mensaje('¡MOTOR ROTO!', 'Humo y pérdida de potencia', 3); radio.decir('¡Perdemos el motor! Lleva el coche a un lugar seguro.', { prioridad: true }); entrada.vibrar(300, 1); }
-        else if (e.averia === 'caja') { mensaje('CAJA DE CAMBIOS BLOQUEADA', 'Atascado en ' + e.p.coche.marcha + 'ª', 2.6); radio.decir(`Problema en la caja de cambios, estás atascado en ${e.p.coche.marcha}ª. Sigue como puedas.`, { prioridad: true }); }
+        if (e.averia === 'motor') { mensaje('¡MOTOR ROTO!', 'Humo y pérdida de potencia', 3); radio.decir('¡Perdemos el motor! Lleva el coche a un lugar seguro.', { prioridad: true, voz: ['@', 'ing:apaga'] }); entrada.vibrar(300, 1); }
+        else if (e.averia === 'caja') { mensaje('CAJA DE CAMBIOS BLOQUEADA', 'Atascado en ' + e.p.coche.marcha + 'ª', 2.6); radio.decir(`Problema en la caja de cambios, estás atascado en ${e.p.coche.marcha}ª. Sigue como puedas.`, { prioridad: true, voz: ['ing:hidraulica', '@'] }); }
         else if (e.averia === 'ers') { mensaje('ERS SOBRECALENTADO', 'Sin despliegue unos segundos', 2.2); radio.decir('El ERS se ha sobrecalentado. Sin batería unos veinte segundos.', { prioridad: true }); }
       } else if (e.averia === 'motor') radio.decir(`¡Humo en el coche de ${e.p.nombre.replace('@', '')}! Parece el motor.`, { tipo: 'megafonia', clave: 'av:' + e.p.nombre, cada: 999 });
     }
@@ -1577,7 +1613,7 @@ function procesarEventos() {
       if (e.p.jugador) { estr.paradas++; progresar('parada', { seg: e.duracion }); }
       const k = sesion.participantes.indexOf(e.p);
       modelos[k].cambiarCompuesto(e.p.coche.reglaje.compuesto);
-      if (e.p.jugador) radio.decir(e.duracion < 3 ? `¡Parada de ${e.duracion.toFixed(1)} segundos! Vamos, vamos, vamos.` : `Parada de ${e.duracion.toFixed(1)} segundos. Sal con cuidado, neumáticos fríos.`, { prioridad: true });
+      if (e.p.jugador) radio.decir(e.duracion < 3 ? `¡Parada de ${e.duracion.toFixed(1)} segundos! Vamos, vamos, vamos.` : `Parada de ${e.duracion.toFixed(1)} segundos. Sal con cuidado, neumáticos fríos.`, { prioridad: true, voz: e.duracion < 3 ? ['ing:perfecta', '@'] : ['@', 'ing:salTrafico'] });
       if (e.p.jugador && relevo.pendiente) ponerRelevo(!relevo.activo);
       if (e.p.jugador) { mensaje(`PARADA: ${e.duracion.toFixed(1)} s`, `Neumáticos ${COMPUESTOS[e.p.coche.reglaje.compuesto].nombre.toLowerCase()}`, 2.4); $('#bBox').classList.remove('activo'); }
     }
@@ -1635,7 +1671,7 @@ function radioRivales(p, pr) {
   for (const q of [del, tras]) {
     if (!q) continue;
     const antes = estadoRadio.paradas.get(q) ?? q.paradas;
-    if (q.paradas > antes) radio.decir(q === del ? `${nom(q)} ha parado. Aprieta ahora: si hacemos buenas vueltas saldremos por delante.` : `${nom(q)} ha entrado a boxes. Intentará el undercut: cuidado con su vuelta de salida.`, { clave: 'paradaRival', cada: 40 });
+    if (q.paradas > antes) radio.decir(q === del ? `${nom(q)} ha parado. Aprieta ahora: si hacemos buenas vueltas saldremos por delante.` : `${nom(q)} ha entrado a boxes. Intentará el undercut: cuidado con su vuelta de salida.`, { clave: 'paradaRival', cada: 40, voz: q === del ? ['@', 'ing:sigue'] : ['@', 'ing:contrario'] });
     estadoRadio.paradas.set(q, q.paradas);
   }
   // gestión: atacar o cuidar
@@ -1767,7 +1803,7 @@ function radioPeriodica(dt) {
     else if (comp === 'lluvia' && clima.agua < 0.32 && clima.agua > 0.1) radio.decir('La pista mejora. Los intermedios ya son más rápidos.', { clave: 'aInter', cada: 45 });
     else if (deLluvia && clima.agua < 0.09) radio.decir('La trazada está seca. Box: es hora de los lisos.', { clave: 'aSeco', cada: 35, prioridad: true });
     const desg = Math.max(...c.ruedas.map(w => w.neum.desgaste));
-    if (desg > 0.55 && !estadoRadio.avisoDesg) { estadoRadio.avisoDesg = true; radio.decir('Los neumáticos están muy gastados. Entra a boxes cuando quieras.'); }
+    if (desg > 0.55 && !estadoRadio.avisoDesg) { estadoRadio.avisoDesg = true; radio.decir('Los neumáticos están muy gastados. Entra a boxes cuando quieras.', { voz: ['pil:muertos', 'ing:boxbox'] }); }
     if (c.danoAleron > 0.3) radio.decir('Tienes el alerón delantero dañado. Entra a boxes a cambiar el morro.', { clave: 'morro', cada: 60 });
   }
   // neumáticos, frenos, batería y combustible
@@ -2445,7 +2481,7 @@ function avisoDano(e) {
   else if (det === 'aleronTras') { mensaje('ALERÓN TRASERO DAÑADO', 'El coche pierde estabilidad', 2.2); radio.decir('Alerón trasero dañado. Cuidado en las frenadas, la trasera estará nerviosa.', { clave: 'alaT', cada: 40 }); }
   else if (det === 'fondo') { mensaje('FONDO DAÑADO', 'Menos carga aerodinámica', 2.2); radio.decir('Has roto el fondo. El coche tiene menos carga, frena antes.', { clave: 'fondo', cada: 60 }); }
   else if (det === 'motor') { mensaje('MOTOR TOCADO', 'Pierdes potencia', 2.2); radio.decir('El golpe ha tocado la caja de cambios y el motor. Perdemos potencia.', { clave: 'motorD', cada: 60 }); }
-  else if (det.startsWith('pinchazo')) { sonido.revienta?.(); mensaje('¡PINCHAZO!', `Rueda ${NOMBRE_RUEDA[+det.slice(8)]} · entra a boxes`, 2.8); radio.decir(`¡Pinchazo en la ${NOMBRE_RUEDA[+det.slice(8)]}! Box, box. Tráelo despacio.`, { prioridad: true, clave: 'pinch', cada: 15 }); }
+  else if (det.startsWith('pinchazo')) { sonido.revienta?.(); mensaje('¡PINCHAZO!', `Rueda ${NOMBRE_RUEDA[+det.slice(8)]} · entra a boxes`, 2.8); radio.decir(`¡Pinchazo en la ${NOMBRE_RUEDA[+det.slice(8)]}! Box, box. Tráelo despacio.`, { prioridad: true, clave: 'pinch', cada: 15, voz: +det.slice(8) === 0 ? ['pil:hePinchado', 'pil:pinchDI', 'ing:pinchDI', 'ing:boxFondo'] : +det.slice(8) === 3 ? ['pil:vibracion', 'ing:pinchTD', 'ing:reducePit'] : ['pil:hePinchado', '@', 'ing:reducePit'] }); }
   else if (det.startsWith('susp')) { mensaje('SUSPENSIÓN DAÑADA', `Rueda ${NOMBRE_RUEDA[+det.slice(4)]} · el coche tira hacia un lado`, 2.4); radio.decir('La suspensión está tocada, el coche tirará hacia un lado. Compensa con el volante.', { clave: 'susp', cada: 40 }); }
 }
 
@@ -2483,7 +2519,7 @@ document.querySelectorAll('#panelBox [data-box]').forEach(b => b.addEventListene
   if ($('#chkRelevo').checked) { relevo.pendiente = true; $('#chkRelevo').checked = false; }
   const extra = [susp && 'suspensión', trabajoBox.alaDel && `alerón ${trabajoBox.alaDel > 0 ? '+' : ''}${trabajoBox.alaDel}`].filter(Boolean).join(' y ');
   mensaje('BOX, BOX', `Entra al final de esta vuelta · neumáticos ${COMPUESTOS[v].nombre.toLowerCase()}${extra ? ' · ' + extra : ''}`, 2.4);
-  radio.decir(`Recibido. Box esta vuelta, preparamos ${COMPUESTOS[v].nombre.toLowerCase()}s.`, { clave: 'boxSi', cada: 5 });
+  radio.decir(`Recibido. Box esta vuelta, preparamos ${COMPUESTOS[v].nombre.toLowerCase()}s.`, { clave: 'boxSi', cada: 5, voz: ['pil:boxVuelta', 'ing:entramos', v === 'duro' ? 'ing:duros' : '@', 'ing:limite'] });
 }));
 $('#bBox').addEventListener('click', () => entrada.eventos.push('box'));
 $('#bBox').addEventListener('touchstart', (e) => { e.preventDefault(); entrada.eventos.push('box'); }, { passive: false });
@@ -4216,7 +4252,7 @@ function pararAhora(comp) {
   if (!sesion || sesion.jugador.coche.abandono) return;
   sesion.pedirBox(sesion.jugador, comp);
   $('#bBox').classList.add('activo');
-  radio.decir(`Box, box. Ponemos ${COMPUESTOS[comp].nombre.toLowerCase()}s.`, { prioridad: true, clave: 'boxPlan', cada: 5 });
+  radio.decir(`Box, box. Ponemos ${COMPUESTOS[comp].nombre.toLowerCase()}s.`, { prioridad: true, clave: 'boxPlan', cada: 5, voz: ['ing:boxbox', comp === 'duro' ? 'ing:duros' : '@', 'pil:boxVuelta'] });
 }
 
 // al cruzar la meta: ¿toca parar según el plan, se acaban las ruedas o ha cambiado el tiempo?
@@ -4234,7 +4270,7 @@ function estrategiaVuelta(p) {
   if (sig && hechas + 1 === sig.vuelta && !estr.avisado.has(sig.vuelta)) {
     estr.avisado.add(sig.vuelta);
     decidir(`Plan: box esta vuelta para poner ${COMPUESTOS[sig.compuesto].nombre.toLowerCase()}s. ¿Paramos?`, () => pararAhora(sig.compuesto), 25);
-    radio.decir(`Box esta vuelta, según el plan. Ponemos ${COMPUESTOS[sig.compuesto].nombre.toLowerCase()}s. ¿Confirmas?`, { prioridad: true, clave: 'decPlan' + sig.vuelta, cada: 5 });
+    radio.decir(`Box esta vuelta, según el plan. Ponemos ${COMPUESTOS[sig.compuesto].nombre.toLowerCase()}s. ¿Confirmas?`, { prioridad: true, clave: 'decPlan' + sig.vuelta, cada: 5, voz: ['@', 'ing:confirma'] });
     return;
   }
   // neumáticos acabados sin parada prevista

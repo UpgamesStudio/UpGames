@@ -334,6 +334,8 @@ body.tactil-on .bt.energia { width: 70px; height: 60px; }
 .radio { position: absolute; left: calc(12px + var(--sa-l)); bottom: calc(46vh + 70px + var(--sa-b)); max-width: min(380px, 44vw); display: none; background: rgba(6,9,15,.8); border-left: 3px solid var(--cian); padding: 6px 10px; border-radius: 6px; font-size: 13px; line-height: 1.3; }
 .radio.visible { display: block; }
 .radio b { color: var(--cian); font-size: 10px; letter-spacing: 2px; display: block; }
+.radio.piloto { border-left-color: #ffd23f; }
+.radio.piloto b { color: #ffd23f; }
 body:not(.tactil-on) .radio { bottom: calc(150px + var(--sa-b)); }
 .clima-hud { position: absolute; top: calc(8px + var(--sa-t)); left: calc(170px + var(--sa-l)); font-size: 12px; background: rgba(6,9,15,.55); padding: 2px 8px; border-radius: 6px; display: none; }
 .clima-hud.visible { display: block; }
@@ -889,3 +891,31 @@ body.tactil-on #hudDer { top: calc(46px + var(--sa-t)); }
 }
 /* teclado o mando físico conectado: fuera los controles táctiles */
 body.teclado #tactil { display: none !important; }
+
+/* ─── Rueda de mandos del volante (mantener y deslizar) ─── */
+#tactil .rueda-bt, body.tactil-on #tactil .rueda-bt { position: absolute; top: calc(6px + var(--sa-t)); right: calc(56px + var(--sa-r)); width: 58px; height: 46px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: rgba(10,14,22,.62); border: 1px solid rgba(255,255,255,.22); touch-action: none; -webkit-user-select: none; user-select: none; }
+#tactil .rueda-bt svg { width: 22px; height: 22px; fill: none; stroke: rgba(255,255,255,.92); stroke-width: 2; stroke-linecap: round; }
+#tactil .rueda-bt span { font-size: 8px; letter-spacing: 1px; color: rgba(255,255,255,.75); font-weight: 800; }
+#tactil .rueda-bt.pulsado { background: rgba(225,30,40,.9); border-color: #fff; }
+#tactil .mr-volante { display: none; }   /* los mandos del volante están en la rueda */
+.rueda-mandos { --R: min(31vh, 150px); position: fixed; left: 50%; top: 47%; width: 0; height: 0; z-index: 60; pointer-events: none; display: none; }
+.rueda-mandos.visible { display: block; }
+.rueda-mandos .rm-aro { position: absolute; left: calc(var(--R) * -1.32); top: calc(var(--R) * -1.32); width: calc(var(--R) * 2.64); height: calc(var(--R) * 2.64); border-radius: 50%;
+  background: radial-gradient(circle, rgba(6,9,15,.82) 0 34%, rgba(6,9,15,.55) 35% 68%, rgba(6,9,15,0) 72%); border: 1px solid rgba(255,255,255,.08); animation: rmEntra .14s ease-out; }
+.rueda-mandos .rm-centro { position: absolute; left: -78px; top: -34px; width: 156px; height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.rueda-mandos .rm-centro b { font-size: 15px; letter-spacing: 1.5px; color: #fff; }
+.rueda-mandos .rm-centro small { font-size: 9.5px; color: rgba(255,255,255,.65); line-height: 1.25; margin-top: 2px; }
+.rueda-mandos .rm-centro i { font-style: normal; font-size: 18px; }
+.rueda-mandos .rm-item { position: absolute; left: calc(var(--x) * var(--R) - 45px); top: calc(var(--y) * var(--R) - 30px); width: 90px; height: 60px; border-radius: 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(20,26,38,.92); border: 1.5px solid rgba(255,255,255,.18);
+  transition: transform .08s, background .08s; animation: rmEntra .14s ease-out; }
+.rueda-mandos .rm-item i { font-style: normal; font-size: 18px; line-height: 1; }
+.rueda-mandos .rm-item b { font-size: 11px; letter-spacing: .5px; color: #fff; margin-top: 2px; }
+.rueda-mandos .rm-item small { font-size: 9px; color: #7fe7ff; margin-top: 1px; }
+.rueda-mandos .rm-item.valor b { font-size: 13px; }
+.rueda-mandos .rm-item.valor small { color: rgba(255,255,255,.6); font-size: 8.5px; line-height: 1.15; padding: 0 3px; }
+.rueda-mandos .rm-item.actual { border-color: #2fe07a; }
+.rueda-mandos .rm-item.sel { background: #e8202a; border-color: #fff; transform: scale(1.14); }
+.rueda-mandos .rm-item.sel small { color: #fff; }
+@keyframes rmEntra { from { opacity: 0; transform: scale(.7); } }

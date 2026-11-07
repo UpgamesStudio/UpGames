@@ -280,6 +280,7 @@
       <div class="opcion"><label>Mostrar FPS</label><input type="checkbox" data-aj="fps"></div>
       <div class="opcion"><label>Volumen</label><input type="range" min="0" max="1" step="0.05" data-aj="volumen"><span class="valor"></span></div>
       <div class="opcion"><label>Radio del ingeniero (voz)<span class="desc" id="estadoVoz"></span></label><input type="checkbox" data-aj="radio"> <button class="btn mini" id="bProbarVoz">🔊 Probar</button></div>
+      <div class="opcion"><label>Voz sintética para los avisos sin grabación<span class="desc">El ingeniero y el piloto hablan con voces grabadas; los avisos con datos (tiempos, distancias) salen como subtítulo. Actívalo para que también se lean en voz alta.</span></label><input type="checkbox" data-aj="vozSintetica"></div>
       <div class="opcion"><label>Sonido del motor<span class="desc">Grabaciones reales a bordo · se oye un acelerón al elegir</span></label><div class="segm" data-aj="motorSonido"><b data-v="v10">V10 ★ el mejor</b><b data-v="ferrari">V10 rojo 2004</b><b data-v="alonso">V10 azul 2004</b><b data-v="verstappen">V6 turbo híbrido</b><b data-v="v6">V6 deportivo</b></div></div>
       <div class="opcion"><label>Público y megafonía</label><input type="checkbox" data-aj="ambiente"></div>
       <div class="opcion"><label>Ayuda de frenada<span class="desc">Franjas en el asfalto: amarilla (prepárate) y roja (frena)</span></label><input type="checkbox" data-aj="ayudaFrenada"></div>
@@ -472,6 +473,10 @@
   <button id="bMenu" class="bt menu-bt" aria-label="Menú rápido: boxes, cámara, volante y pausa" aria-expanded="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg><i class="aviso"></i>
   </button>
+  <!-- Volante: mantener pulsado y deslizar el dedo hacia el ajuste (rueda de mandos) -->
+  <button id="bRueda" class="bt rueda-bt" aria-label="Mandos del volante: mantén pulsado y desliza hacia ERS, combustible, freno motor, frenos o boxes">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M3.4 10.5 9.6 11.2M14.4 11.2l6.2-.7M12 14.6V21"/></svg><span>MANDOS</span>
+  </button>
   <div id="menuRapido" class="menu-rapido" role="menu">
     <div class="mr-sec"><b>CARRERA</b><div class="mr-fila">
       <button id="bBox" class="bt mr box" data-cierra><span class="ic">P</span><span class="et">Entrar a boxes</span></button>
@@ -479,7 +484,7 @@
       <button id="bAtras" class="bt mr"><span class="ic">↺</span><span class="et">Mirar atrás</span></button>
       <button id="bRecolocar" class="bt mr" data-cierra title="Volver a la pista"><span class="ic">⟲</span><span class="et">A la pista</span></button>
     </div></div>
-    <div class="mr-sec"><b>VOLANTE</b><div class="mr-fila">
+    <div class="mr-sec mr-volante"><b>VOLANTE</b><div class="mr-fila">
     <button id="bErs" class="bt energia ers-bt" aria-label="ERS: modo de despliegue de la batería">
       <svg viewBox="0 0 64 40" aria-hidden="true"><rect class="pila" x="10" y="8" width="40" height="24" rx="4"/><rect class="borne" x="50" y="15" width="5" height="10" rx="1.5"/><rect class="carga" x="13" y="11" width="34" height="18" rx="2"/><path class="rayo" d="M33 9 L22 22 L30 22 L27 31 L40 17 L32 17 Z"/></svg>
       <span id="bErsTxt">ERS</span>
