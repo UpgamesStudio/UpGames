@@ -32,19 +32,35 @@ function pieza(g, zona, brazo = 0) {
   return g;
 }
 
-function geometriaPersona(calidad) {
+// Dos niveles de detalle: 'cerca' (unos 500 triángulos) y 'lejos' (unos 90: cajas y un octaedro).
+// Antes cada espectador tenía ~1.600 triángulos y las gradas sumaban millones por fotograma.
+function geometriaPersona(calidad, nivel = 'cerca') {
+  if (nivel === 'lejos') return geometriaLejana();
   const r = calidad >= 2 ? 1 : 0;
-  const cap = (rad, largo, x, y, z, zona, brazo = 0, sx = 1, sz = 1) => { const g = new THREE.CapsuleGeometry(rad, largo, 2 + r, 6 + r * 2); g.scale(sx, 1, sz); g.translate(x, y, z); return pieza(g, zona, brazo); };
+  const cap = (rad, largo, x, y, z, zona, brazo = 0, sx = 1, sz = 1) => { const g = new THREE.CapsuleGeometry(rad, largo, 1, 5 + r); g.scale(sx, 1, sz); g.translate(x, y, z); return pieza(g, zona, brazo); };
   const partes = [
     cap(0.066, 0.2, -0.08, 0.17, 0, 2), cap(0.066, 0.2, 0.08, 0.17, 0, 2),                       // piernas
     cap(0.15, 0.2, 0, 0.5, 0, 1, 0, 1, 0.72),                                                     // torso
     cap(0.046, 0.22, -0.205, 0.53, 0, 1, -1), cap(0.046, 0.22, 0.205, 0.53, 0, 1, 1),             // brazos (cuelgan del hombro)
   ];
-  for (const s of [-1, 1]) { const m = new THREE.SphereGeometry(0.05, 6 + r * 2, 4 + r * 2); m.translate(s * 0.205, 0.38, 0); partes.push(pieza(m, 0, s)); }  // manos
-  const cab = new THREE.SphereGeometry(0.115, 10 + r * 4, 8 + r * 2); cab.scale(1, 1.05, 1); cab.translate(0, 0.84, 0); partes.push(pieza(cab, 0));
+  for (const s of [-1, 1]) { const m = new THREE.SphereGeometry(0.05, 5, 3); m.translate(s * 0.205, 0.38, 0); partes.push(pieza(m, 0, s)); }  // manos
+  const cab = new THREE.SphereGeometry(0.115, 8 + r * 2, 6); cab.scale(1, 1.05, 1); cab.translate(0, 0.84, 0); partes.push(pieza(cab, 0));
   // gorra: casquete y visera (se esconde en quien no lleva)
-  const casq = new THREE.SphereGeometry(0.122, 10 + r * 4, 5, 0, Math.PI * 2, 0, Math.PI * 0.5); casq.translate(0, 0.86, 0); partes.push(pieza(casq, 3));
-  const vis = new THREE.CylinderGeometry(0.1, 0.1, 0.012, 10, 1, false, -Math.PI * 0.5, Math.PI); vis.scale(1, 1, 0.9); vis.translate(0, 0.875, -0.07); partes.push(pieza(vis, 3));
+  const casq = new THREE.SphereGeometry(0.122, 8 + r * 2, 3, 0, Math.PI * 2, 0, Math.PI * 0.5); casq.translate(0, 0.86, 0); partes.push(pieza(casq, 3));
+  const vis = new THREE.CylinderGeometry(0.1, 0.1, 0.012, 6, 1, false, -Math.PI * 0.5, Math.PI); vis.scale(1, 1, 0.9); vis.translate(0, 0.875, -0.07); partes.push(pieza(vis, 3));
+  for (const g of partes) { g.deleteAttribute('uv'); }
+  return mergeGeometries(partes.map(g => g.index ? g.toNonIndexed() : g));
+}
+
+function geometriaLejana() {
+  const caja = (sx, sy, sz, x, y, z, zona, brazo = 0) => { const g = new THREE.BoxGeometry(sx, sy, sz); g.translate(x, y, z); return pieza(g, zona, brazo); };
+  const partes = [
+    caja(0.24, 0.34, 0.12, 0, 0.17, 0, 2),                 // piernas
+    caja(0.3, 0.42, 0.2, 0, 0.5, 0, 1),                    // torso
+    caja(0.08, 0.34, 0.08, -0.205, 0.5, 0, 1, -1), caja(0.08, 0.34, 0.08, 0.205, 0.5, 0, 1, 1),   // brazos
+  ];
+  const cab = new THREE.OctahedronGeometry(0.13, 0); cab.translate(0, 0.84, 0); partes.push(pieza(cab, 0));
+  const gorra = new THREE.BoxGeometry(0.22, 0.06, 0.24); gorra.translate(0, 0.93, -0.02); partes.push(pieza(gorra, 3));
   for (const g of partes) { g.deleteAttribute('uv'); }
   return mergeGeometries(partes.map(g => g.index ? g.toNonIndexed() : g));
 }
@@ -155,7 +171,8 @@ export class Publico {
   }
 
   construir(scene) {
-    const geoP = geometriaPersona(this.calidad), geoB = geometriaBandera();
+    const geoP = geometriaPersona(this.calidad), geoL = geometriaPersona(this.calidad, 'lejos'), geoB = geometriaBandera();
+    this.lod = [];
     const matP = material(this.u, false), matB = material(this.u, true);
     const col = new THREE.Color(), elegir = (l) => col.setHex(l[Math.floor(Math.random() * l.length)]);
     this.n = 0;
@@ -174,14 +191,19 @@ export class Publico {
         (Math.random() < 0.5 ? col.setHex(fav) : elegir(ROPA)).toArray(gorra, k * 4); gorra[k * 4 + 3] = Math.random() < 0.4 ? 1 : 0;
         if (Math.random() < 0.06) conBandera.push(k);
       }
-      const ip = new THREE.InstancedMesh(geoP, matP, n);
-      ip.geometry = geoP.clone();
-      ip.geometry.setAttribute('iCamisa', new THREE.InstancedBufferAttribute(camisa, 3));
-      ip.geometry.setAttribute('iPiel', new THREE.InstancedBufferAttribute(piel, 3));
-      ip.geometry.setAttribute('iPantalon', new THREE.InstancedBufferAttribute(pant, 3));
-      ip.geometry.setAttribute('iGorra', new THREE.InstancedBufferAttribute(gorra, 4));
-      for (let k = 0; k < n; k++) ip.setMatrixAt(k, lista[k]);
-      const mallas = [ip];
+      // la misma grada en los dos niveles de detalle (comparten los colores de cada espectador)
+      const crear = (geo) => {
+        const im = new THREE.InstancedMesh(geo.clone(), matP, n);
+        im.geometry.setAttribute('iCamisa', new THREE.InstancedBufferAttribute(camisa, 3));
+        im.geometry.setAttribute('iPiel', new THREE.InstancedBufferAttribute(piel, 3));
+        im.geometry.setAttribute('iPantalon', new THREE.InstancedBufferAttribute(pant, 3));
+        im.geometry.setAttribute('iGorra', new THREE.InstancedBufferAttribute(gorra, 4));
+        for (let k = 0; k < n; k++) im.setMatrixAt(k, lista[k]);
+        return im;
+      };
+      const ip = crear(geoP), il = crear(geoL);
+      const mallas = [ip, il];
+      const grada = { cerca: ip, lejos: il, bandera: null };
       if (conBandera.length) {
         const nb = conBandera.length, ib = new THREE.InstancedMesh(geoB.clone(), matB, nb);
         const cb = new Float32Array(nb * 3), z3 = new Float32Array(nb * 3), z4 = new Float32Array(nb * 4);
@@ -190,12 +212,15 @@ export class Publico {
         ib.geometry.setAttribute('iPiel', new THREE.InstancedBufferAttribute(z3, 3));
         ib.geometry.setAttribute('iPantalon', new THREE.InstancedBufferAttribute(z3, 3));
         ib.geometry.setAttribute('iGorra', new THREE.InstancedBufferAttribute(z4, 4));
-        mallas.push(ib);
+        mallas.push(ib); grada.bandera = ib;
       }
       for (const im of mallas) {
         im.computeBoundingSphere(); im.boundingSphere.radius += 2;   // margen para saltos, brazos y banderas
         im.castShadow = false; im.receiveShadow = false; scene.add(im);
       }
+      grada.centro = ip.boundingSphere.center.clone(); grada.radio = ip.boundingSphere.radius;
+      il.visible = false;
+      this.lod.push(grada);
     }
     this.gradas = [];
   }
@@ -204,6 +229,16 @@ export class Publico {
   actualizar(dt, foco) {
     this.u.tiempo.value = (this.u.tiempo.value + dt) % 1000;
     if (foco) this.u.foco.value.set(foco.x, foco.y || 0, foco.z);
+    // nivel de detalle por grada según lo lejos que esté de la acción (el coche que se mira)
+    if (foco && this.lod) {
+      const lim = this.calidad >= 2 ? 95 : 60;
+      for (const g of this.lod) {
+        const d = Math.hypot(g.centro.x - foco.x, g.centro.z - foco.z) - g.radio;
+        const cerca = d < lim;
+        g.cerca.visible = cerca; g.lejos.visible = !cerca;
+        if (g.bandera) g.bandera.visible = cerca;
+      }
+    }
     // la ola aparece de vez en cuando y dura unos segundos
     const t = this.u.tiempo.value;
     this.u.ola.value = Math.max(0, Math.sin(t * 0.06) - 0.75) * 4;

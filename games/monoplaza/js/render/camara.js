@@ -74,7 +74,9 @@ export class Camara {
     }
     if (this.modo === 'persecucion' || this.modo === 'cercana') {
       const cerca = this.modo === 'cercana';
-      const dist = cerca ? 4.6 : 6.8, alto = cerca ? 1.45 : 2.05;
+      // (los coches cerrados son más altos y largos: la cámara va más alta y algo más lejos)
+      const pc = modelo?.camaras?.[cerca ? 'cercana' : 'persecucion'];
+      const dist = pc ? pc[0] : cerca ? 4.6 : 6.8, alto = pc ? pc[1] : cerca ? 1.45 : 2.05, mira = pc ? pc[2] : 0.75;
       // rumbo suavizado: la cámara se queda algo atrás en los giros
       let d = car.psi - this.rumbo;
       d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -93,7 +95,7 @@ export class Camara {
       if (this.pos.y < car.y + 0.6) this.pos.y = car.y + 0.6;
       cam.position.set(this.pos.x + sx, this.pos.y + sy, this.pos.z);
       cam.up.set(0, 1, 0);
-      cam.lookAt(car.x + cos * 3.5 * sentido, car.y + 0.75, car.z + sin * 3.5 * sentido);
+      cam.lookAt(car.x + cos * 3.5 * sentido, car.y + mira, car.z + sin * 3.5 * sentido);
       cam.near = 0.1;
     } else {
       // cámaras a bordo: siguen el cabeceo y balanceo de la carrocería
@@ -103,10 +105,10 @@ export class Camara {
       const local = this.modo === 'tcam' ? new THREE.Vector3(...(cm.tcam || [-0.32, 1.13, 0])) : cara ? new THREE.Vector3(...(cm.cara || [0.60, 0.90, 0])) : new THREE.Vector3(...(cm.cabina || [0.16, 0.86, 0]));
       const mirar = this.modo === 'tcam' ? new THREE.Vector3(...(cm.mirarTcam || [30, 0.4, 0])) : cara ? new THREE.Vector3(...(cm.mirarCara || [0.0, 0.79, 0])) : new THREE.Vector3(...(cm.mirarCabina || [30, -0.24, 0]));
       // en la cabina la vista acompaña el giro de la cabeza del piloto hacia la curva
-      if (this.modo === 'cabina' && modelo.mirada) mirar.applyAxisAngle(new THREE.Vector3(0, 1, 0), modelo.mirada * 0.85);
+      if (this.modo === 'cabina' && modelo.mirada && !modelo.cerrado) mirar.applyAxisAngle(new THREE.Vector3(0, 1, 0), modelo.mirada * 0.85);
       if (this.mirarAtras) { mirar.x = -30; local.x = this.modo === 'tcam' ? -0.6 : -0.1; local.y += 0.1; }
       // al frenar la cabeza va hacia delante y abajo; al acelerar, atrás; en curva, hacia fuera
-      const hg = this.modo === 'cabina' ? modelo.piloto?.cabezaG : null;
+      const hg = this.modo === 'cabina' && !modelo.cerrado ? modelo.piloto?.cabezaG : null;
       if (hg) {
         // la vista va con la cabeza del piloto (muelle con inercia: llega tarde y se pasa un poco)
         local.z += hg.x * 0.16; local.x -= hg.z * 0.14; local.y -= Math.max(0, -hg.z) * 0.05;

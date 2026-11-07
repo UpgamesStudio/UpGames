@@ -451,7 +451,11 @@ function resolucionDinamica(fps) {
   tResLento = fps < 50 ? tResLento + 1 : 0;
   tResRapido = fps > 58 ? tResRapido + 1 : 0;
   let nueva = escalaRes;
-  if (tResLento >= 2 && escalaRes > 0.7) { nueva = Math.max(0.7, escalaRes - 0.1); tResLento = 0; }
+  // a la resolución mínima y aún lento (< 40 fps): se baja la calidad gráfica (sombras, efectos)
+  if (tResLento >= 4 && escalaRes <= 0.6 && fps < 40 && calidad > 0 && ajustes.calidad === 'auto') {
+    tResLento = 0; cambiarCalidad(calidad - 1); mensaje('CALIDAD AJUSTADA', 'Para ir más fluido', 1.2); return;
+  }
+  if (tResLento >= 2 && escalaRes > 0.6) { nueva = Math.max(0.6, escalaRes - 0.1); tResLento = 0; }
   else if (tResRapido >= 5 && escalaRes < 1) { nueva = Math.min(1, escalaRes + 0.1); tResRapido = 0; }
   if (nueva === escalaRes) return;
   escalaRes = nueva;

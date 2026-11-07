@@ -575,7 +575,7 @@ body.en-repe #bCocheNuevo { display: none; }
 .sel-cat b.sel { background: #e8202a; color: #fff; }
 .cat-desc { margin: 4px 0 0; font-size: 12px; color: var(--tenue); text-align: center; }
 .modo.online { border-color: rgba(0,229,255,.55); }
-body.cat-gt .ers, body.cat-gt #hErsModo, body.cat-gt #hDrs, body.cat-gt #bErs, body.cat-gt #bDrs,
+body.cat-gt .ers, body.cat-gt #hErsModo, body.cat-gt #hDrs, body.cat-gt #bErs, body.cat-gt #bDrs, body.cat-gt #bOT, body.cat-stock #bOT,
 body.cat-stock .ers, body.cat-stock #hErsModo, body.cat-stock #hDrs, body.cat-stock #bErs, body.cat-stock #bDrs { display: none !important; }
 .lobby-cuerpo { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 18px; min-height: 0; }
 .lobby-modos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(86px, auto); gap: 10px; align-content: start; }
@@ -893,9 +893,9 @@ body.tactil-on #hudDer { top: calc(46px + var(--sa-t)); }
 body.teclado #tactil { display: none !important; }
 
 /* ─── Rueda de mandos del volante (mantener y deslizar) ─── */
-#tactil .rueda-bt, body.tactil-on #tactil .rueda-bt { position: absolute; top: calc(6px + var(--sa-t)); right: calc(56px + var(--sa-r)); width: 58px; height: 46px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  background: rgba(10,14,22,.62); border: 1px solid rgba(255,255,255,.22); touch-action: none; -webkit-user-select: none; user-select: none; }
-#tactil .rueda-bt svg { width: 22px; height: 22px; fill: none; stroke: rgba(255,255,255,.92); stroke-width: 2; stroke-linecap: round; }
+#tactil .rueda-bt, body.tactil-on #tactil .rueda-bt { position: relative; width: 66px; height: 66px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: rgba(7,10,17,.66); border: 2px solid rgba(232,32,42,.85); box-shadow: 0 0 10px rgba(232,32,42,.35); touch-action: none; -webkit-user-select: none; user-select: none; }
+#tactil .rueda-bt svg { width: 26px; height: 26px; fill: none; stroke: rgba(255,255,255,.92); stroke-width: 2; stroke-linecap: round; }
 #tactil .rueda-bt span { font-size: 8px; letter-spacing: 1px; color: rgba(255,255,255,.75); font-weight: 800; }
 #tactil .rueda-bt.pulsado { background: rgba(225,30,40,.9); border-color: #fff; }
 #tactil .mr-volante { display: none; }   /* los mandos del volante están en la rueda */
@@ -919,3 +919,28 @@ body.teclado #tactil { display: none !important; }
 .rueda-mandos .rm-item.sel { background: #e8202a; border-color: #fff; transform: scale(1.14); }
 .rueda-mandos .rm-item.sel small { color: #fff; }
 @keyframes rmEntra { from { opacity: 0; transform: scale(.7); } }
+
+/* ─── Menú principal agrupado: dos modos grandes y tres grupos ─── */
+.lobby-modos.agrupado { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.75fr); grid-auto-rows: auto; gap: 14px; align-items: stretch; }
+.lobby-principal { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
+.lobby-modos.agrupado .modo.destacado { grid-column: auto; grid-row: auto; min-height: 0; padding: 14px 18px; }
+.lobby-modos.agrupado .modo.destacado .t { font-size: clamp(22px, 2.8vw, 34px); }
+.lobby-modos.agrupado .modo.online { background: linear-gradient(135deg, #0b6bd6 0%, #08408a 55%, #061a3a 100%); border-color: rgba(120,190,255,.45); }
+.lobby-grupos { display: flex; flex-direction: column; gap: 8px; }
+.grupo h3 { margin: 0 0 5px; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,.55); font-weight: 800; }
+.grupo .fila { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.lobby-modos.agrupado .grupo .modo { min-height: 66px; padding: 9px 10px 9px 13px; justify-content: flex-end; }
+.lobby-modos.agrupado .grupo .modo .t { font-size: clamp(10px, 1.15vw, 15px); }
+.lobby-modos.agrupado .grupo .modo .d { display: block; font-size: 10.5px; }
+.lobby-modos.agrupado .grupo .modo i { width: 20px; height: 20px; top: 7px; right: 8px; }
+@media (max-height: 500px) {
+  .lobby-modos.agrupado { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.9fr); gap: 10px; }
+  .lobby-modos.agrupado .grupo .modo { min-height: 50px; padding: 6px 8px 6px 11px; }
+  .lobby-modos.agrupado .grupo .modo .d { display: none; }
+  .grupo h3 { font-size: 9px; margin-bottom: 3px; }
+  .lobby-grupos { gap: 5px; }
+  .lobby-modos.agrupado .modo.destacado { padding: 10px 12px; }
+  .lobby-modos.agrupado .modo.destacado .t { font-size: 21px; }
+  .lobby-modos.agrupado .modo.destacado .ir { font-size: 11px; padding: 4px 9px; }
+}
+@media (max-width: 700px) { .lobby-modos.agrupado { grid-template-columns: 1fr; } .grupo .fila { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

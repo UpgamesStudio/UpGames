@@ -53,7 +53,13 @@ export class Radio {
     return this._buf.get(clave);
   }
   /** Precarga las frases más habituales (sin bloquear nada). */
-  precargar(claves = Object.keys(VOCES)) { for (const k of claves) this._cargar(k); }
+  precargar(claves = Object.keys(VOCES)) {
+    // de una en una y con pausas, para no dar tirones al empezar la sesión
+    if (this._precargando) return; this._precargando = true;
+    const lista = claves.filter(k => !this._buf.has(k));
+    const sig = () => { const k = lista.shift(); if (!k) { this._precargando = false; return; } this._cargar(k).finally(() => setTimeout(sig, 250)); };
+    setTimeout(sig, 1500);
+  }
 
   _vozDe(tipo) {
     const vs = voces();

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COCHE, CAT, COMPUESTOS } from '../config.js';
-import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS } from './carroceriaCerrada.js';
+import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS, formaDe } from './carroceriaCerrada.js';
 import { texturaCarbono } from './texturas.js';
 import { proyectarUV, dibujarLibrea, materialLibrea } from './librea.js';
 import { normalPliegues } from './personas.js';
@@ -970,11 +970,14 @@ export function crearModelo(opc) {
   if (cerrado) {
     const tamC = calidad >= 2 ? 1024 : 512;
     const cvC = document.createElement('canvas'); cvC.width = tamC; cvC.height = tamC;
-    pintarLibreaCerrada(cvC, { categoria: cat, patron: eq.patron || equipo.patron || 'franjas', colores, numero });
+    // en GT cada equipo lleva uno de los tres coches (coupé, berlinetta o muscle)
+    const semilla = [...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) + (opc.variante ?? 0);
+    const forma = opc.forma || formaDe(cat, semilla);
+    pintarLibreaCerrada(cvC, { categoria: forma, patron: eq.patron || equipo.patron || 'franjas', colores, numero });
     const texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 4;
     pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
     const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
-    const cc = crearCarroceria(cat, { pintura: pinturaFinal, ruedas: ruedasC, calidad });
+    const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad });
     for (const o of [cuerpo, halo, mCarbono, mNegro, mMetal, forroCabina, alaDel, alaTras, luzLluvia]) if (o) o.visible = false;
     carroceria.remove(cuerpo);
     for (const gp of gruposPieza) gp.g.visible = false;
@@ -993,7 +996,8 @@ export function crearModelo(opc) {
     }
     // cámara «a bordo» sobre el capó (dentro de un coche cerrado no se vería nada)
     const ojo = [0.17 + dx, 0.80 + dy, dz], capo = [cc.forma.cristal[0] - 0.08, cc.forma.cintura + 0.16, 0];
-    camaras = { cabina: capo, mirarCabina: [30, capo[1] - 0.25, 0], cara: [ojo[0] + 0.55, ojo[1] + 0.02, dz], mirarCara: [ojo[0] - 0.1, ojo[1] - 0.08, dz],
+    camaras = { cabina: capo, mirarCabina: [30, capo[1] - 0.25, 0],
+      persecucion: [7.4, 2.45, 0.95], cercana: [5.5, 1.9, 0.95], cara: [cc.forma.secciones[0][0] + 0.02, 0.38, 0], mirarCara: [30, 0.3, 0],
       tcam: [-0.25, cc.forma.techo + 0.14, 0], mirarTcam: [30, 0.6, 0] };
     calor.position.set(cc.forma.secciones[1][0] - 0.1, 0.3, 0.35);
   }
@@ -1112,7 +1116,7 @@ export function crearModelo(opc) {
   let tPantalla = 0;
   const estadoDanos = { alaDel: false, alaTras: false };
   const modelo = {
-    raiz, carroceria, ruedas, pivDrs, luzLluvia, pintura: pinturaFinal, categoria: cat, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
+    raiz, carroceria, ruedas, pivDrs, luzLluvia, pintura: pinturaFinal, categoria: cat, cerrado, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
     // cámaras a bordo (coordenadas de la carrocería): la de cabina en los ojos del piloto, centrada
     // entre el arco del halo (0,94 m) y el borde de la cabina (0,72 m); la de la cara, sobre el
     // arco del halo (detrás del pilar) mirando al casco; la T-Cam, sobre la toma de aire

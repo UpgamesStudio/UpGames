@@ -25,8 +25,42 @@ const FORMAS = {
       [-0.50, 0.84, 0.62, 1.18], [-0.95, 0.86, 0.55, 1.05], [-1.38, 0.87, 0.46, 0.91], [-1.50, 0.87, 0.44, 0.0],
     ],
     parabrisas: 0.42, luneta: -0.88, pilarB: [-0.28, -0.16],
-    ruedas: { del: 0.31, tras: 0.33 },
-    piloto: [-0.36, 0.13, -0.38], ala: true, rejilla: 0.62, toma: true,
+    ruedas: { del: 0.31, tras: 0.33 }, ruedasX: [1.46, -1.24],
+    piloto: [-0.36, 0.13, -0.38], ala: true, rejilla: 0.62, toma: [1.62, 1.92], branquia: true,
+  },
+  // GT de motor central (berlinetta): morro corto y bajo, cabina adelantada, caderas anchas y tomas laterales
+  gtb: {
+    baja: [
+      [2.30, 0.72, 0.26, 0.36, 0.38], [2.25, 0.86, 0.16, 0.46, 0.46], [2.10, 0.95, 0.12, 0.56, 0.52],
+      [1.85, 0.99, 0.12, 0.66, 0.56], [1.46, 1.00, 0.12, 0.72, 0.60], [1.10, 0.95, 0.12, 0.70, 0.66],
+      [0.60, 0.90, 0.12, 0.72, 0.72], [0.00, 0.92, 0.12, 0.78, 0.78], [-0.60, 0.99, 0.12, 0.86, 0.84],
+      [-1.24, 1.04, 0.12, 0.92, 0.88], [-1.70, 1.01, 0.13, 0.92, 0.89], [-2.00, 0.95, 0.18, 0.89, 0.88],
+      [-2.08, 0.88, 0.27, 0.84, 0.84],
+    ],
+    cabina: [
+      [1.12, 0.80, 0.68, 0.0], [0.85, 0.81, 0.62, 0.98], [0.50, 0.81, 0.60, 1.12], [0.10, 0.82, 0.60, 1.14],
+      [-0.35, 0.84, 0.58, 1.12], [-0.90, 0.86, 0.50, 1.02], [-1.50, 0.88, 0.40, 0.94], [-1.70, 0.88, 0.38, 0.0],
+    ],
+    parabrisas: 0.52, luneta: -0.42, pilarB: [-0.14, -0.04],
+    ruedas: { del: 0.31, tras: 0.34 }, ruedasX: [1.46, -1.24],
+    piloto: [-0.22, 0.10, -0.38], ala: true, rejilla: 0.6, toma: [1.70, 1.98], tomaLateral: [-0.78, -0.36], branquia: false,
+  },
+  // GT de motor delantero largo (estilo muscle): capó largo, parabrisas recto y zaga cuadrada
+  gtm: {
+    baja: [
+      [2.45, 0.80, 0.26, 0.50, 0.50], [2.40, 0.92, 0.16, 0.60, 0.59], [2.25, 0.99, 0.12, 0.68, 0.64],
+      [1.95, 1.01, 0.12, 0.76, 0.68], [1.46, 1.02, 0.12, 0.80, 0.70], [0.95, 0.99, 0.12, 0.80, 0.76],
+      [0.40, 0.96, 0.12, 0.82, 0.80], [-0.20, 0.96, 0.12, 0.84, 0.83], [-0.80, 0.99, 0.12, 0.88, 0.86],
+      [-1.24, 1.03, 0.12, 0.92, 0.89], [-1.75, 1.01, 0.13, 0.93, 0.91], [-2.08, 0.97, 0.18, 0.92, 0.91],
+      [-2.16, 0.90, 0.27, 0.88, 0.88],
+    ],
+    cabina: [
+      [0.85, 0.84, 0.72, 0.0], [0.55, 0.85, 0.68, 1.06], [0.20, 0.85, 0.66, 1.20], [-0.25, 0.86, 0.66, 1.22],
+      [-0.70, 0.88, 0.62, 1.17], [-1.15, 0.90, 0.52, 1.04], [-1.62, 0.92, 0.44, 0.96], [-1.75, 0.92, 0.42, 0.0],
+    ],
+    parabrisas: 0.22, luneta: -0.75, pilarB: [-0.42, -0.30],
+    ruedas: { del: 0.31, tras: 0.33 }, ruedasX: [1.46, -1.24],
+    piloto: [-0.45, 0.15, -0.38], ala: true, rejilla: 0.7, toma: [1.30, 1.95], branquia: true,
   },
   stock: {
     baja: [
@@ -40,11 +74,16 @@ const FORMAS = {
       [-0.85, 0.89, 0.70, 1.28], [-1.25, 0.90, 0.64, 1.12], [-1.60, 0.91, 0.56, 0.98], [-1.72, 0.91, 0.54, 0.0],
     ],
     parabrisas: 0.24, luneta: -1.0, pilarB: [-0.42, -0.30],
-    ruedas: { del: 0.30, tras: 0.30 },
-    piloto: [-0.42, 0.22, -0.38], ala: false, rejilla: 0.75, toma: false,
+    ruedas: { del: 0.30, tras: 0.30 }, ruedasX: [1.34, -1.45],
+    piloto: [-0.42, 0.22, -0.38], ala: false, rejilla: 0.75, toma: null, branquia: false,
   },
 };
 export const ANCHO_RUEDAS = { gt: FORMAS.gt.ruedas, stock: FORMAS.stock.ruedas };
+/** Carrocería de cada coche: en GT hay tres (coupé, berlinetta de motor central y muscle). */
+export function formaDe(categoria, semilla = 0) {
+  if (categoria !== 'gt') return categoria;
+  return ['gt', 'gtb', 'gtm'][Math.abs(Math.floor(semilla)) % 3];
+}
 
 // interpolación suave (Catmull-Rom) de una tabla ordenada por x descendente
 function interp(tabla, x, k) {
@@ -111,7 +150,7 @@ function haciaFuera(g, centro) {
 
 function carroceriaBaja(F, ruedas, calidad) {
   const T = F.baja, xN = T[0][0], xC = T[T.length - 1][0], L = xN - xC;
-  const nMedia = calidad >= 2 ? 26 : calidad >= 1 ? 20 : 14;
+  const nMedia = calidad >= 2 ? 34 : calidad >= 1 ? 24 : 16;
   const xs = [], fino = calidad >= 2 ? 0.03 : 0.055, grueso = calidad >= 2 ? 0.09 : 0.16;
   const cerca = (x) => ruedas.some(w => Math.abs(x - w.x) < w.r + 0.14) || x > xN - 0.25 || x < xC + 0.2;
   for (let x = xN; x > xC; x -= cerca(x) ? fino : grueso) xs.push(x);
@@ -128,16 +167,19 @@ function carroceriaBaja(F, ruedas, calidad) {
       let z = zz * sg, c = [1, 1, 1];
       const y = y0;
       // pasos de rueda: lo que tapa la rueda se mete hasta la cara interior (y se pinta oscuro)
+      let xx = x, yy = y;
       for (const r of ruedas) {
-        const dx = x - r.x, dy = y - r.r, ra = r.r + 0.06, zIn = Math.abs(r.z) - r.w / 2 - 0.05;
-        if (dx * dx + dy * dy < ra * ra && Math.sign(z || 1) === Math.sign(r.z) && Math.abs(z) > zIn) { z = Math.sign(z) * zIn; c = OSCURO; }
+        const dx = x - r.x, dy = y - r.r, ra = r.r + 0.06, zIn = Math.abs(r.z) - r.w / 2 - 0.05, d = Math.hypot(dx, dy);
+        if (Math.sign(z || 1) !== Math.sign(r.z) || Math.abs(z) <= zIn) continue;
+        if (d < ra) { z = Math.sign(z) * zIn; c = OSCURO; }
+        // los vértices que quedan justo fuera se ponen sobre el círculo: el borde del arco sale redondo
+        else if (d < ra + 0.03 && dy > -0.02) { xx = r.x + dx / d * ra; yy = r.r + dy / d * ra; }
       }
       // faldones, rejilla, difusor y tomas del capó (oscuros)
       if (y < yb + 0.065) c = OSCURO;
       if (x > xN - 0.1 && y < (ys + yb) * F.rejilla && y > yb + 0.05 && Math.abs(z) < w * 0.72) c = OSCURO;
       if (x < xC + 0.08 && y < yb + 0.2) c = OSCURO;
-      if (F.toma && x > 1.62 && x < 1.92 && Math.abs(z) > 0.22 && Math.abs(z) < 0.5 && y > yc - 0.01) c = OSCURO;
-      anillo.push([x, y, z]); col.push(c);
+      anillo.push([xx, yy, z]); col.push(c);
       uv.push([(x - xC) / L, sg > 0 ? vDe(zz, y0) : 1 - vDe(zz, y0)]);
     }
     anillos.push(anillo); uvs.push(uv); cols.push(col);
@@ -235,11 +277,77 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
   };
   costado(() => num(U(stock ? -0.2 : 0.0), 0, rN, 0));
   num(U(stock ? -0.35 : -0.3), V(0.5), rN * 1.15, -Math.PI / 2);
-  // patrocinadores: capó, faldón y franja del parabrisas
-  x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.font = `italic 900 ${Math.round(H * 0.026)}px system-ui, sans-serif`;
-  x.save(); x.translate(U(1.75), V(0.5)); x.rotate(Math.PI / 2); x.fillText('UPGAMES', 0, 0); x.restore();
-  costado(() => { x.font = `800 ${Math.round(H * 0.02)}px system-ui, sans-serif`; x.fillStyle = tercero; x.fillText('APEX GP', U(-1.75), bh * 1.6); x.fillText('UPGAMES', U(1.75), bh * 1.6); });
+  // ── líneas de las piezas (puertas, capó, paragolpes, tapón de gasolina): dan realismo ──
+  const rA = F.ruedasX;
+  x.strokeStyle = 'rgba(0,0,0,.38)'; x.lineWidth = Math.max(1.5, W / 600);
+  const xPuerta = [F.parabrisas + 0.12, F.pilarB[0] - 0.02];
+  costado(() => {
+    x.strokeRect(U(xPuerta[1]), -H * 0.125, U(xPuerta[0]) - U(xPuerta[1]), H * 0.235);                    // puerta
+    x.beginPath(); x.moveTo(U(xPuerta[0] - 0.12), -H * 0.04); x.lineTo(U(xPuerta[0] - 0.24), -H * 0.04); x.stroke();   // tirador
+    for (const xs of [rA[0] + 0.52, rA[1] - 0.48]) { x.beginPath(); x.moveTo(U(xs), -H * 0.13); x.lineTo(U(xs), H * 0.14); x.stroke(); }  // paragolpes
+    x.beginPath(); x.arc(U(rA[1] + 0.05), -H * 0.1, H * 0.018, 0, Math.PI * 2); x.stroke();          // gasolina
+  });
+  const xCapo = F.cabina[0][0] + 0.05;
+  for (const v of [0.41, 0.59]) { x.beginPath(); x.moveTo(U(xCapo), V(v)); x.lineTo(U(x0 - 0.18), V(v)); x.stroke(); }
+  x.beginPath(); x.moveTo(U(xCapo), V(0.41)); x.lineTo(U(xCapo), V(0.59)); x.stroke();
+
+  // ── tomas de aire dibujadas (nítidas): rejillas del capó, branquias y toma lateral ──
+  const rejilla = (x0r, y0r, w, h, n, horiz = false) => {
+    x.fillStyle = 'rgba(6,7,10,.92)'; x.beginPath(); x.roundRect ? x.roundRect(x0r, y0r, w, h, Math.min(w, h) * 0.25) : x.rect(x0r, y0r, w, h); x.fill();
+    x.strokeStyle = 'rgba(90,95,110,.55)'; x.lineWidth = Math.max(1, W / 900);
+    for (let k = 1; k < n; k++) { x.beginPath(); if (horiz) { x.moveTo(x0r + 2, y0r + h * k / n); x.lineTo(x0r + w - 2, y0r + h * k / n); } else { x.moveTo(x0r + w * k / n, y0r + 2); x.lineTo(x0r + w * k / n, y0r + h - 2); } x.stroke(); }
+  };
+  if (F.toma) for (const v of [0.455, 0.545]) rejilla(U(F.toma[0]), V(v) - H * 0.022, U(F.toma[1]) - U(F.toma[0]), H * 0.044, 6, true);
+  costado(() => {
+    if (F.branquia) { const xa = rA[0] - 0.52; for (let k = 0; k < 3; k++) rejilla(U(xa - k * 0.08), -H * 0.06, U(0.05) - U(0), H * 0.1, 1); }
+    if (F.tomaLateral) { const [a, b] = F.tomaLateral; x.fillStyle = 'rgba(6,7,10,.92)'; x.beginPath(); x.moveTo(U(b), -H * 0.09); x.lineTo(U(a), -H * 0.02); x.lineTo(U(a), H * 0.06); x.lineTo(U(b), H * 0.06); x.closePath(); x.fill(); }
+  });
+
+  // ── patrocinadores: UPGAMES, UPCOINS, NEXUS IA, APEX GP, UPGAMES TV ──
+  const logo = (txt, cx, cy, alto, { fondo = null, color = '#fff', rot = 0, ancho = null } = {}) => {
+    x.save(); x.translate(cx, cy); x.rotate(rot);
+    x.font = `italic 900 ${Math.round(alto)}px system-ui, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const w = ancho || x.measureText(txt).width + alto * 0.7;
+    if (fondo) { x.fillStyle = fondo; x.beginPath(); x.roundRect?.(-w / 2, -alto * 0.7, w, alto * 1.4, alto * 0.25); if (!x.roundRect) x.rect(-w / 2, -alto * 0.7, w, alto * 1.4); x.fill(); }
+    x.fillStyle = color; x.fillText(txt, 0, alto * 0.04); x.restore();
+  };
+  const moneda = (cx, cy, r) => { x.fillStyle = '#ffc928'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); x.strokeStyle = '#b8860b'; x.lineWidth = r * 0.18; x.stroke(); x.fillStyle = '#8a5a00'; x.font = `900 ${Math.round(r * 1.2)}px system-ui`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('U', cx, cy + r * 0.05); };
+  // capó: UPGAMES grande en una placa oscura
+  logo('UPGAMES', U((xCapo + x0) / 2 - 0.05), V(0.5), H * 0.03, { fondo: 'rgba(8,10,16,.85)', rot: Math.PI / 2 });
+  // morro: NEXUS IA
+  logo('NEXUS IA', U(x0 - 0.12), V(0.5), H * 0.017, { color: '#7fe7ff', rot: Math.PI / 2 });
+  // maletero: UPCOINS con su moneda
+  { const cx = U(x1 + 0.35), cy = V(0.5); x.save(); x.translate(cx, cy); x.rotate(Math.PI / 2); logo('UPCOINS', 0, 0, H * 0.022, { fondo: 'rgba(8,10,16,.85)', color: '#ffc928' }); x.restore(); }
+  costado(() => {
+    // puerta: bajo el número, UPCOINS con su moneda
+    const xp = (xPuerta[0] + xPuerta[1]) / 2;
+    logo('UPCOINS', U(xp) + H * 0.012, H * 0.075, H * 0.024, { fondo: 'rgba(8,10,16,.82)', color: '#ffc928' });
+    moneda(U(xp) - H * 0.06, H * 0.075, H * 0.014);
+    // aleta delantera: NEXUS IA · aleta trasera: APEX GP y UPGAMES TV
+    logo('NEXUS IA', U(rA[0] - 0.05), -H * 0.07, H * 0.02, { fondo: 'rgba(8,10,16,.8)', color: '#7fe7ff' });
+    logo('APEX GP', U(rA[1] - 0.05), -H * 0.075, H * 0.022, { color: '#fff', fondo: '#e8202a' });
+    logo('UPGAMES TV', U(rA[1] - 0.05), -H * 0.02, H * 0.015, { color: '#fff' });
+    // faldón: la web
+    logo('UPGAMES.GAMES', U(xp), H * 0.135, H * 0.016, { color: '#fff' });
+    // paragolpes delantero y trasero
+    logo('UPGAMES', U(x0 - 0.2), H * 0.06, H * 0.016, { color: tercero });
+    logo('NEXUS', U(x1 + 0.2), H * 0.06, H * 0.016, { color: tercero });
+  });
+}
+
+// gira una lámina para que su eje X local sea `ejeX` y su Y local `ejeY` (la normal sale de ambos)
+function orientar(m, ejeX, ejeY) { m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ejeX, ejeY, ejeX.clone().cross(ejeY))); }
+
+/** Lienzo con letras para una pegatina (parasol del parabrisas, alerón). */
+function pegatina(txt, { ancho = 512, alto = 64, fondo = '#0b0c10', color = '#fff', extra = null } = {}) {
+  const cv = document.createElement('canvas'); cv.width = ancho; cv.height = alto;
+  const x = cv.getContext('2d');
+  if (fondo) { x.fillStyle = fondo; x.fillRect(0, 0, ancho, alto); }
+  x.font = `italic 900 ${Math.round(alto * 0.66)}px system-ui, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = color; x.fillText(txt, ancho / 2 - (extra ? alto * 0.4 : 0), alto * 0.54);
+  if (extra) { x.fillStyle = extra; x.font = `900 ${Math.round(alto * 0.4)}px system-ui`; x.fillText('●', ancho / 2 + x.measureText(txt).width * 0.75, alto * 0.54); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
 }
 
 /**
@@ -275,7 +383,7 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2 }) {
   add(new THREE.BoxGeometry(0.45, 0.025, wv(xC + 0.2) * 1.7), carbono, xC + 0.2, yb(xC + 0.2) + 0.03, 0);
   for (const z of [-0.55, -0.2, 0.2, 0.55]) add(new THREE.BoxGeometry(0.4, 0.14, 0.012), carbono, xC + 0.2, yb(xC + 0.2) + 0.1, z);
   // escapes
-  for (const s of categoria === 'gt' ? [-0.35, 0.35] : [0.62]) {
+  for (const s of categoria !== 'stock' ? [-0.35, 0.35] : [0.62]) {
     const e = add(new THREE.CylinderGeometry(0.045, 0.05, 0.12, 14, 1, true), cromo, xC + 0.02, yb(xC) + 0.08, s);
     e.rotation.z = Math.PI / 2;
   }
@@ -286,10 +394,10 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2 }) {
   for (const s of [-1, 1]) {
     const xf = xN - 0.16, f = add(esfera, faro, xf, ys(xf) - 0.07, s * (wv(xf) - 0.2), false);
     f.scale.set(0.16, 0.045, 0.17); f.rotation.set(0, s * 0.45, s * 0.12);
-    const xp = xC + 0.03, p = add(new THREE.BoxGeometry(0.04, 0.05, categoria === 'gt' ? 0.5 : 0.42), piloto, xp, ys(xp) - 0.1, s * (wv(xp) - 0.33), false);
+    const xp = xC + 0.03, p = add(new THREE.BoxGeometry(0.04, 0.05, categoria !== 'stock' ? 0.5 : 0.42), piloto, xp, ys(xp) - 0.1, s * (wv(xp) - 0.33), false);
     p.rotation.y = s * 0.15;
   }
-  if (categoria === 'gt') add(new THREE.BoxGeometry(0.03, 0.022, 0.75), piloto, xC + 0.02, ys(xC) - 0.1, 0, false);   // tira LED central
+  if (categoria !== 'stock') add(new THREE.BoxGeometry(0.03, 0.022, 0.75), piloto, xC + 0.02, ys(xC) - 0.1, 0, false);   // tira LED central
   // retrovisores sobre un brazo, al pie del parabrisas
   const espejos = [];
   const cab0 = F.cabina[0][0];
@@ -306,6 +414,13 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2 }) {
     const perfil = new THREE.Shape(); perfil.moveTo(0.16, 0); perfil.quadraticCurveTo(0.05, 0.035, -0.16, 0.012); perfil.lineTo(-0.16, -0.004); perfil.quadraticCurveTo(0.05, 0.012, 0.16, 0);
     const geoAla = new THREE.ExtrudeGeometry(perfil, { depth: 1.76, bevelEnabled: false }); geoAla.translate(0, 0, -0.88);
     const ala = add(geoAla, carbono, xA, yA, 0); ala.rotation.z = -0.1;
+    // pegatina encima del ala (se lee desde detrás) y en las derivas
+    const sup = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.22), new THREE.MeshStandardMaterial({ map: pegatina('UPCOINS', { ancho: 512, alto: 72, color: '#ffc928', fondo: '#111216', extra: '#ffc928' }), roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }));
+    sup.position.set(xA - 0.01, yA + 0.028, 0); orientar(sup, new THREE.Vector3(0, 0, 1), new THREE.Vector3(Math.cos(0.1), -Math.sin(0.1), 0)); extras.add(sup);
+    for (const s of [-1, 1]) {
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.14), new THREE.MeshStandardMaterial({ map: pegatina('NEXUS IA', { ancho: 256, alto: 96, color: '#7fe7ff' }), roughness: 0.4 }));
+      d.position.set(xA - 0.02, yA - 0.02, s * 0.893); if (s < 0) d.rotation.y = Math.PI; extras.add(d);
+    }
     for (const s of [-1, 1]) {
       add(new THREE.BoxGeometry(0.4, 0.2, 0.012), carbono, xA - 0.02, yA - 0.02, s * 0.885);
       // cuello de cisne: baja desde el ala hasta el maletero
@@ -315,6 +430,17 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2 }) {
   } else {
     const xS = xC + 0.12, sp = add(new THREE.BoxGeometry(0.015, 0.2, wv(xS) * 1.82), new THREE.MeshStandardMaterial({ color: 0xdfeaff, roughness: 0.05, transparent: true, opacity: 0.45 }), xS, ys(xS) + 0.09, 0);
     sp.rotation.z = 0.32;
+  }
+  // parasol del parabrisas (UPGAMES) y pegatinas del alerón (UPCOINS / NEXUS IA)
+  {
+    const xb = F.parabrisas + 0.04, x2 = xb + 0.12;
+    const y1 = interp(F.cabina, xb, 3), y2 = interp(F.cabina, x2, 3), wr = interp(F.cabina, xb, 2);
+    const mat = new THREE.MeshStandardMaterial({ map: pegatina('UPGAMES', { ancho: 512, alto: 64 }), roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 });
+    const banda = new THREE.Mesh(new THREE.PlaneGeometry(wr * 2.02, 0.13), mat);
+    banda.position.set((xb + x2) / 2, (y1 + y2) / 2 + 0.006, 0);
+    // inclinada como el parabrisas; se lee de frente
+    orientar(banda, new THREE.Vector3(0, 0, -1), new THREE.Vector3(xb - x2, y1 - y2, 0).normalize());
+    extras.add(banda);
   }
   // salpicadero y forro del techo (por si se mira desde dentro)
   add(new THREE.BoxGeometry(0.34, 0.12, 1.5), negro, cab0 - 0.32, ys(cab0) - 0.02, 0);
