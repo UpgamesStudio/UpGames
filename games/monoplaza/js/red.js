@@ -159,6 +159,7 @@ export class Multijugador {
       s.on('clasif', (d) => this._emitirLocal('clasif', { ...d, tFinLocal: d.tFin - this.offset }));
       s.on('tablaQ', (t) => this._emitirLocal('tablaQ', t));
       s.on('elo', (d) => this._emitirLocal('elo', d));
+      s.on('premio', (d) => this._emitirLocal('premio', d));
       s.on('reid', (d) => {
         for (const m of [this.buffers, this.libreas]) if (m.has(d.viejo)) { m.set(d.nuevo, m.get(d.viejo)); m.delete(d.viejo); }
         this._emitirLocal('reid', d);
@@ -191,7 +192,7 @@ export class Multijugador {
   listo(v) { this.socket?.emit('listo', v); }
   iniciar() { return new Promise(r => this.socket.emit('iniciar', r)); }
   revancha() { this.socket?.emit('revancha'); }
-  vueltaQ(t) { this.socket?.emit('vueltaQ', t); }
+  vueltaQ(t, valida = true) { this.socket?.emit('vueltaQ', t, valida); }
   enviarBots(lista) { this.socket?.volatile.emit('estadosBots', lista.map(([id, e]) => [id, e.map(v => Math.round(v * 1000) / 1000)])); }
   botMeta(id) { this.socket?.emit('botMeta', id); }
   botAbandono(id) { this.socket?.emit('botAbandono', id); }

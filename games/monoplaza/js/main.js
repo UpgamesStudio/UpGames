@@ -8,7 +8,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { Circuito, CIRCUITOS } from './track.js';
 import { Sesion } from './race.js';
-import { REGLAJE_DEF, COMPUESTOS, COCHE, EQUIPOS, MEJORAS_INFO, compuestoParaAgua } from './config.js';
+import { REGLAJE_DEF, COMPUESTOS, COCHE, EQUIPOS, MEJORAS_INFO, compuestoParaAgua, CAT, CATEGORIAS, aplicarCategoria, categoriaOk } from './config.js';
 import { CLIMAS } from './clima.js';
 import * as CAMP from './campeonato.js';
 import { Radio } from './radio.js';
@@ -77,6 +77,7 @@ const AJ_DEF = {
   control: esTactil ? 'inclinacion' : 'tactil', sensibilidad: 1, anguloInclinacion: 24, invertir: false, vibracion: true,
   tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, trazada: true,
   calidad: 'auto', fps: false, volumen: 0.8, unidades: 'kmh', camara: 'persecucion', radio: true, ambiente: true, averias: true, repeAuto: true, halo: true, motorSonido: 'v10',
+  categoria: 'f1',
 };
 const OPC_CARRERA_DEF = { vueltas: 5, rivales: 7, dificultad: 'normal', posSalida: 0, compuesto: 'medio', clima: 'seco', hora: 'dia', formacion: 0, duracion: 0 };
 function cargar() {
@@ -84,6 +85,19 @@ function cargar() {
 }
 const datos = cargar();
 const ajustes = { ...AJ_DEF, ...(datos.ajustes || {}) };
+// categoría (Fórmula, GT o Stock Car): cambia el coche de todos los modos
+function ponerCategoria(id, recargar = true) {
+  id = categoriaOk(id);
+  aplicarCategoria(id);
+  for (const k of Object.keys(CATEGORIAS)) document.body.classList.toggle('cat-' + k, k === id);
+  document.querySelectorAll('#selCat b').forEach(b => b.classList.toggle('sel', b.dataset.cat === id));
+  const d = document.querySelector('#catDesc'); if (d) d.textContent = CATEGORIAS[id].desc;
+  const mc = document.querySelector('#mCat'); if (mc) mc.textContent = CATEGORIAS[id].nombre;
+  if (ajustes.categoria !== id) { ajustes.categoria = id; try { guardar(); } catch { /* aún no */ } }
+  if (recargar && circuito && circuito.categoria !== id) cargarCircuito(circuito.id, true);
+}
+aplicarCategoria(categoriaOk(ajustes.categoria));
+document.querySelector('#selCat')?.addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (b && !jugando) { sonido.iniciar(); ponerCategoria(b.dataset.cat); } });
 // circuitos creados con el editor (se corren sin conexión)
 let circuitosCom = ED.cargarGuardados();
 for (const d of circuitosCom) { try { ED.registrar(CIRCUITOS, d); } catch { /* dañado */ } }
@@ -197,6 +211,7 @@ async function iniciar() {
   crearRenderer();
   await cargarImagenLibrea();
   await Promise.all([cargarCuerpo(), cargarCuerpoEscaneado()]); // cuerpos de los personajes: el escaneado (mecánicos y pilotos) y el de Studio
+  ponerCategoria(ajustes.categoria, false);
   await cargarCircuito(circuitoId);
   mostrar('menu');
   requestAnimationFrame(bucle);
@@ -252,7 +267,7 @@ function colocarModelo(m, c, pend, dt = 0) {
 let cargando = null;
 async function cargarCircuito(id, forzar = false) {
   if (cargando) await cargando;
-  if (!forzar && circuito && circuito.id === id) return;
+  if (!forzar && circuito && circuito.id === id && circuito.categoria === CAT.id) return;
   let fin;
   cargando = new Promise(r => { fin = r; });
   const visible = document.querySelector('.pantalla.visible')?.id;
@@ -341,12 +356,14 @@ function liberarEscena() {
 // --- Paso 2 del menú: circuito con vista previa del trazado --------------------------------
 const flujo = { modo: 'carrera', pista: null };
 const NOMBRE_FLUJO = { carrera: 'Carrera', contrarreloj: 'Contrarreloj', practica: 'Práctica libre' };
-const TIPO_PISTA = (d) => d.comunidad ? 'Creado por ti' : d.tipo === 'urbano' ? 'Urbano' : d.tipo === 'parque' ? 'Rápido' : 'Técnico';
+const TIPO_PISTA = (d) => d.comunidad ? 'Creado por ti' : d.ovalo ? 'Óvalo con peralte' : d.tipo === 'urbano' ? 'Urbano' : d.tipo === 'parque' ? 'Rápido' : 'Técnico';
+// con el Stock Car los óvalos van primero
+const listaPistas = () => Object.values(CIRCUITOS).sort((a, b) => CAT.id === 'stock' ? (b.ovalo ? 1 : 0) - (a.ovalo ? 1 : 0) : 0);
 const cachePrev = new Map();
 function pintarCircuitos() {
   const el = $('#selCircuito');
   flujo.pista ??= circuitoId;
-  el.innerHTML = Object.values(CIRCUITOS).map(d => `<button class="pista ${d.id === flujo.pista ? 'sel' : ''}" data-v="${d.id}"><span><b>${d.corto}</b><small>${TIPO_PISTA(d)}${d.pais ? ' · ' + d.pais : ''}</small></span>${d.hora === 'noche' ? '<span class="tag">🌙 NOCHE</span>' : records['crono:' + d.id] ? `<span class="tag">⏱ ${fmt(records['crono:' + d.id])}</span>` : ''}</button>`).join('');
+  el.innerHTML = listaPistas().map(d => `<button class="pista ${d.id === flujo.pista ? 'sel' : ''}" data-v="${d.id}"><span><b>${d.corto}</b><small>${TIPO_PISTA(d)}${d.pais ? ' · ' + d.pais : ''}</small></span>${d.hora === 'noche' ? '<span class="tag">🌙 NOCHE</span>' : records['crono:' + d.id] ? `<span class="tag">⏱ ${fmt(records['crono:' + d.id])}</span>` : ''}</button>`).join('');
   el.querySelectorAll('.pista').forEach(b => b.onclick = () => { flujo.pista = b.dataset.v; el.querySelectorAll('.pista').forEach(x => x.classList.toggle('sel', x === b)); previsualizar(flujo.pista); });
   previsualizar(flujo.pista);
 }
@@ -941,6 +958,7 @@ document.addEventListener('click', (e) => {
   if (destino === 'escuela') { abrirEscuela(); return; }
   if (destino === 'progreso') { abrirProgreso(); return; }
   if (destino === 'multi') { abrirMulti(); return; }
+  if (destino === 'rapidaOnline') { abrirMulti(true); return; }
   if (destino === 'campeonato') { abrirCampeonato(); return; }
   if (destino === 'rankings') { abrirRankings(); return; }
   if (destino === 'menu' && enGaraje) cerrarGaraje();
@@ -1243,7 +1261,7 @@ function actualizarHud(dt) {
   // LEDs de cambio (cada frame)
   const rpm = c.rpm;
   const nOn = Math.max(0, Math.min(15, Math.floor((rpm - 10500) / 4200 * 15)));
-  const flash = rpm > 14550 && c.marcha > 0 && c.marcha < 8;
+  const flash = rpm > 14550 && c.marcha > 0 && c.marcha < COCHE.relaciones.length;
   leds.classList.toggle('flash', flash && Math.floor(performance.now() / 70) % 2 === 0);
   ledEls.forEach((el, k) => el.classList.toggle('on', k < nOn));
   tHud += dt;
@@ -1507,7 +1525,15 @@ function procesarEventos() {
         records[clave] = e.t; guardar();
       }
       telemetria?.cerrarVuelta(e.t, e.valida);
-      if (qRed && e.valida) multi.vueltaQ(e.t);
+      if (qRed && !qRed.terminada) {
+        multi.vueltaQ(e.t, !!e.valida);
+        // carrera rápida: N vueltas cronometradas y a esperar la parrilla
+        if (qRed.vueltas) {
+          qRed.n++;
+          if (qRed.n >= qRed.vueltas) terminarQRed('¡Vueltas hechas! Esperando a que el resto termine las suyas…');
+          else radio.decir(`${e.valida ? fmt(e.t) : 'Vuelta anulada'}. Te queda ${qRed.vueltas - qRed.n === 1 ? 'una vuelta' : (qRed.vueltas - qRed.n) + ' vueltas'}.`, { clave: 'qRedV', cada: 3 });
+        }
+      }
       if (qActual) finVueltaClasif(e);
       if (sesion.modo === 'carrera' && e.p.vuelta === sesion.vueltasTotales) { mensaje('ÚLTIMA VUELTA', '', 1.8); radio.decir('Última vuelta. ¡Tráelo a casa!', { clave: 'ultima', cada: 60 }); }
       else if (sesion.modo === 'carrera') {
@@ -2124,7 +2150,7 @@ function lanzarMomento(cfg) {
     if (k > 0) sPos -= (p.jugador && cfg.hueco > 0 ? cfg.hueco : orden[k - 1].jugador && cfg.hueco < 0 ? -cfg.hueco : 0.5) * v;
     const car = p.coche;
     car.colocar(sPos, k % 2 ? 1.5 : -1.5);
-    car.vx = v; car.marcha = 6; car.rpm = 11500;
+    car.vx = v; car.marcha = Math.min(6, COCHE.relaciones.length); car.rpm = 11500;
     for (const w of car.ruedas) { w.omega = v / w.radio; w.neum.desgaste = p.jugador ? cfg.tuDesgaste : cfg.ellosDesgaste; w.neum.tSup = w.neum.tNucleo = w.neum.c.tOpt; }
     p.vuelta = s.vueltasTotales; p.sAnterior = car.proj.s; p.tVuelta = 0;
   });
@@ -2670,7 +2696,7 @@ function libreaParaRed() {
 // --- Multijugador -------------------------------------------------------------------
 let salaActual = null, carreraRed = null, tEnvio = 0;
 
-async function abrirMulti() {
+async function abrirMulti(buscarYa = false) {
   mostrar('multi');
   pintarOpcMulti();
   $('#mEstado').textContent = 'Conectando con el servidor de UpGames…';
@@ -2679,6 +2705,7 @@ async function abrirMulti() {
     $('#mEstado').innerHTML = `Conectado${cuenta.conectado() ? ` como <b>@${cuenta.usuario()}</b>` : ' como invitado (inicia sesión para usar tu nombre y tus mejoras)'} · ping ${Math.round(multi.latencia || 0)} ms`;
     multi.pedirLista();
     pintarOficial();
+    if (buscarYa && !buscando) $('#bBuscar').click();
   } catch (e) { $('#mEstado').textContent = e.message + '. Revisa tu conexión.'; }
 }
 
@@ -2727,11 +2754,11 @@ let buscando = false;
 $('#bBuscar').addEventListener('click', async () => {
   if (buscando) { multi.cancelarBusqueda(); buscando = false; $('#bBuscar').textContent = '⚡ Buscar partida'; $('#mEstado').textContent = 'Búsqueda cancelada'; return; }
   try { await multi.conectar(); } catch (e) { $('#mEstado').textContent = e.message; return; }
-  const r = await multi.buscar({ ...datosJugador(), region: opcMulti.region });
+  const r = await multi.buscar({ ...datosJugador(), region: opcMulti.region, categoria: CAT.id });
   if (!r?.ok) { $('#mEstado').textContent = r?.error || 'No se pudo buscar'; return; }
   buscando = true;
   $('#bBuscar').textContent = '✕ Cancelar búsqueda';
-  $('#mEstado').innerHTML = `Buscando rivales de tu nivel (ELO ${r.elo} · ${r.nivel})… en cola: ${r.enCola}. Se empareja en unos segundos.`;
+  $('#mEstado').innerHTML = `Buscando rivales de <b>${CAT.nombre}</b> de tu nivel (ELO ${r.elo} · ${r.nivel})… en cola: ${r.enCola}. Se empareja en cuanto haya otro piloto (hasta 22; la IA completa la parrilla).${cuenta.conectado() ? '' : '<br>Inicia sesión para ganar UpCoins en el top 10.'}`;
 });
 multi.on('emparejado', (d) => {
   buscando = false; $('#bBuscar').textContent = '⚡ Buscar partida';
@@ -2749,13 +2776,23 @@ multi.on('licencia', (d) => {
   perfilApex.sr = d.despues; perfilApex.licencia = d.licencia; guardar();
   ultimaLic = d;
   if (d.anterior && d.anterior !== d.licencia) setTimeout(() => mensaje(`LICENCIA ${d.licencia}`, '¡Nueva licencia!', 3), 500);
-  if ($('#resultados').classList.contains('visible')) $('#resPremio').textContent = [ultimoElo && textoElo(ultimoElo), textoLic(d)].filter(Boolean).join(' · ');
+  if ($('#resultados').classList.contains('visible')) $('#resPremio').textContent = textoResRed();
 });
 const textoElo = (d) => { const dif = d.despues - d.antes; return `ELO ${d.antes} → ${d.despues} (${dif >= 0 ? '+' : ''}${dif}) · ${d.nivel}`; };
+// carrera rápida: UpCoins NO retirables por terminar en el top 10
+let ultimoPremio = null;
+const textoResRed = () => [ultimoPremio && textoPremio(ultimoPremio), ultimoElo && textoElo(ultimoElo), ultimaLic && textoLic(ultimaLic)].filter(Boolean).join(' · ');
+const textoPremio = (d) => d.tope ? `Hoy ya cobraste tus ${d.porDia} carreras premiadas` : `🪙 +${d.uc} UpCoins por terminar P${d.pos}${d.upcoins != null ? ` · tienes ${d.upcoins}` : ''}`;
+multi.on('premio', (d) => {
+  ultimoPremio = d;
+  if (d.upcoins != null) { perfilApex.upcoins = d.upcoins; guardar(); }
+  if (d.uc > 0) setTimeout(() => mensaje('¡UPCOINS!', `+${d.uc} por terminar P${d.pos} · úsalas en el Garaje`, 3.5), 400);
+  if ($('#resultados').classList.contains('visible')) $('#resPremio').textContent = textoResRed();
+});
 multi.on('elo', (d) => {
   perfilApex.elo = d.despues; perfilApex.nivel = d.nivel; guardar();
   ultimoElo = d;
-  if ($('#resultados').classList.contains('visible')) $('#resPremio').textContent = [textoElo(d), ultimaLic && textoLic(ultimaLic)].filter(Boolean).join(' · ');
+  if ($('#resultados').classList.contains('visible')) $('#resPremio').textContent = textoResRed();
 });
 multi.on('lista', (l) => {
   $('#listaSalas').innerHTML = l.length ? '<h3>Salas abiertas y carreras en directo</h3>' + l.map(x => {
@@ -2770,7 +2807,7 @@ multi.on('aviso', (t) => { if ($('#sala').classList.contains('visible')) $('#sal
 const datosJugador = () => ({ nombre: cuenta.usuario() || 'Invitado', equipado: { ...equipado }, livery: libreaParaRed() });
 $('#bCrearSala').addEventListener('click', async () => {
   const juez = $('#mpJuez').checked;
-  const r = await multi.crear({ ...datosJugador(), opciones: { tipo: opcMulti.tipo, max: opcMulti.max, vueltas: opcMulti.vueltas, publica: $('#mpPublica').checked, mejoras: $('#mpMejoras').checked, circuito: opcMulti.circuito, clima: opcMulti.clima, juez, licMin: opcMulti.licMin || 'D' } });
+  const r = await multi.crear({ ...datosJugador(), opciones: { tipo: opcMulti.tipo, max: opcMulti.max, vueltas: opcMulti.vueltas, publica: $('#mpPublica').checked, mejoras: $('#mpMejoras').checked, circuito: opcMulti.circuito, clima: opcMulti.clima, juez, licMin: opcMulti.licMin || 'D', categoria: CAT.id } });
   if (!r.ok) { $('#mEstado').textContent = r.error; return; }
   espectando = juez;
   entrarSala(r.sala);
@@ -2803,7 +2840,8 @@ function pintarSala() {
   $('#salaTitulo').textContent = `${s.nombre} · ${s.codigo}`;
   $('#salaInfo').innerHTML = `${s.rapida ? 'Partida rápida' : s.tipo === '1v1' ? 'Duelo 1 vs 1' : `Sala abierta · hasta ${s.max} pilotos`} · <b>${CIRCUITOS[s.circuito]?.nombre || ''}</b> · ${CLIMAS[s.clima] || 'Seco'} · ${s.vueltas} vueltas · ${s.mejoras ? 'con mejoras de UpCoins' : 'coches iguales'}${s.publica ? ' · pública' : ' · privada'}${s.licMin && s.licMin !== 'D' ? ` · exige licencia ${s.licMin}` : ''}<br>Comparte el código <b style="color:#ffd23f;font-size:16px">${s.codigo}</b> para que se unan.`;
   // el circuito de la sala se prepara mientras se espera
-  if (s.circuito && s.circuito !== circuito.id && !cargando && s.estado === 'espera') cargarCircuito(s.circuito);
+  if (s.categoria && s.categoria !== CAT.id && !cargando && s.estado === 'espera') ponerCategoria(s.categoria, false);
+  if (s.circuito && (s.circuito !== circuito.id || circuito.categoria !== CAT.id) && !cargando && s.estado === 'espera') cargarCircuito(s.circuito);
   $('#salaPilotos').innerHTML = s.jugadores.map((j, k) => `<div class="sala-fila"><b>${k + 1}</b><span><i class="eq" style="display:inline-block;width:4px;height:16px;border-radius:2px;margin-right:8px;vertical-align:middle;background:${j.equipado?.colores?.base || '#888'}"></i>${j.nombre.replace(/</g, '')} ${chipLic(j.licencia)}${j.id === yo ? ' (tú)' : ''}</span><span class="host">${j.id === s.host ? 'ANFITRIÓN' : ''}</span><span class="listo">${j.listo || j.id === s.host ? 'LISTO' : ''}</span></div>`).join('');
   $('#bSalaEmpezar').classList.toggle('oculto', !soyHost);
   $('#bSalaListo').classList.toggle('oculto', soyHost || espectando);
@@ -2822,9 +2860,10 @@ $('#bSalaCompartir').addEventListener('click', async () => {
 // el servidor da la salida: todos arrancan la carrera a la vez con el mismo semáforo
 multi.on('salida', async (d) => {
   const s = salaActual;
-  if (s.circuito && s.circuito !== circuito?.id) await cargarCircuito(s.circuito);
+  if (s.categoria && s.categoria !== CAT.id) ponerCategoria(s.categoria, false);
+  if (s.circuito && (s.circuito !== circuito?.id || circuito.categoria !== CAT.id)) await cargarCircuito(s.circuito);
   modoActual = 'red'; enRed = true;
-  carreraCamp = null; qActual = null; ultimoElo = null; ultimaLic = null;
+  carreraCamp = null; qActual = null; ultimoElo = null; ultimaLic = null; ultimoPremio = null;
   incRed = { contactos: 0, sanciones: 0, limites: 0, tUlt: -99 };
   sonido.iniciar(); sonido.ponerVolumen(ajustes.volumen);
   const rc = { ...reglaje };
@@ -2903,9 +2942,10 @@ let qRed = null;
 multi.on('clasif', async (d) => {
   if (espectando) { pintarSala(); return; }
   const s = salaActual;
-  if (s?.circuito && s.circuito !== circuito?.id) await cargarCircuito(s.circuito);
+  if (s?.categoria && s.categoria !== CAT.id) ponerCategoria(s.categoria, false);
+  if (s?.circuito && (s.circuito !== circuito?.id || circuito.categoria !== CAT.id)) await cargarCircuito(s.circuito);
   enRed = true; modoActual = 'red'; carreraCamp = null; qActual = null;
-  qRed = { tFin: d.tFinLocal, tabla: [], terminada: false };
+  qRed = { tFin: d.tFinLocal, tabla: [], terminada: false, vueltas: s?.clasifVueltas || 0, n: 0 };
   sonido.iniciar(); sonido.ponerVolumen(ajustes.volumen);
   const opc = opcBase('contrarreloj');
   opc.ayudas = ayudasDe(true);
@@ -2913,12 +2953,16 @@ multi.on('clasif', async (d) => {
   if (opc.clima === 'lluvia') opc.reglaje.compuesto = 'lluvia';
   sesion = new Sesion(circuito, opc);
   arrancarSesion('contrarreloj');
-  mensaje('CLASIFICACIÓN', `${Math.round(d.seg / 60)} minutos · marca tu mejor vuelta`, 3);
-  radio.decir(`Clasificación: ${Math.round(d.seg / 60)} minutos. Busca una vuelta limpia.`, { clave: 'qRed', cada: 10 });
-  radio.decir(`Clasificación de ${Math.round(d.seg / 60)} minutos. Tu mejor vuelta decide la parrilla de la carrera.`, { prioridad: true });
+  if (qRed.vueltas) {
+    mensaje('CLASIFICACIÓN', `Vuelta de salida + ${qRed.vueltas} vueltas cronometradas · la mejor decide la parrilla`, 3.5);
+    radio.decir(`Clasificación: tienes ${qRed.vueltas} vueltas cronometradas después de la vuelta de salida. La mejor decide tu posición en la parrilla.`, { prioridad: true });
+  } else {
+    mensaje('CLASIFICACIÓN', `${Math.round(d.seg / 60)} minutos · marca tu mejor vuelta`, 3);
+    radio.decir(`Clasificación de ${Math.round(d.seg / 60)} minutos. Tu mejor vuelta decide la parrilla de la carrera.`, { prioridad: true });
+  }
 });
 multi.on('tablaQ', (t) => {
-  if (qRed) qRed.tabla = t;
+  if (qRed) { qRed.tabla = t; if (qRed.terminada && $('#clasif').classList.contains('visible')) pintarTablaQRed(); }
   // el espectador ve la tabla de la clasificación en la pantalla de la sala
   if (espectando && $('#sala').classList.contains('visible')) $('#salaPilotos').innerHTML = '<h3>Clasificación</h3>' + t.map((x, k) => `<div class="sala-fila"><b>${k + 1}</b><span>${nombreQ(x)}</span><span>${x.t ? fmt(x.t) : 'sin tiempo'}</span></div>`).join('');
 });
@@ -2932,19 +2976,27 @@ function actualizarQRed() {
   const pos = qRed.tabla.findIndex(x => x.id === multi.yo) + 1;
   const el = $('#hQRed');
   el.classList.add('visible');
-  el.textContent = `CLASIFICACIÓN ${Math.floor(falta / 60)}:${String(Math.floor(falta % 60)).padStart(2, '0')}${pos ? ` · P${pos}/${qRed.tabla.length}` : ''}`;
-  if (falta <= 0 && !qRed.terminada && jugando) {
-    qRed.terminada = true;
-    jugando = false;
-    $('#hud').classList.remove('visible'); $('#tactil').classList.remove('visible');
-    document.body.classList.remove('jugando');
-    sonido.silenciar(true);
-    $('#qTitulo').textContent = 'Clasificación terminada';
-    $('#qInfo').textContent = 'Formando la parrilla… la salida es en unos segundos.';
-    $('#qLista').innerHTML = qRed.tabla.map((x, i) => `<div class="fila-q ${x.id === multi.yo ? 'yo' : ''}"><b>${i + 1}</b><span>${nombreQ(x)}${x.bot != null ? ' <small style="color:var(--tenue)">IA</small>' : ''}</span><span>${fmt(x.t)}</span><span></span></div>`).join('');
-    $('#bQSeguir').classList.add('oculto'); $('#bQSaltar').classList.add('oculto');
-    mostrar('clasif');
-  }
+  const reloj = `${Math.floor(falta / 60)}:${String(Math.floor(falta % 60)).padStart(2, '0')}`;
+  el.textContent = qRed.vueltas
+    ? `CLASIFICACIÓN · ${qRed.n === 0 && !(sesion?.jugador?.vuelta > 1) ? 'VUELTA DE SALIDA' : `VUELTA ${Math.min(qRed.n + 1, qRed.vueltas)}/${qRed.vueltas}`} · ${reloj}${pos ? ` · P${pos}/${qRed.tabla.length}` : ''}`
+    : `CLASIFICACIÓN ${reloj}${pos ? ` · P${pos}/${qRed.tabla.length}` : ''}`;
+  if (falta <= 0 && !qRed.terminada && jugando) terminarQRed('Formando la parrilla… la salida es en unos segundos.');
+}
+function pintarTablaQRed() {
+  $('#qLista').innerHTML = qRed.tabla.map((x, i) => `<div class="fila-q ${x.id === multi.yo ? 'yo' : ''}"><b>${i + 1}</b><span>${nombreQ(x)}${x.bot != null ? ' <small style="color:var(--tenue)">IA</small>' : ''}</span><span>${x.t ? fmt(x.t) : 'sin tiempo'}</span><span></span></div>`).join('');
+}
+function terminarQRed(info) {
+  if (!qRed || qRed.terminada) return;
+  qRed.terminada = true;
+  jugando = false;
+  $('#hud').classList.remove('visible'); $('#tactil').classList.remove('visible');
+  document.body.classList.remove('jugando');
+  sonido.silenciar(true);
+  $('#qTitulo').textContent = 'Clasificación terminada';
+  $('#qInfo').textContent = info;
+  pintarTablaQRed();
+  $('#bQSeguir').classList.add('oculto'); $('#bQSaltar').classList.add('oculto');
+  mostrar('clasif');
 }
 
 // En línea no hay coche nuevo: quien destroza el coche queda fuera y pierde la carrera
@@ -2970,7 +3022,7 @@ function mostrarResultadosRed(r) {
   $('#resTitulo').textContent = espectando ? '🏁 Resultados de la carrera' : yo?.pos === 1 && !yo.abandono ? '🏆 ¡Victoria en línea!' : `Resultado: P${yo?.pos ?? '-'}`;
   document.body.classList.remove('espectando');
   const ganador = r[0];
-  $('#resPremio').textContent = ultimoElo || ultimaLic ? [ultimoElo && textoElo(ultimoElo), ultimaLic && textoLic(ultimaLic)].filter(Boolean).join(' · ') : cuenta.conectado() ? 'Calculando ELO y licencia…' : '';
+  $('#resPremio').textContent = ultimoElo || ultimaLic || ultimoPremio ? textoResRed() : cuenta.conectado() ? 'Calculando ELO y licencia…' : '';
   $('#resLista').innerHTML = r.map(x => `<div class="fila-res ${x.id === multi.yo ? 'yo' : ''}"><b>${x.pos}</b><span>${nombreQ(x)}${x.bot != null ? ' <small style="color:var(--tenue)">IA</small>' : ''}</span><span>${x.abandono ? 'Abandono' : x === ganador ? fmt(x.tiempo) : '+' + (x.tiempo - ganador.tiempo).toFixed(3)}</span><span>${fmt(x.mejor)}</span></div>`).join('');
   mostrar('resultados');
   $('#bResOtra').textContent = 'Volver a la sala';

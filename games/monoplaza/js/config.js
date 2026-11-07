@@ -61,6 +61,59 @@ export const COCHE = {
   rodadura: 0.012,
 };
 
+// ─── Categorías ─────────────────────────────────────────────────────────────────────────────
+// Todas comparten la física (neumáticos, transferencias, daños); cambian el coche. Para no
+// tocar el resto del juego, el motor trabaja siempre en la escala de rpm del F1 (4.000-15.000)
+// y cada categoría trae su factor para mostrarlas y para el sonido (rpmReal).
+// CAT es la categoría activa: aplicarCategoria() la cambia ANTES de crear el circuito y los coches.
+const COCHE_F1 = JSON.parse(JSON.stringify(COCHE));
+export const CATEGORIAS = {
+  f1: {
+    id: 'f1', nombre: 'Fórmula', corto: 'F1', desc: 'Monoplaza de 1.000 CV con efecto suelo, DRS y ERS.',
+    coche: {}, cl: 1, cd: 1, mu: 1, rebufo: 1, drs: true, ers: true, rpmReal: 1, radio: 1, tono: 1, brillo: 1,
+    perfil: { mu: 1.55, clA: 4.6, cdA: 1.07, P: 640000, vmax: 97 },
+  },
+  gt: {
+    id: 'gt', nombre: 'GT', corto: 'GT', desc: 'Gran turismo de 550 CV: carrocería cerrada, más peso, menos carga y roces sin miedo.',
+    coche: {
+      masaSeca: 1300, wheelbase: 2.70, viaDel: 1.62, viaTras: 1.60, repartoDel: 0.46, alturaCG: 0.42,
+      centroBalanceoDel: 0.06, centroBalanceoTras: 0.11, inerciaYaw: 2050, radioDel: 0.345, radioTras: 0.35, inerciaRueda: 1.6,
+      angMaxRueda: 0.42, rigidezBalanceoTotal: 140000, rigidezCabeceo: 190000, muelleDel: 160000, muelleTras: 150000,
+      alturaLibreDel: 0.055, alturaLibreTras: 0.07, areaFrontal: 2.0,
+      curvaPar: COCHE_F1.curvaPar.map(([r, t]) => [r, Math.round(t * 0.74)]),
+      relaciones: [22.6, 16.6, 13.0, 10.5, 8.6, 7.07], relacionReversa: -18, tiempoCambioSubir: 0.06, tiempoCambioBajar: 0.09,
+      ersPotencia: 0, parFrenoMax: 11500, consumoMax: 90 / 3600,
+    },
+    cl: 0.30, cd: 0.86, mu: 0.86, rebufo: 1.15, drs: false, ers: false, rpmReal: 0.55, radio: 0.96, tono: 0.72, brillo: 0.8,
+    perfil: { mu: 1.30, clA: 1.4, cdA: 0.92, P: 390000, vmax: 82 },
+  },
+  stock: {
+    id: 'stock', nombre: 'Stock Car', corto: 'STOCK', desc: 'Berlina de 670 CV para óvalos: mucho rebufo, pelotones a tres en fondo y aire sucio.',
+    coche: {
+      masaSeca: 1550, wheelbase: 2.79, viaDel: 1.66, viaTras: 1.64, repartoDel: 0.52, alturaCG: 0.45,
+      centroBalanceoDel: 0.07, centroBalanceoTras: 0.12, inerciaYaw: 2500, radioDel: 0.355, radioTras: 0.355, inerciaRueda: 1.8,
+      angMaxRueda: 0.40, rigidezBalanceoTotal: 120000, rigidezCabeceo: 170000, muelleDel: 150000, muelleTras: 140000,
+      alturaLibreDel: 0.06, alturaLibreTras: 0.08, areaFrontal: 2.3,
+      curvaPar: COCHE_F1.curvaPar.map(([r, t]) => [r, Math.round(t * 0.95)]),
+      relaciones: [15.5, 11.0, 8.2, 5.6], relacionReversa: -16, tiempoCambioSubir: 0.08, tiempoCambioBajar: 0.11,
+      ersPotencia: 0, parFrenoMax: 10500, consumoMax: 110 / 3600,
+    },
+    cl: 0.21, cd: 0.90, mu: 0.80, rebufo: 1.45, drs: false, ers: false, rpmReal: 0.62, radio: 1, tono: 0.66, brillo: 0.7,
+    perfil: { mu: 1.14, clA: 0.95, cdA: 0.95, P: 500000, vmax: 101 },
+  },
+};
+export const CAT = { ...CATEGORIAS.f1 };
+export const categoriaOk = (id) => (CATEGORIAS[id] ? id : 'f1');
+/** Cambia la categoría activa (coche, aerodinámica y agarre). Devuelve la categoría. */
+export function aplicarCategoria(id) {
+  const c = CATEGORIAS[categoriaOk(id)];
+  for (const k of Object.keys(COCHE)) delete COCHE[k];
+  Object.assign(COCHE, JSON.parse(JSON.stringify(COCHE_F1)), JSON.parse(JSON.stringify(c.coche)));
+  for (const k of Object.keys(CAT)) delete CAT[k];
+  Object.assign(CAT, c);
+  return CAT;
+}
+
 // Reglaje por defecto (valores enteros como en un simulador)
 export const REGLAJE_DEF = {
   aleronDel: 6,      // 1..11

@@ -168,6 +168,9 @@ class Salas {
             rapida: !!opc.rapida,
             // partida rápida: clasificación previa (s) y pilotos de la IA que completan la parrilla
             clasifSeg: Math.max(0, Math.min(600, Math.floor(+opc.clasifSeg) || 0)),
+            // clasificación por vueltas (carrera rápida): cada piloto tiene N vueltas cronometradas
+            clasifVueltas: Math.max(0, Math.min(3, Math.floor(+opc.clasifVueltas) || 0)),
+            categoria: categoriaOk(opc.categoria), emparejada: !!opc.emparejada,
             bots: [], tFinQ: 0,
             nombre: limpiarNombre(opc.nombre || `Sala de ${limpiarNombre(jugador?.nombre)}`).slice(0, 24),
             host: id, estado: 'espera', jugadores: new Map(), parrilla: [], tSalida: 0, tPrimero: 0, creada: this.ahora(),
@@ -271,6 +274,11 @@ class Salas {
         for (const j of sala.jugadores.values()) { j.terminado = false; j.tiempo = null; j.abandono = false; j.mejor = null; j.tQ = null; j.inc = null; }
         // partida rápida: la IA completa la parrilla hasta el máximo de la sala
         if (sala.rapida) this._crearBots(sala);
+        if (sala.clasifVueltas > 0) {
+            // vuelta de salida + N cronometradas con margen; acaba antes si todos terminan sus vueltas
+            sala.clasifSeg = Math.round((sala.clasifVueltas + 1.8) * ritmoDe(sala.circuito, sala.categoria) * 1.25 + 20);
+            for (const j of sala.jugadores.values()) j.nQ = 0;
+        }
         if (sala.clasifSeg > 0) {
             sala.estado = 'clasif';
             sala.tFinQ = this.ahora() + sala.clasifSeg * 1000 + 6000;   // 6 s para cargar y salir a pista
@@ -295,7 +303,7 @@ class Salas {
 
     _crearBots(sala) {
         const n = Math.max(0, sala.max - sala.jugadores.size);
-        const minV = CIRCUITOS[sala.circuito]?.minVuelta || 60;
+        const minV = (CIRCUITOS[sala.circuito]?.minVuelta || 60) * factorCat(sala.circuito, sala.categoria);
         sala.bots = Array.from({ length: n }, (_, k) => {
             const hab = Math.round((0.945 + this.azar() * 0.05) * 1000) / 1000;
             // vuelta de clasificación: el ritmo de la IA con algo de dispersión
@@ -304,13 +312,20 @@ class Salas {
     }
 
     /** Vuelta de clasificación de un piloto (se guarda la mejor). */
-    vueltaQ(id, t) {
+    vueltaQ(id, t, valida = true) {
         const sala = this.salaDe(id);
         const j = sala?.jugadores.get(id);
         const s = +t;
-        const min = Math.max(VUELTA_MIN_S, CIRCUITOS[sala?.circuito]?.minVuelta || 0);
-        if (!j || sala.estado !== 'clasif' || !(s >= min && s < 600)) return null;
-        if (j.tQ == null || s < j.tQ) j.tQ = Math.round(s * 1000) / 1000;
+        const min = minVueltaDe(sala?.circuito, sala?.categoria);
+        if (!j || sala.estado !== 'clasif' || !(s >= min * 0.98 && s < 900)) return null;
+        if (sala.clasifVueltas > 0) {
+            if ((j.nQ || 0) >= sala.clasifVueltas) return null;          // ya hizo sus vueltas
+            j.nQ = (j.nQ || 0) + 1;
+        }
+        if (valida !== false && s >= min && (j.tQ == null || s < j.tQ)) j.tQ = Math.round(s * 1000) / 1000;
+        // todos los que siguen conectados han hecho sus vueltas: la parrilla sale ya
+        if (sala.clasifVueltas > 0 && [...sala.jugadores.values()].every(x => x.desconectado || (x.nQ || 0) >= sala.clasifVueltas))
+            sala.tFinQ = Math.min(sala.tFinQ, this.ahora() + 4000);
         return sala;
     }
 
@@ -351,7 +366,7 @@ class Salas {
         const b = sala?.bots.find(x => x.id === botId);
         if (!b || sala.host !== id || sala.estado !== 'carrera' || b.terminado) return null;
         const t = (this.ahora() - sala.tSalida) / 1000;
-        if (t < sala.vueltas * Math.max(VUELTA_MIN_S, CIRCUITOS[sala.circuito]?.minVuelta || 0)) return null;
+        if (t < sala.vueltas * minVueltaDe(sala.circuito, sala.categoria)) return null;
         b.terminado = true; b.tiempo = Math.round(t * 1000) / 1000;
         return sala;
     }
@@ -397,7 +412,7 @@ class Salas {
         const sala = this.salaDe(id);
         const j = sala?.jugadores.get(id);
         const s = +t;
-        const min = Math.max(VUELTA_MIN_S, CIRCUITOS[sala?.circuito]?.minVuelta || 0);
+        const min = minVueltaDe(sala?.circuito, sala?.categoria);
         if (!j || sala.estado !== 'carrera' || !(s >= min && s < 3600)) return null;
         if (j.mejor == null || s < j.mejor) j.mejor = Math.round(s * 1000) / 1000;
         return sala;
@@ -409,7 +424,7 @@ class Salas {
         const j = sala?.jugadores.get(id);
         if (!j || sala.estado !== 'carrera' || j.terminado) return null;
         const t = (this.ahora() - sala.tSalida) / 1000;
-        if (t < sala.vueltas * Math.max(VUELTA_MIN_S, CIRCUITOS[sala.circuito]?.minVuelta || 0)) return null;
+        if (t < sala.vueltas * minVueltaDe(sala.circuito, sala.categoria)) return null;
         // tiene que haber recorrido (de forma creíble) casi toda la distancia de la carrera
         const largo = CIRCUITOS[sala.circuito]?.largo;
         if (largo && j.tEstado && (j.dist || 0) < largo * sala.vueltas * 0.95) return null;
@@ -497,7 +512,7 @@ class Salas {
         return {
             codigo: sala.codigo, tipo: sala.tipo, max: sala.max, vueltas: sala.vueltas, publica: sala.publica, mejoras: sala.mejoras,
             circuito: sala.circuito, clima: sala.clima, semilla: sala.semilla, rapida: sala.rapida, licMin: sala.licMin,
-            clasifSeg: sala.clasifSeg, tFinQ: sala.tFinQ, bots: sala.bots.map(b => ({ id: b.id, k: b.k, hab: b.hab, terminado: b.terminado, abandono: b.abandono })),
+            clasifSeg: sala.clasifSeg, clasifVueltas: sala.clasifVueltas, categoria: sala.categoria, emparejada: sala.emparejada, tFinQ: sala.tFinQ, bots: sala.bots.map(b => ({ id: b.id, k: b.k, hab: b.hab, terminado: b.terminado, abandono: b.abandono })),
             nombre: sala.nombre, host: sala.host, estado: sala.estado, parrilla: sala.parrilla, tSalida: sala.tSalida,
             juez: sala.juez || null, espectadores: this.numEspectadores(sala),
             jugadores: [...sala.jugadores.values()].map(j => ({ id: j.id, nombre: j.nombre, usuario: j.usuario, equipado: j.equipado, licencia: j.licencia,
@@ -509,7 +524,7 @@ class Salas {
         // abiertas con sitio (para unirse) y en marcha (para verlas como espectador)
         return [...this.salas.values()].filter(s => s.publica && ((s.estado === 'espera' && s.jugadores.size < s.max) || s.estado === 'carrera' || s.estado === 'clasif'))
             .sort((a, b) => (a.estado === 'espera' ? 0 : 1) - (b.estado === 'espera' ? 0 : 1) || b.jugadores.size - a.jugadores.size).slice(0, 30)
-            .map(s => ({ codigo: s.codigo, nombre: s.nombre, tipo: s.tipo, jugadores: s.jugadores.size + s.bots.length, max: s.max, vueltas: s.vueltas, mejoras: s.mejoras, circuito: s.circuito, clima: s.clima, licMin: s.licMin,
+            .map(s => ({ codigo: s.codigo, nombre: s.nombre, tipo: s.tipo, jugadores: s.jugadores.size + s.bots.length, max: s.max, vueltas: s.vueltas, mejoras: s.mejoras, circuito: s.circuito, clima: s.clima, licMin: s.licMin, categoria: s.categoria,
                 estado: s.estado, espectadores: this.numEspectadores(s), juez: !!s.juez }));
     }
 
@@ -543,7 +558,33 @@ const CIRCUITOS = {
     isla:        { nombre: 'Circuito de la Isla',            minVuelta: 66, largo: 4365 },
     bahia:       { nombre: 'Circuito Urbano de la Bahía',    minVuelta: 85, largo: 4935 },
     bulevar:     { nombre: 'Gran Bulevar Nocturno',          minVuelta: 82, largo: 6209 },
+    // óvalos (Stock Car): cat = ritmo de cada categoría respecto al del F1 en ese trazado
+    ovalo_costa: { nombre: 'Speedway de la Costa',           minVuelta: 22, largo: 2577, ovalo: true, cat: { gt: 1.48, stock: 1.57 } },
+    superovalo:  { nombre: 'Superóvalo del Desierto',        minVuelta: 36, largo: 4145, ovalo: true, cat: { gt: 1.23, stock: 1.28 } },
+    ovalo_corto: { nombre: 'Óvalo Corto del Puerto',         minVuelta: 12.8, largo: 991, ovalo: true, cat: { gt: 1.47, stock: 1.54 } },
 };
+// Categorías: el F1 es la referencia; en los circuitos normales el GT va ~31 % más lento y el Stock ~34 %
+const CATEGORIAS = ['f1', 'gt', 'stock'];
+const categoriaOk = c => (CATEGORIAS.includes(c) ? c : 'f1');
+const FACTOR_CAT = { f1: 1, gt: 1.31, stock: 1.34 };
+const factorCat = (circuito, cat) => (cat === 'f1' ? 1 : CIRCUITOS[circuito]?.cat?.[cat] || FACTOR_CAT[cat] || 1);
+/** Vuelta mínima creíble (s) de una categoría en un circuito. */
+const minVueltaDe = (circuito, cat = 'f1') => (CIRCUITOS[circuito]?.minVuelta || VUELTA_MIN_S) * Math.max(1, factorCat(circuito, cat) * 0.95);
+/** Ritmo de vuelta de la IA (s) de una categoría en un circuito. */
+const ritmoDe = (circuito, cat = 'f1') => (CIRCUITOS[circuito]?.minVuelta || 60) * 1.285 * factorCat(circuito, cat);
+// Carrera rápida online: UpCoins NO retirables para los 10 primeros (solo pilotos con cuenta
+// que terminan la carrera), como mucho RAPIDA_DIA carreras premiadas al día por piloto
+const PREMIOS_RAPIDA = { 1: 12, 2: 9, 3: 7, 4: 6, 5: 5, 6: 4, 7: 3, 8: 3, 9: 2, 10: 2 };
+const TOP_RAPIDA = 10, RAPIDA_DIA = 10, CLASIF_VUELTAS = 2;
+const premioRapida = pos => PREMIOS_RAPIDA[pos] || 0;
+/** Vueltas de la carrera rápida: unos 8 minutos de carrera. */
+const vueltasRapida = (circuito, cat) => Math.max(3, Math.min(25, Math.round(480 / ritmoDe(circuito, cat))));
+/** Circuito de la carrera rápida: el Stock Car corre casi siempre en óvalos; los demás, nunca. */
+function circuitoRapida(cat, azar = Math.random) {
+    const ovalos = Object.keys(CIRCUITOS).filter(c => CIRCUITOS[c].ovalo), normales = Object.keys(CIRCUITOS).filter(c => !CIRCUITOS[c].ovalo);
+    const lista = cat === 'stock' && azar() < 0.8 ? ovalos : normales;
+    return lista[Math.floor(azar() * lista.length)];
+}
 const CLIMAS = ['seco', 'lluvia', 'variable'];
 const circuitoOk = c => Object.prototype.hasOwnProperty.call(CIRCUITOS, c) ? c : 'valle';
 
@@ -675,14 +716,17 @@ class Emparejador {
         this.cola = new Map();   // id → { id, elo, region, t, jugador }
         this.ahora = ahora; this.maximo = maximo; this.espera = espera;
     }
-    entrar(id, jugador, elo, region, sr = SR_INICIAL) { this.cola.set(id, { id, jugador, elo: +elo || ELO_INICIAL, region: regionOk(region), sr: +sr || 0, t: this.ahora() }); return this.cola.size; }
+    entrar(id, jugador, elo, region, sr = SR_INICIAL, categoria = 'f1') { this.cola.set(id, { id, jugador, elo: +elo || ELO_INICIAL, region: regionOk(region), sr: +sr || 0, categoria: categoriaOk(categoria), t: this.ahora() }); return this.cola.size; }
+    /** Pilotos esperando en la cola de una categoría. */
+    enCola(categoria) { return [...this.cola.values()].filter(x => x.categoria === categoriaOk(categoria)).length; }
     salir(id) { return this.cola.delete(id); }
     _compatibles(a, b, ahora) {
         const espera = Math.min(ahora - a.t, ahora - b.t) / 1000;
         const margen = 150 + 25 * espera;
         // quien conduce sucio (SR < 2) corre con los suyos durante el primer minuto
         const limpio = (a.sr >= 2) === (b.sr >= 2) || espera >= 60;
-        return Math.abs(a.elo - b.elo) <= margen && (a.region === b.region || espera >= 20) && limpio;
+        // cada categoría corre con los suyos (un GT no puede salir en una parrilla de F1)
+        return a.categoria === b.categoria && Math.abs(a.elo - b.elo) <= margen && (a.region === b.region || espera >= 20) && limpio;
     }
     /** Grupos listos para correr (se sacan de la cola). */
     emparejar() {
@@ -716,7 +760,7 @@ function oficialDe(ahora = Date.now()) {
 
 module.exports = {
     oficialDe, OFICIAL_CADA, OFICIAL_ABRE,
-    CIRCUITOS, CLIMAS, circuitoOk, PREMIOS, TOP_PREMIADO, premioPosicion, PUNTOS_CARRERA, CARRERAS_DIA, carreraPuntuable, puntosCarrera, validarResultado,
+    CIRCUITOS, CLIMAS, circuitoOk, CATEGORIAS, categoriaOk, factorCat, minVueltaDe, ritmoDe, PREMIOS_RAPIDA, TOP_RAPIDA, RAPIDA_DIA, CLASIF_VUELTAS, premioRapida, vueltasRapida, circuitoRapida, PREMIOS, TOP_PREMIADO, premioPosicion, PUNTOS_CARRERA, CARRERAS_DIA, carreraPuntuable, puntosCarrera, validarResultado,
     semanaDe, semanaAnterior, FANTASMA_HZ, FANTASMA_MAX, validarVuelta, ELO_INICIAL, eloTras, nivelElo, SR_INICIAL, LICENCIAS, licenciaDe, nivelLicencia, limpiarIncidentes, srTras, REGIONES, regionOk, Emparejador,
     NIVELES, PRECIO_NIVEL, MEJORAS, COSMETICOS, EQUIPADO_DEF, MAX_JUGADORES, ESTADO_LARGO,
     catalogo, precioCompra, tieneCosmetico, validarEquipado, nivelesMejoras, limpiarNombre, Salas,

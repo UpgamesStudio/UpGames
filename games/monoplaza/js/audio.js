@@ -5,6 +5,8 @@
 // fibra de carbono que cruje y piezas que caen), rivales situados en 3D con efecto
 // Doppler, eco junto a los muros, público, lluvia y megafonía.
 
+import { CAT } from './config.js';
+
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const N_RIVALES = 3;
 
@@ -599,7 +601,7 @@ export class Sonido {
     if (P.positionX) { P.positionX.setValueAtTime(c.x, t); P.positionY.setValueAtTime(c.y + 0.5, t); P.positionZ.setValueAtTime(c.z, t); }
     else P.setPosition(c.x, c.y + 0.5, c.z);
     const carga = clamp(c.mandos?.acelerador ?? 0.5, 0, 1);
-    r.voz.ajustar(c.rpm, carga, escalaTiempo > 0 ? 0.9 : 0, t, doppler * clamp(escalaTiempo, 0.35, 1), clamp(1 - dist / 250, 0.25, 1), 0);
+    r.voz.ajustar(c.rpm, carga, escalaTiempo > 0 ? 0.9 : 0, t, doppler * clamp(escalaTiempo, 0.35, 1) * (CAT.tono ?? 1), clamp(1 - dist / 250, 0.25, 1), 0);
     void k;
   }
 
@@ -639,7 +641,7 @@ export class Sonido {
       brillo = clamp(1.2 - dist / 300, 0.35, 1);
     }
     this._aplicarPerfil(perfil, dist, t);
-    this.motor.ajustar(car.rpm, carga, vol, t, tono, brillo, corte);
+    this.motor.ajustar(car.rpm, carga, vol, t, tono * (CAT.tono ?? 1), brillo * (CAT.brillo ?? 1), corte);
     // turbo: la presión sube con carga y vueltas; al levantar, soplido de la válvula
     const pObj = carga * clamp((car.rpm - 6000) / 6000, 0, 1);
     if (this.presion > 0.5 && pObj < 0.2 && !this.muestras) {
@@ -758,7 +760,7 @@ export class Sonido {
     const vRad = ((Math.cos(c.psi) * c.velocidad - vCam.x) * dx + (Math.sin(c.psi) * c.velocidad - vCam.z) * dz) / dist;
     const doppler = aBordo ? 1 : clamp(343 / (343 + clamp(vRad, -150, 150)), 0.6, 1.7);
     this._aplicarPerfil(aBordo ? 'cabina' : dist > 25 ? 'lejos' : 'atras', dist, t);
-    this.motor.ajustar(c.rpm, clamp(c.mandos.acelerador, 0, 1), vol, t, tono * doppler, aBordo ? 0.25 : clamp(1 - dist / 250, 0.3, 1), 0);
+    this.motor.ajustar(c.rpm, clamp(c.mandos.acelerador, 0, 1), vol, t, tono * doppler * (CAT.tono ?? 1), aBordo ? 0.25 : clamp(1 - dist / 250, 0.3, 1), 0);
     this.viento.g.gain.setTargetAtTime(aBordo ? Math.min(0.3, (c.velocidad / 95) ** 2 * 0.3) : 0, t, 0.1);
     this.raspado.g.gain.setTargetAtTime(clamp(c.fondoToca || 0, 0, 1) * clamp(9 / dist, 0, 1) * 0.2, t, 0.02);
     // los demás: los tres más cercanos a la cámara

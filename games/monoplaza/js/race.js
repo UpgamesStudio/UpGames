@@ -73,7 +73,7 @@ export class Sesion {
         // vuelta de salida lanzada
         coche.colocar(circuito.largo - 700, 0);
         coche.vx = 55; for (const w of coche.ruedas) w.omega = 55 / w.radio;
-        coche.marcha = 5; coche.rpm = 11000;
+        coche.marcha = Math.min(5, COCHE.relaciones.length); coche.rpm = 11000;
       }
     };
     if (mp) {

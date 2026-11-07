@@ -6,8 +6,9 @@
  *   POST /apexgp/comprar         { id: 'mejora:motor' | 'cosmetico:patron:rayo', clave }
  *   PUT  /apexgp/equipar         { equipado } (solo se guarda lo que el piloto tiene)
  *
- *   UpCoins (NO retirables, solo monedas) únicamente para el TOP 5 del ranking mundial
- *   de cada semana: 1º 15 · 2º 10 · 3º-5º 5. Las carreras sueltas solo dan puntos.
+ *   UpCoins (NO retirables, solo monedas) para el TOP 5 del ranking mundial de cada semana
+ *   (1º 15 · 2º 10 · 3º-5º 5) y para el TOP 10 de cada carrera rápida online emparejada
+ *   (1º 12 … 10º 2; como mucho 10 carreras premiadas al día). Las demás carreras dan puntos.
  *
  *   Campeonato mundial (puntos por carrera, máx. 6 carreras al día):
  *   POST /apexgp/campeonato/carrera    { circuito, vueltas, rivales, dificultad } → ficha firmada
@@ -428,7 +429,26 @@ function registrar(app, deps) {
         // estadísticas de los pilotos con cuenta
         for (const r of res) if (r.usuario) Perfil.updateOne({ usuario: r.usuario }, { $inc: { carreras: 1, victorias: r.pos === 1 && !r.abandono ? 1 : 0 } }, { upsert: true }).catch(() => {});
         actualizarElo(s, res).catch(e => logger.error(`[apexgp] elo: ${e.message}`));
+        if (s.emparejada) premiarRapida(s, res).catch(e => logger.error(`[apexgp] premios rápida: ${e.message}`));
         actualizarSr(res).catch(e => logger.error(`[apexgp] sr: ${e.message}`));
+    }
+
+    // Carrera rápida emparejada: UpCoins NO retirables al top 10 (pilotos con cuenta que terminan),
+    // con tope diario. La referencia es única por sala y piloto: no se cobra dos veces.
+    async function premiarRapida(s, res) {
+        const humanos = res.filter(r => r.bot == null);
+        if (humanos.length < 2) return;                        // contra la IA sola no hay premio
+        const vistos = new Set(), hoy = new Date(); hoy.setUTCHours(0, 0, 0, 0);
+        for (const r of res) {
+            if (!r.usuario || r.abandono || r.descalificado || r.pos > A.TOP_RAPIDA || vistos.has(r.usuario)) continue;
+            vistos.add(r.usuario);
+            const uc = A.premioRapida(r.pos);
+            const yaHoy = await LiveTx.countDocuments({ usuario: r.usuario, planId: 'apexgp:rapida', fecha: { $gte: hoy } }).catch(() => 0);
+            const sk = ns.sockets.get(r.id);
+            if (yaHoy >= A.RAPIDA_DIA) { sk?.emit('premio', { uc: 0, pos: r.pos, tope: true, porDia: A.RAPIDA_DIA }); continue; }
+            const ok = await premiar(r.usuario, uc, `apexgp:rapida:${s.codigo}:${s.creada}:${r.usuario}`, 'apexgp:rapida');
+            if (ok) sk?.emit('premio', { uc, pos: r.pos, upcoins: await totalUC(r.usuario).catch(() => null), quedan: A.RAPIDA_DIA - yaHoy - 1 });
+        }
     }
 
     // safety rating y licencia de cada piloto con cuenta según su informe de incidentes
@@ -552,8 +572,9 @@ function registrar(app, deps) {
             const u = socket.data.usuario;
             const p = u ? await Perfil.findOne({ usuario: u }).select('elo sr').lean().catch(() => null) : null;
             const elo = p?.elo || A.ELO_INICIAL, sr = p?.sr ?? A.SR_INICIAL;
-            const n = emparejador.entrar(id, await jugadorDe(socket, d), elo, d?.region, sr);
-            cb?.({ ok: true, elo, nivel: A.nivelElo(elo), sr, enCola: n });
+            const cat = A.categoriaOk(d?.categoria);
+            emparejador.entrar(id, await jugadorDe(socket, d), elo, d?.region, sr, cat);
+            cb?.({ ok: true, elo, nivel: A.nivelElo(elo), sr, enCola: emparejador.enCola(cat), categoria: cat, premios: A.PREMIOS_RAPIDA, porDia: A.RAPIDA_DIA });
         });
         socket.on('cancelarBusqueda', () => emparejador.salir(id));
         // GP Oficial: información de la próxima y apuntarse (abre 10 minutos antes)
@@ -600,8 +621,8 @@ function registrar(app, deps) {
         socket.on('estadosBots', d => { if (lim(id)) salas.estadoBots(id, d); });
         socket.on('botMeta', b => { const s = salas.botMeta(id, String(b)); if (s) emitirSala(s); });
         socket.on('botAbandono', b => { const s = salas.botAbandono(id, String(b)); if (s) emitirSala(s); });
-        socket.on('vueltaQ', t => {
-            const s = salas.vueltaQ(id, t);
+        socket.on('vueltaQ', (t, valida) => {
+            const s = salas.vueltaQ(id, t, valida !== false);
             if (s) ns.to(rid(s.codigo)).emit('tablaQ', salas.tablaQ(s));
         });
         socket.on('vuelta', t => { const s = salas.vuelta(id, t); if (s) ns.to(rid(s.codigo)).emit('vuelta', { id, t: +t }); });
@@ -648,15 +669,16 @@ function registrar(app, deps) {
     }, 1000).unref();
 
     // partida rápida: cada segundo se forman grupos por ELO y región y salen solos
-    const CIRC = Object.keys(A.CIRCUITOS);
     setInterval(() => {
         for (const g of emparejador.emparejar()) {
             const vivos = g.filter(x => ns.sockets.get(x.id));
-            if (vivos.length < 2) { for (const x of vivos) emparejador.entrar(x.id, x.jugador, x.elo, x.region, x.sr); continue; }
+            if (vivos.length < 2) { for (const x of vivos) emparejador.entrar(x.id, x.jugador, x.elo, x.region, x.sr, x.categoria); continue; }
             const [h, ...resto] = vivos;
-            // 22 coches (la IA completa la parrilla), 20 vueltas y 6 minutos de clasificación
-            const opciones = { tipo: 'abierta', max: A.MAX_JUGADORES, vueltas: 20, publica: false, rapida: true, nombre: 'Partida rápida', clasifSeg: +process.env.APEXGP_CLASIF_SEG || 360,
-                circuito: CIRC[Math.floor(Math.random() * CIRC.length)], clima: Math.random() < 0.2 ? 'variable' : 'seco' };
+            // carrera rápida: 22 coches (la IA completa la parrilla), 2 vueltas de clasificación y
+            // unos 8 minutos de carrera; el circuito depende de la categoría (Stock Car: óvalos)
+            const categoria = h.categoria || 'f1', circ = A.circuitoRapida(categoria);
+            const opciones = { tipo: 'abierta', max: A.MAX_JUGADORES, vueltas: A.vueltasRapida(circ, categoria), publica: false, rapida: true, nombre: 'Carrera rápida', clasifSeg: 0, clasifVueltas: A.CLASIF_VUELTAS,
+                categoria, emparejada: true, circuito: circ, clima: A.CIRCUITOS[circ]?.ovalo ? 'seco' : Math.random() < 0.2 ? 'variable' : 'seco' };
             const { sala } = salas.crear(h.id, h.jugador, opciones);
             for (const x of resto) salas.unirse(x.id, sala.codigo, x.jugador);
             for (const x of vivos) { salas.listo(x.id, true); const sk = ns.sockets.get(x.id); sk.join(rid(sala.codigo)); sk.leave('apex:lobby'); }

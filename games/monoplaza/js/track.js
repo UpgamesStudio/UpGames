@@ -1,7 +1,7 @@
 // Circuito: trazado, muestreo, superficies, trazada ideal y perfil de velocidad.
 // No depende de Three.js para poder probar las físicas en Node.
 
-import { COCHE, G, RHO_AIRE } from './config.js';
+import { COCHE, CAT, G, RHO_AIRE } from './config.js';
 import { REALES } from './circuitosReales.js';
 
 // Trazado tipo "tortuga": rectas (S) y curvas de radio constante (A).
@@ -124,8 +124,47 @@ const TRAZADO_VELOZ = {
   drs: [{ ini: -300, fin: 900, det: -460 }, { recta: 'Recta del Serraglio', ini: 120, fin: -60, det: -260 }],
 };
 
+
+// ─── Óvalos (Stock Car): giran a la izquierda, con peralte en las curvas ──────────────────────
+// La meta está en mitad de la recta principal. peralte: grados en curvas y en rectas.
+const OVALO_COSTA = {
+  id: 'ovalo_costa', nombre: 'Speedway de la Costa', corto: 'Speedway Costa', pais: 'Costa del Golfo', tipo: 'ovalo', ovalo: true,
+  ancho: 18, peralte: { curvas: 24, rectas: 5 }, drs: [],
+  segmentos: [
+    { t: 'S', l: 330, nombre: 'Recta principal' }, { t: 'A', r: 200, a: -90, nombre: 'Curva 1' }, { t: 'A', r: 200, a: -90, nombre: 'Curva 2' },
+    { t: 'S', l: 660, nombre: 'Recta de atrás' }, { t: 'A', r: 200, a: -90, nombre: 'Curva 3' }, { t: 'A', r: 200, a: -90, nombre: 'Curva 4' },
+    { t: 'S', l: 330, nombre: 'Recta principal' },
+  ],
+  relieve: [[0.6, 1, 0.3]],
+};
+const SUPEROVALO = {
+  id: 'superovalo', nombre: 'Superóvalo del Desierto', corto: 'Superóvalo', pais: 'Desierto del Sur', tipo: 'ovalo', ovalo: true,
+  ancho: 20, peralte: { curvas: 24, rectas: 6 }, drs: [],
+  segmentos: [
+    { t: 'A', r: 900, a: -8, nombre: 'Tri-óvalo' }, { t: 'S', l: 300, ajusta: true },
+    { t: 'A', r: 340, a: -86, nombre: 'Curva 1' }, { t: 'A', r: 340, a: -86, nombre: 'Curva 2' },
+    { t: 'S', l: 1000, nombre: 'Recta de atrás' },
+    { t: 'A', r: 340, a: -86, nombre: 'Curva 3' }, { t: 'A', r: 340, a: -86, nombre: 'Curva 4' },
+    { t: 'S', l: 300, ajusta: true, nombre: 'Recta principal' }, { t: 'A', r: 900, a: -8, nombre: 'Tri-óvalo' },
+  ],
+  relieve: [[0.8, 1, 1.1]],
+};
+const OVALO_CORTO = {
+  id: 'ovalo_corto', nombre: 'Óvalo Corto del Puerto', corto: 'Óvalo Corto', pais: 'Puerto Viejo', tipo: 'ovalo', ovalo: true,
+  ancho: 16, peralte: { curvas: 26, rectas: 4 }, drs: [],
+  segmentos: [
+    { t: 'S', l: 130, nombre: 'Recta principal' }, { t: 'A', r: 75, a: -180, nombre: 'Curvas 1-2' },
+    { t: 'S', l: 260, nombre: 'Recta de atrás' }, { t: 'A', r: 75, a: -180, nombre: 'Curvas 3-4' },
+    { t: 'S', l: 130, nombre: 'Recta principal' },
+  ],
+  relieve: [[0.3, 1, 0.3]],
+};
+export let PERALTE_IA = 0.55;          // la IA cuenta con menos agarre del peralte del que da (no se pasa)
+export const ponerPeralteIA = (v) => { PERALTE_IA = v; };
+export const OVALOS = ['ovalo_costa', 'superovalo', 'ovalo_corto'];
+
 // los tres originales y los trazados reales (con otros nombres)
-export const CIRCUITOS = { valle: TRAZADO_VALLE, puerto: TRAZADO_PUERTO, veloz: TRAZADO_VELOZ, ...REALES };
+export const CIRCUITOS = { valle: TRAZADO_VALLE, puerto: TRAZADO_PUERTO, veloz: TRAZADO_VELOZ, ...REALES, ovalo_costa: OVALO_COSTA, superovalo: SUPEROVALO, ovalo_corto: OVALO_CORTO };
 for (const d of Object.values(REALES)) { d.real = true; d.drs ??= 'auto'; }
 export const circuitoDe = id => CIRCUITOS[id] || TRAZADO_VALLE;
 
@@ -191,9 +230,12 @@ function construirPolilinea(segs, paso) {
 function cerrarTrazado(def) {
   const segs = def.segmentos.map(s => ({ ...s }));
   const ic = segs.findIndex(s => s.cierra);
-  const suma = segs.reduce((a, s, i) => a + (s.t === 'A' && i !== ic ? s.a : 0), 0);
-  segs[ic].a = 360 - suma;
+  if (ic >= 0) {                      // (los óvalos ya cierran el ángulo solos)
+    const suma = segs.reduce((a, s, i) => a + (s.t === 'A' && i !== ic ? s.a : 0), 0);
+    segs[ic].a = 360 - suma;
+  }
   const aj = segs.map((s, i) => s.ajusta ? i : -1).filter(i => i >= 0);
+  if (aj.length < 2) return segs;
   // dirección de cada recta ajustable
   const dirDe = (idx) => {
     let h = 0;
@@ -266,18 +308,23 @@ export class Circuito {
     const xs = suavizarCircular(Array.from(X), rS, vS), zs = suavizarCircular(Array.from(Z), rS, vS);
     this.x = Float64Array.from(xs); this.z = Float64Array.from(zs);
     this._derivadas();
+    this._peralte();
     if (def.puntos) this._rectasAuto();
     this._relieve();
     this._superficies();
     this.trazada = this._trazadaIdeal();
     this.perfil = this._perfilVelocidad(this.trazada);
     // perfil en tráfico: con aire sucio se pierde carga y agarre (las curvas rápidas dejan de ir a fondo)
-    this.perfilSucio = this._perfilVelocidad(this.trazada, { mu: 1.55 * 0.96, clA: 4.6 * 0.74 });
+    const MU = CAT.perfil.mu, CLA = CAT.perfil.clA;
+    this.perfilSucio = this._perfilVelocidad(this.trazada, { mu: MU * 0.96, clA: CLA * 0.74 });
     // neumáticos fríos o gastados: 15 % menos de agarre (en las curvas rápidas pesa mucho más)
-    this.perfilFrio = this._perfilVelocidad(this.trazada, { mu: 1.55 * 0.85 });
-    this.perfilFrioSucio = this._perfilVelocidad(this.trazada, { mu: 1.55 * 0.85 * 0.96, clA: 4.6 * 0.74 });
+    this.perfilFrio = this._perfilVelocidad(this.trazada, { mu: MU * 0.85 });
+    this.perfilFrioSucio = this._perfilVelocidad(this.trazada, { mu: MU * 0.85 * 0.96, clA: CLA * 0.74 });
     // ritmo de la IA (clasificación simulada) en los trazados reales: como en los originales
-    if (!def.ritmoIA) def.ritmoIA = Math.round(this.vueltaTeorica(1) * (def.urbano ? 1.04 : 1.084) * 10) / 10;
+    // (cada categoría tiene su ritmo: el de los originales es el del F1)
+    if (def._ritmoBase === undefined) def._ritmoBase = def.ritmoIA ?? null;
+    this.categoria = CAT.id;
+    def.ritmoIA = CAT.id === 'f1' && def._ritmoBase ? def._ritmoBase : Math.round(this.vueltaTeorica(1) * (def.urbano ? 1.04 : 1.084) * 10) / 10;
     this._indexar();
     // nombres de curvas por posición
     this.curvas = [];
@@ -314,7 +361,7 @@ export class Circuito {
     const q = Math.max(0.3, Math.min(1, Math.round(f * 20) / 20));
     if (q >= 1) return this.perfil;
     this._perfiles ??= new Map();
-    if (!this._perfiles.has(q)) this._perfiles.set(q, this._perfilVelocidad(this.trazada, { mu: 1.55 * q }));
+    if (!this._perfiles.has(q)) this._perfiles.set(q, this._perfilVelocidad(this.trazada, { mu: CAT.perfil.mu * q }));
     return this._perfiles.get(q);
   }
 
@@ -552,12 +599,13 @@ export class Circuito {
   // Velocidad máxima en cada punto de la trazada (modelo de masa puntual con carga aerodinámica)
   _perfilVelocidad(t, opc = {}) {
     const n = this.n;
-    const m = COCHE.masaSeca + 40;
-    const mu = opc.mu ?? 1.55;
-    const clA = opc.clA ?? 4.6, cdA = opc.cdA ?? 1.07;
+    const pf = CAT.perfil, m = COCHE.masaSeca + 40;
+    const mu = opc.mu ?? pf.mu;
+    const clA = opc.clA ?? pf.clA, cdA = opc.cdA ?? pf.cdA;
     const kA = 0.5 * RHO_AIRE * clA, kD = 0.5 * RHO_AIRE * cdA;
-    const P = 640000 * 0.92;
-    const vmax = 97;
+    const P = pf.P * 0.92;
+    const vmax = pf.vmax;
+    const per = this.peralte;
     const v = new Float64Array(n);
     // el agarre efectivo baja con la carga (sensibilidad del neumático): a mucha velocidad
     // la carga aerodinámica no rinde el 100 %, así que se resuelve por bisección
@@ -567,7 +615,8 @@ export class Circuito {
     };
     for (let i = 0; i < n; i++) {
       const k = Math.abs(t.curv[i]) + 1e-6;
-      const cabe = (vv) => muV(vv) * (m * G + kA * vv * vv) >= m * vv * vv * k;
+      const pk = per ? per[i] : 0;
+      const cabe = (vv) => muV(vv) * (m * G + kA * vv * vv) * (1 + pk * PERALTE_IA * Math.min(1.6, vv * vv * k / G)) >= m * vv * vv * k;
       if (cabe(vmax)) { v[i] = vmax; continue; }
       let lo = 5, hi = vmax;
       for (let it = 0; it < 30; it++) { const mid = (lo + hi) / 2; if (cabe(mid)) lo = mid; else hi = mid; }
@@ -697,6 +746,20 @@ export class Circuito {
 }
 
 // Calle de boxes paralela a la recta principal, a la derecha (lado del interior del circuito)
+// Peralte (óvalos): seno del ángulo de inclinación en cada muestra; sube con la curvatura
+Circuito.prototype._peralte = function () {
+  const pd = this.def.peralte;
+  if (!pd) { this.peralte = null; return; }
+  const k = this.curvSuave, n = this.n;
+  let kmax = 0; for (let i = 0; i < n; i++) kmax = Math.max(kmax, Math.abs(k[i]));
+  this.peralte = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const f = Math.min(1, Math.abs(k[i]) / (kmax * 0.8 || 1));
+    const g = f * f * (3 - 2 * f);
+    this.peralte[i] = Math.sin((pd.rectas + (pd.curvas - pd.rectas) * g) * Math.PI / 180);
+  }
+};
+
 Circuito.prototype._calleBoxes = function () {
   const L = this.largo;
   // la calle de boxes cabe en la recta de meta: se mide cuánta recta hay antes y después

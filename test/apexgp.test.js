@@ -526,6 +526,60 @@ function crearMundo(monedas) {
         assert.strictEqual(S.iniciar('u1').ok, true);                       // oficial: sale con la IA
         assert.ok(sala.bots.length > 0);
     });
+    await test('carrera rápida: 2 vueltas de clasificación, categoría y fin anticipado', () => {
+        let ahora = 2_000_000;
+        const S = new A.Salas({ ahora: () => ahora });
+        const { sala } = S.crear('a', { nombre: 'Ana' }, { tipo: 'abierta', max: 22, vueltas: 5, rapida: true, clasifVueltas: 2, categoria: 'gt', emparejada: true, circuito: 'valle' });
+        S.unirse('b', sala.codigo, { nombre: 'Beto' }); S.listo('b', true);
+        assert.strictEqual(sala.categoria, 'gt');
+        assert.ok(S.iniciar('a').clasif);
+        assert.ok(sala.clasifSeg > 0 && sala.tFinQ > ahora + 60000);       // tiempo de sobra para salida + 2 vueltas
+        assert.strictEqual(S.publico(sala).categoria, 'gt');
+        assert.strictEqual(S.publico(sala).clasifVueltas, 2);
+        // un GT no puede marcar el tiempo de un F1 en el Valle (mín. 62 s × 1,31 × 0,95)
+        assert.strictEqual(S.vueltaQ('a', 70), null);
+        assert.ok(S.vueltaQ('a', 104, false));                           // anulada: cuenta como vuelta, sin tiempo
+        assert.ok(sala.jugadores.get('a').tQ == null);
+        assert.ok(S.vueltaQ('a', 103.5));
+        assert.strictEqual(sala.jugadores.get('a').tQ, 103.5);
+        assert.strictEqual(S.vueltaQ('a', 101), null);                    // ya hizo sus 2 vueltas
+        const fin = sala.tFinQ;
+        assert.ok(S.vueltaQ('b', 105)); assert.ok(S.vueltaQ('b', 106));
+        assert.ok(sala.tFinQ < fin && sala.tFinQ <= ahora + 4000);         // todos listos: sale ya
+        ahora = sala.tFinQ + 1;
+        assert.strictEqual(S.revisarClasif().length, 1);
+        assert.strictEqual(sala.parrilla.indexOf('a') < sala.parrilla.indexOf('b'), true);
+        // los bots del GT clasifican con tiempos de GT
+        assert.ok(sala.bots.every(b => b.tQ > 95));
+    });
+    await test('carrera rápida: emparejador por categoría, óvalos, vueltas y premios top 10', () => {
+        let ahora = 0;
+        const E = new A.Emparejador({ ahora: () => ahora, espera: 1000 });
+        E.entrar('f1a', {}, 1200, 'europa', 2.5, 'f1'); E.entrar('gta', {}, 1200, 'europa', 2.5, 'gt'); E.entrar('f1b', {}, 1200, 'europa', 2.5, 'f1');
+        assert.strictEqual(E.enCola('gt'), 1);
+        ahora = 5000;
+        const g = E.emparejar();
+        assert.strictEqual(g.length, 1);
+        assert.deepStrictEqual(g[0].map(x => x.id).sort(), ['f1a', 'f1b']);  // el GT se queda esperando a otro GT
+        assert.strictEqual(E.cola.has('gta'), true);
+        assert.strictEqual(A.categoriaOk('nascar'), 'f1');
+        // Stock Car: casi siempre óvalos; F1 y GT nunca
+        for (let k = 0; k < 20; k++) { assert.ok(!A.CIRCUITOS[A.circuitoRapida('f1')].ovalo); assert.ok(!A.CIRCUITOS[A.circuitoRapida('gt')].ovalo); }
+        assert.ok(A.CIRCUITOS[A.circuitoRapida('stock', () => 0.1)].ovalo);
+        // unos 8 minutos de carrera
+        for (const [c, cat] of [['valle', 'f1'], ['valle', 'gt'], ['ovalo_corto', 'stock'], ['superovalo', 'stock']]) {
+            const v = A.vueltasRapida(c, cat), min = v * A.ritmoDe(c, cat) / 60;
+            assert.ok(v >= 3 && v <= 25 && min > 5 && min < 11, `${c} ${cat}: ${v} vueltas, ${min.toFixed(1)} min`);
+        }
+        // los óvalos tienen vueltas cortas (un F1 en el óvalo corto no es un tramposo)
+        assert.ok(A.minVueltaDe('ovalo_corto', 'stock') < 20 && A.minVueltaDe('ovalo_corto', 'stock') > 12);
+        assert.strictEqual(A.minVueltaDe('valle', 'f1'), 62);
+        // premios: 10 primeros, del 1º al 10º decreciente, nada del 11º en adelante
+        const p = [...Array(12)].map((_, i) => A.premioRapida(i + 1));
+        assert.deepStrictEqual(p.slice(10), [0, 0]);
+        assert.ok(p.slice(0, 10).every((v, i) => v > 0 && (i === 0 || v <= p[i - 1])));
+        assert.strictEqual(A.TOP_RAPIDA, 10);
+    });
     await test('limpiarNombre: sin HTML ni nombres larguísimos', () => {
         assert.strictEqual(A.limpiarNombre('<b>Ana</b>'), 'bAnab');
         assert.strictEqual(A.limpiarNombre('x'.repeat(60)).length, 18);

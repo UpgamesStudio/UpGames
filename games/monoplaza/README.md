@@ -12,7 +12,8 @@ Pensado primero para Android en horizontal: la información va en franjas finas 
 ## Modos
 
 - **Carrera** contra hasta 21 rivales con IA (11 equipos de 2 coches): semáforo de salida, posiciones, rebufo, DRS con detección a 1 s, contactos, estrategia de boxes y abandonos.
-- **Partida rápida en línea**: 22 coches (la IA completa la parrilla y la simula el anfitrión; si se va, la simula el siguiente), 20 vueltas y 6 minutos de clasificación que deciden la parrilla. En línea no hay ayudas ni reinicios: quien destroza el coche queda fuera.
+- **Categorías**: Fórmula (monoplaza con efecto suelo, DRS y ERS), **GT** (gran turismo cerrado de ~550 CV, más peso y menos carga) y **Stock Car** (berlina de ~670 CV pensada para óvalos, con rebufo muy fuerte). Se eligen arriba en el menú y valen para todos los modos. Tres óvalos con peralte: Speedway de la Costa, Superóvalo del Desierto y Óvalo Corto del Puerto.
+- **Carrera rápida online**: emparejamiento automático por categoría, nivel (ELO) y región, hasta 22 pilotos (la IA completa la parrilla y la simula el anfitrión; si se va, la simula el siguiente). Vuelta de salida + **2 vueltas de clasificación** que deciden la parrilla y unos 8 minutos de carrera. Los **10 primeros** con cuenta ganan **UpCoins no retirables** (12, 9, 7, 6, 5, 4, 3, 3, 2, 2; hasta 10 carreras premiadas al día) para las mejoras del Garaje. En línea no hay ayudas ni reinicios: quien destroza el coche queda fuera.
 - **Multijugador**: duelos 1 vs 1 o salas abiertas de hasta 22 pilotos (Socket.IO, espacio `/apexgp` del backend). Salida sincronizada con el reloj del servidor, rivales interpolados y resultados validados en el servidor.
 - **Contrarreloj** con fantasma de tu mejor vuelta, delta en vivo y sectores de colores (morado, verde, amarillo).
 - **Práctica libre** para probar el reglaje.

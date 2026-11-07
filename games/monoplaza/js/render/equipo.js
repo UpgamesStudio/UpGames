@@ -30,8 +30,13 @@ function fundir(grupo) {
   return out;
 }
 
-const A = COCHE.wheelbase * (1 - COCHE.repartoDel), B = COCHE.wheelbase * COCHE.repartoDel;
-const RUEDAS = [[A, -1, COCHE.viaDel / 2], [A, 1, COCHE.viaDel / 2], [-B, -1, COCHE.viaTras / 2], [-B, 1, COCHE.viaTras / 2]];
+// ejes del coche de la categoría activa (se recalculan al crear cada equipo de boxes)
+let A, B, RUEDAS;
+function ejes() {
+  A = COCHE.wheelbase * (1 - COCHE.repartoDel); B = COCHE.wheelbase * COCHE.repartoDel;
+  RUEDAS = [[A, -1, COCHE.viaDel / 2], [A, 1, COCHE.viaDel / 2], [-B, -1, COCHE.viaTras / 2], [-B, 1, COCHE.viaTras / 2]];
+}
+ejes();
 const entre = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
 const suave = (t) => t * t * (3 - 2 * t);
 
@@ -97,6 +102,7 @@ class Parada {
     this.scene = scene; this.alEvento = alEvento;
     this.color = color; this.compuesto = compuesto || 'medio';
     this.estado = 'espera'; this.t = 0; this.tFin = 0;
+    ejes();
     this.grupo = new THREE.Group();
     this.equipo = [];
     const e = equipamiento();

@@ -2,7 +2,7 @@
 // Ejes del coche: x hacia delante, y hacia la derecha. Rumbo ψ: el vector delantero
 // en el mundo es (cos ψ, sin ψ) en el plano (x, z). Guiñada positiva = giro a la derecha.
 
-import { COCHE, COMPUESTOS, G, RHO_AIRE, REGLAJE_DEF, efectosMejoras, factorAgua } from '../config.js';
+import { COCHE, CAT, COMPUESTOS, G, RHO_AIRE, REGLAJE_DEF, efectosMejoras, factorAgua } from '../config.js';
 import { SUPERFICIES, SUP_ASFALTO, SUP_BORDILLO, SUP_ESCAPE, SUP_GRAVA, BARRERAS } from '../track.js';
 import { Neumatico, fuerzasNeumatico, muCarga } from './neumatico.js';
 
@@ -225,7 +225,7 @@ export class Monoplaza {
     for (const w of this.ruedas) { w.neum = new Neumatico(c, this.reglaje.presion); w.neum.tSup = 82; w.neum.tNucleo = 80; this._mejorarNeum(w.neum); }
   }
 
-  _mejorarNeum(n) { n.mejoraMu = this.ef.mu; n.mejoraDesgaste = this.ef.desgaste * (this.multDesgaste || 1); }
+  _mejorarNeum(n) { n.mejoraMu = this.ef.mu * (CAT.mu ?? 1); n.mejoraDesgaste = this.ef.desgaste * (this.multDesgaste || 1); }
 
   // En carreras cortas el desgaste se acelera para que la estrategia de boxes cuente
   ponerMultDesgaste(m) { this.multDesgaste = m; for (const w of this.ruedas) this._mejorarNeum(w.neum); }
@@ -305,11 +305,11 @@ export class Monoplaza {
     if (Math.min(this.alturaDel, this.alturaTras) < 0.004) suelo *= 0.93; // pérdida por contacto del fondo
     clDel *= suelo * clamp(1 + 3.0 * (hDelRef - this.alturaDel), 0.85, 1.18);
     clTras *= suelo * clamp(1 + 1.6 * (hTrasRef - this.alturaTras), 0.88, 1.12);
-    clDel *= (1 - 0.35 * this.danoAleron) * this.ef.cl;
-    clTras *= (1 - 0.55 * this.dano.aleronTras) * this.ef.cl;
+    clDel *= (1 - 0.35 * this.danoAleron) * this.ef.cl * CAT.cl;
+    clTras *= (1 - 0.55 * this.dano.aleronTras) * this.ef.cl * CAT.cl;
     // fondo y pontones rotos: hasta un 30 % menos de carga y más resistencia
     clDel *= 1 - 0.22 * (this.dano.fondo || 0); clTras *= 1 - 0.30 * (this.dano.fondo || 0);
-    cdA = cdA * this.ef.cd + 0.06 * this.dano.aleronTras + 0.03 * this.danoAleron + 0.05 * (this.dano.fondo || 0);
+    cdA = cdA * this.ef.cd * CAT.cd + 0.06 * this.dano.aleronTras + 0.03 * this.danoAleron + 0.05 * (this.dano.fondo || 0);
     // aire sucio (estela de otro coche): con el efecto suelo la mayor parte de la carga la da el
     // fondo, que la estela apenas toca; la sufren sobre todo los alerones (el delantero más, de
     // ahí el subviraje al seguir a otro en curva). Además la estela es turbulenta: la carga
@@ -321,7 +321,8 @@ export class Monoplaza {
     }
     this.turbulencia = this.aireSucio;
     // rebufo: dentro del cono de baja presión de detrás del otro coche hay menos resistencia
-    cdA *= 1 - 0.32 * this.rebufo;
+    // (los coches cerrados de óvalo hacen un rebufo mucho más grande: pelotones en fila)
+    cdA *= 1 - Math.min(0.6, 0.32 * this.rebufo * (CAT.rebufo ?? 1));
     // viento: la aerodinámica trabaja con la velocidad del aire, no con la del coche
     const cs = Math.cos(this.psi), sn = Math.sin(this.psi), wv = this.viento;
     const vaL = this.vx - (wv ? wv.x * cs + wv.z * sn : 0);          // de cara: más carga y más resistencia
@@ -342,6 +343,8 @@ export class Monoplaza {
   // --- Paso de integración -------------------------------------------------
   paso(dt) {
     this.reloj += dt;
+    // cajas de 4 o 6 marchas (Stock Car, GT): nunca una marcha que el coche no tiene
+    if (this.marcha > COCHE.relaciones.length) this.marcha = COCHE.relaciones.length;
     if (this.vuelo || this.volcado) { this._pasoSinRuedas(dt); return; }
     const c = this.circuito;
     const m = this.masa;
@@ -351,6 +354,7 @@ export class Monoplaza {
     const v = this.velocidad;
 
     // DRS: se cierra al frenar
+    if (!CAT.drs) this.drsPermitido = false;
     if (mand.freno > 0.08 || !this.drsPermitido) this.drsAbierto = false;
     else if (mand.drs && this.drsPermitido) this.drsAbierto = true;
 
@@ -411,7 +415,7 @@ export class Monoplaza {
     let angMax = COCHE.angMaxRueda;
     if (this.ayudas.direccion && !this.esIA) {
       // limita el giro al ángulo útil para la velocidad (evita sobrevirar con el móvil)
-      const kA = 0.5 * RHO_AIRE * 4.6 / m;
+      const kA = 0.5 * RHO_AIRE * CAT.perfil.clA / m;
       const aLat = 1.7 * (G + kA * v * v);
       const util = COCHE.wheelbase * aLat / Math.max(1, v * v) + 0.075;
       angMax = Math.min(angMax, Math.max(0.05, util));
@@ -554,6 +558,8 @@ export class Monoplaza {
       w.sup = c.superficie(iw, w.d);
       w.wy = c.y[iw] + c.caida(iw, w.d);
       if (c.enSalchicha?.(iw, w.d)) { salchicha++; w.wy += 0.07; }
+      // peralte de los óvalos: la curva inclinada aprieta el coche contra el asfalto (más agarre)
+      if (c.peralte && v > 10) w.fz *= 1 + c.peralte[iw] * Math.min(1.6, v * v * Math.abs(c.curvSuave?.[iw] ?? 0) / G) * 0.9;
       const sp = SUPERFICIES[w.sup];
       if (w.sup !== SUP_ASFALTO && w.sup !== SUP_BORDILLO) fuera++;
       if (w.sup === SUP_BORDILLO) bordillo++;
@@ -886,7 +892,7 @@ export class Monoplaza {
       if (this.marcha < 1) { this.marcha = 1; return; }
       const rpm = this.rpm;
       const patina = Math.max(this.ruedas[2].kappa, this.ruedas[3].kappa) > 0.3;
-      if (rpm > 14650 && this.marcha < 8 && acel > 0.2 && !patina) this.cambiar(1);
+      if (rpm > 14650 && this.marcha < COCHE.relaciones.length && acel > 0.2 && !patina) this.cambiar(1);
       else if (this.marcha > 1) {
         const rpmAbajo = rpm * COCHE.relaciones[this.marcha - 2] / COCHE.relaciones[this.marcha - 1];
         const umbral = freno > 0.1 ? 13600 : 12200;
@@ -897,7 +903,7 @@ export class Monoplaza {
 
   cambiar(dir) {
     if (this.cambioT > 0 || this.cajaBloqueada) return;
-    if (dir > 0 && this.marcha < 8) {
+    if (dir > 0 && this.marcha < COCHE.relaciones.length) {
       if (this.marcha === -1) { this.marcha = 1; return; }
       this.cambioDestino = this.marcha + 1; this.cambioT = COCHE.tiempoCambioSubir;
     } else if (dir < 0) {

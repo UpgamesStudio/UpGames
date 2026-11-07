@@ -3,7 +3,8 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { COCHE, COMPUESTOS } from '../config.js';
+import { COCHE, CAT, COMPUESTOS } from '../config.js';
+import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS } from './carroceriaCerrada.js';
 import { texturaCarbono } from './texturas.js';
 import { proyectarUV, dibujarLibrea, materialLibrea } from './librea.js';
 import { normalPliegues } from './personas.js';
@@ -599,6 +600,7 @@ function pintarPantalla(p, car, info = {}) {
  */
 export function crearModelo(opc) {
   const { equipo, compuesto = 'medio', calidad = 2, cabina = false } = opc;
+  const cat = opc.categoria || CAT.id, cerrado = cat === 'gt' || cat === 'stock';
   const eq = opc.equipado || {};
   const fisico = calidad >= 2;
   const colores = { base: equipo.base, acento: equipo.acento, tercero: equipo.tercero || '#ffffff', ...(eq.colores || {}) };
@@ -767,7 +769,7 @@ export function crearModelo(opc) {
   geo.metal.push(loftS([S(-2.25, 0.036, 0.43, 0.38, 2, 2), S(-2.37, 0.042, 0.436, 0.374, 2, 2)], 14));
   const carroceria = new THREE.Group();
   if (forroCabina) carroceria.add(forroCabina);
-  const cuerpo = unir(geo.librea, pintura, true);
+  let cuerpo = unir(geo.librea, pintura, true);
   cuerpo.name = 'cuerpo';
   carroceria.add(cuerpo);
   // el halo, aparte: se quita en los ajustes (opc.halo === false)
@@ -894,8 +896,14 @@ export function crearModelo(opc) {
   // vías de un F1 real: 2,0 m por fuera de las ruedas en los dos ejes (1,69 m delante con
   // neumáticos de 305 mm y 1,60 m detrás con los de 405 mm)
   const VIA_DEL = 1.69, VIA_TRAS = 1.60;
-  const pos = [[A, -VIA_DEL / 2, COCHE.radioDel, 0.305], [A, VIA_DEL / 2, COCHE.radioDel, 0.305],
+  let pos = [[A, -VIA_DEL / 2, COCHE.radioDel, 0.305], [A, VIA_DEL / 2, COCHE.radioDel, 0.305],
     [-B, -VIA_TRAS / 2, COCHE.radioTras, 0.405], [-B, VIA_TRAS / 2, COCHE.radioTras, 0.405]];
+  // GT y Stock Car: ruedas donde las pone su chasis (batalla, vías y medidas de su categoría)
+  if (cerrado) {
+    const a = COCHE.wheelbase * (1 - COCHE.repartoDel), b = COCHE.wheelbase * COCHE.repartoDel, an = ANCHO_RUEDAS[cat];
+    pos = [[a, -COCHE.viaDel / 2, COCHE.radioDel, an.del], [a, COCHE.viaDel / 2, COCHE.radioDel, an.del],
+      [-b, -COCHE.viaTras / 2, COCHE.radioTras, an.tras], [-b, COCHE.viaTras / 2, COCHE.radioTras, an.tras]];
+  }
   const grupo = new THREE.Group();
   // cara de la llanta: entre los radios se ve el disco, que brilla al rojo cuando está caliente
   // (se ve desde fuera y desde cualquier ángulo); una por eje
@@ -955,6 +963,40 @@ export function crearModelo(opc) {
   const sombraC = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 5.8), matSombraContacto(calidad));
   sombraC.rotation.x = -Math.PI / 2; sombraC.position.set(-0.15, 0.015, 0); sombraC.renderOrder = -1;
   raiz.add(sombraC); raiz.add(reflejoLuz);
+
+  // ── Carrocería cerrada (GT / Stock Car): el chasis, las ruedas y el piloto son los mismos; la
+  // piel del monoplaza se quita y se pone la del coche cerrado (con su propia librea)
+  let pinturaFinal = pintura, camaras = null;
+  if (cerrado) {
+    const tamC = calidad >= 2 ? 1024 : 512;
+    const cvC = document.createElement('canvas'); cvC.width = tamC; cvC.height = tamC;
+    pintarLibreaCerrada(cvC, { categoria: cat, patron: eq.patron || equipo.patron || 'franjas', colores, numero });
+    const texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 4;
+    pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
+    const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
+    const cc = crearCarroceria(cat, { pintura: pinturaFinal, ruedas: ruedasC, calidad });
+    for (const o of [cuerpo, halo, mCarbono, mNegro, mMetal, forroCabina, alaDel, alaTras, luzLluvia]) if (o) o.visible = false;
+    carroceria.remove(cuerpo);
+    for (const gp of gruposPieza) gp.g.visible = false;
+    cuerpo = cc.cuerpo; cuerpo.name = 'cuerpo';
+    carroceria.add(cuerpo); carroceria.add(cc.extras);
+    // piloto sentado (más erguido y a la izquierda) y su volante
+    const [dx, dy, dz] = cc.forma.piloto;
+    piloto.grupo.position.add(new THREE.Vector3(dx, dy, dz));
+    columna.position.add(new THREE.Vector3(dx, dy, dz));
+    // retrovisores de verdad para el coche del jugador
+    espejos.length = 0;
+    for (const m of cc.extras.children) if (m.geometry?.parameters?.width === 0.12 && m.geometry.parameters.depth === 0.16) {
+      const e = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.07), matEspejo);
+      e.rotation.y = -Math.PI / 2; e.position.set(m.position.x - 0.062, m.position.y, m.position.z); e.userData.lado = Math.sign(m.position.z);
+      carroceria.add(e); espejos.push(e);
+    }
+    // cámara «a bordo» sobre el capó (dentro de un coche cerrado no se vería nada)
+    const ojo = [0.17 + dx, 0.80 + dy, dz], capo = [cc.forma.cristal[0] - 0.08, cc.forma.cintura + 0.16, 0];
+    camaras = { cabina: capo, mirarCabina: [30, capo[1] - 0.25, 0], cara: [ojo[0] + 0.55, ojo[1] + 0.02, dz], mirarCara: [ojo[0] - 0.1, ojo[1] - 0.08, dz],
+      tcam: [-0.25, cc.forma.techo + 0.14, 0], mirarTcam: [30, 0.6, 0] };
+    calor.position.set(cc.forma.secciones[cc.forma.secciones.length - 1][0] - 0.1, 0.32, 0.55);
+  }
 
   // Abolladuras: hunde la carrocería donde ha pegado cada golpe (se acumulan). Las caras que se
   // mueven toman la normal de su triángulo: el carbono roto se ve arrugado, con aristas.
@@ -1057,7 +1099,7 @@ export function crearModelo(opc) {
       if (!malla.userData.orig) continue;
       malla.geometry.attributes.position.array.set(malla.userData.orig); malla.geometry.attributes.position.needsUpdate = true;
     }
-    calor.visible = true; pivDrs.visible = true; luzLluvia.visible = true;
+    calor.visible = true; pivDrs.visible = !cerrado; luzLluvia.visible = !cerrado;
     if (posOrig) cuerpo.geometry.attributes.normal.array.set(nrmOrig);
     cuerpo.geometry.attributes.normal.needsUpdate = true;
     const gol = cuerpo.geometry.attributes.golpe;
@@ -1070,14 +1112,14 @@ export function crearModelo(opc) {
   let tPantalla = 0;
   const estadoDanos = { alaDel: false, alaTras: false };
   const modelo = {
-    raiz, carroceria, ruedas, pivDrs, luzLluvia, pintura, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
+    raiz, carroceria, ruedas, pivDrs, luzLluvia, pintura: pinturaFinal, categoria: cat, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
     // cámaras a bordo (coordenadas de la carrocería): la de cabina en los ojos del piloto, centrada
     // entre el arco del halo (0,94 m) y el borde de la cabina (0,72 m); la de la cara, sobre el
     // arco del halo (detrás del pilar) mirando al casco; la T-Cam, sobre la toma de aire
-    camaras: { cabina: [0.17, 0.80, 0], mirarCabina: [30, -0.2, 0], cara: [0.42, 0.9, 0], mirarCara: [0.05, 0.75, 0],
+    camaras: camaras || { cabina: [0.17, 0.80, 0], mirarCabina: [30, -0.2, 0], cara: [0.42, 0.9, 0], mirarCara: [0.05, 0.75, 0],
       tcam: [-0.06, 1.05, 0], mirarTcam: [30, 0.4, 0] },
     /** Pone o quita el halo (ajustes). */
-    ponerHalo(si) { halo.visible = si; },
+    ponerHalo(si) { halo.visible = si && !cerrado; },
     mirada: 0,                     // giro de la cabeza (rad) para la cámara de cabina
     alDesprender: null,            // (tipo, objeto3D) → efectos de escombros
     elevar: 0,                     // gatos de boxes
@@ -1125,6 +1167,7 @@ export function crearModelo(opc) {
       if (dt2 >= 0.95 && !estadoDanos.alaTras) { estadoDanos.alaTras = true; this.alDesprender?.('alaTras', alaTras); }
       if (dt2 < 0.05 && estadoDanos.alaTras) estadoDanos.alaTras = false;
       alaTras.visible = !estadoDanos.alaTras;
+      if (cerrado) { alaDel.visible = false; alaTras.visible = false; }
       // espejos y deflectores se rompen según el daño acumulado en SU lado: el primer golpe
       // en la izquierda puede llevarse el espejo izquierdo; el segundo, los deflectores
       const zn = d?.zona;
@@ -1134,7 +1177,7 @@ export function crearModelo(opc) {
         if (lado < 0.05 && (d?.piezas || 0) < 0.05 && g.rota) g.rota = false;
         const o = g.glb || g.g;
         if (lado >= umbral && !g.rota) { g.rota = true; this.alDesprender?.(g.tipo, o); }
-        o.visible = !g.rota;
+        o.visible = !g.rota && !cerrado;
         // antes de romperse se tuerce
         if (!g.rota) o.rotation.set(lado * 0.25 * g.sg, 0, -lado * 0.3);
       });
@@ -1170,7 +1213,7 @@ export function crearModelo(opc) {
       this.mirada = piloto.mirada;
       // LEDs y pantalla del volante
       const nOn = Math.max(0, Math.min(15, Math.floor((car.rpm - 10500) / 4200 * 15)));
-      const flash = car.rpm > 14550 && car.marcha > 0 && car.marcha < 8 && Math.floor(performance.now() / 70) % 2 === 0;
+      const flash = car.rpm > 14550 && car.marcha > 0 && car.marcha < COCHE.relaciones.length && Math.floor(performance.now() / 70) % 2 === 0;
       volante.leds.forEach((m, k) => { m.emissiveIntensity = flash ? (k >= 10 ? 4 : 0) : k < nOn ? 3 : 0; });
       if (volante.pantalla) {
         tPantalla += dt;
