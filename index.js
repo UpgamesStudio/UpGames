@@ -368,6 +368,11 @@ app.use((req, res, next) => {
 const MONGODB_URI = config.MONGODB_URI;
 const JWT_SECRET  = config.JWT_SECRET;
 
+// Caché corta de lecturas públicas (perfil, ficha, favoritos, comentarios, rankings…):
+// cada consulta a Mongo cuesta ~200 ms; las escrituras la vacían al momento (modulos/cacheRespuestas.js)
+const cacheRespuestas = require('./modulos/cacheRespuestas').crear({ secreto: JWT_SECRET });
+app.use(cacheRespuestas.middleware);
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dd4w2plxn',
     api_key:    process.env.CLOUDINARY_API_KEY,
@@ -2652,17 +2657,18 @@ app.get('/usuarios/perfil-publico/:usuario', async (req, res) => {
         const [user, publicaciones] = await Promise.all([
             // LISTA BLANCA: antes se devolvía el documento entero (menos password y
             // paypalEmail) — incluía resetPasswordToken, email, IP, saldo y tarjetas.
-            Usuario.findOne({ usuario: username })
-                .select('usuario avatar banner bio verificadoNivel isVerificado socialLinks createdAt fecha listaSeguidores siguiendo estilo planHasta cosmeticos')
-                .lean(),
+            // (los seguidores y seguidos se cuentan en Mongo: no se traen las listas enteras)
+            Usuario.aggregate([{ $match: { usuario: username } }, { $limit: 1 }, { $project: {
+                usuario: 1, avatar: 1, banner: 1, bio: 1, verificadoNivel: 1, isVerificado: 1, socialLinks: 1, createdAt: 1, fecha: 1, estilo: 1, planHasta: 1, cosmeticos: 1,
+                nSeguidores: { $size: { $ifNull: ['$listaSeguidores', []] } }, nSiguiendo: { $size: { $ifNull: ['$siguiendo', []] } } } }]).then(r => r[0] || null),
             Juego.countDocuments({ usuario: username, status: 'aprobado' })
         ]);
         if (!user) return res.status(404).json({ success: false, error: "Usuario no encontrado" });
-        const { listaSeguidores, siguiendo, _id, planHasta, cosmeticos, ...publico } = user;
+        const { nSeguidores, nSiguiendo, _id, planHasta, cosmeticos, ...publico } = user;
         // Vitrina: insignias que tiene (todas, no solo las 3 que muestra) y cuántos artículos de estilo coleccionó
         const ids = new Set(require('./modulos/extras').COSMETICOS.map(c => c.id)), suyos = (cosmeticos || []).filter(c => ids.has(c));
         const coleccion = { total: suyos.length, insignias: suyos.filter(c => c.startsWith('ins_')) };
-        res.json({ success: true, usuario: { ...publico, coleccion, premium: !!(planHasta && new Date(planHasta) > new Date()), publicaciones, seguidores: listaSeguidores?.length || 0, siguiendo: siguiendo?.length || 0 } });
+        res.json({ success: true, usuario: { ...publico, coleccion, premium: !!(planHasta && new Date(planHasta) > new Date()), publicaciones, seguidores: nSeguidores || 0, siguiendo: nSiguiendo || 0 } });
     } catch (err) {
         res.status(500).json({ success: false, error: "Error al cargar perfil" });
     }
@@ -3238,9 +3244,11 @@ app.delete('/notificaciones/todas/:usuario', verificarToken, async (req, res) =>
 
 app.get('/usuarios/stats-seguimiento/:usuario', async (req, res) => {
     try {
-        const user = await Usuario.findOne({ usuario: req.params.usuario }).select('listaSeguidores siguiendo').lean();
+        // solo los números: no hace falta traer las listas enteras de seguidores
+        const [user] = await Usuario.aggregate([{ $match: { usuario: req.params.usuario } }, { $limit: 1 },
+            { $project: { seguidores: { $size: { $ifNull: ['$listaSeguidores', []] } }, siguiendo: { $size: { $ifNull: ['$siguiendo', []] } } } }]);
         if (!user) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
-        res.json({ success: true, stats: { seguidores: user.listaSeguidores?.length || 0, siguiendo: user.siguiendo?.length || 0 } });
+        res.json({ success: true, stats: { seguidores: user.seguidores || 0, siguiendo: user.siguiendo || 0 } });
     } catch (err) {
         logger.error(`Error en stats-seguimiento: ${err.message}`);
         res.status(500).json({ success: false, error: 'Error interno' });

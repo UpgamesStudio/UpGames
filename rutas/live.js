@@ -41,6 +41,9 @@ const LiveSchema = new mongoose.Schema({
 }, { collection: 'lives', timestamps: false });
 // Un solo live activo por creador (dos pestañas no crean dos directos)
 LiveSchema.index({ creador: 1 }, { unique: true, partialFilterExpression: { estado: 'en_vivo' }, name: 'un_live_activo' });
+// Lista de directos (estado + más recientes): sin este índice Mongo recorría todo el historial
+LiveSchema.index({ estado: 1, inicio: -1 });
+LiveSchema.index({ creador: 1, inicio: -1 });
 
 const TxSchema = new mongoose.Schema({
     tipo:         { type: String, enum: ['compra', 'regalo', 'acceso', 'plan', 'mision'], required: true },   // acceso = saltar la página puente · plan = Premium
@@ -410,13 +413,17 @@ function registrar(app, server, deps) {
                 Live.findOne({ creador: u, estado: 'en_vivo' }).lean(),
             ]);
             if (!creador) return err(res, 404, 'Ese creador no existe');
-            const ultimo = live ? null : await Live.findOne({ creador: u }).sort({ inicio: -1 }).select('titulo inicio fin pico repeticion').lean();
-            // Repeticiones recientes del canal (publicaciones de video ligadas a sus lives)
-            const reps = await Live.find({ creador: u, repeticion: { $ne: '' } }).sort({ inicio: -1 }).limit(6).select('titulo inicio repeticion').lean();
+            // (en paralelo: cada consulta a Mongo es un viaje de ida y vuelta)
+            const [ultimo, reps, top] = await Promise.all([
+                live ? null : Live.findOne({ creador: u }).sort({ inicio: -1 }).select('titulo inicio fin pico repeticion').lean(),
+                // Repeticiones recientes del canal (publicaciones de video ligadas a sus lives)
+                Live.find({ creador: u, repeticion: { $ne: '' } }).sort({ inicio: -1 }).limit(6).select('titulo inicio repeticion').lean(),
+                live ? topDonantes(live._id) : [],
+            ]);
             ok(res, {
                 creador: { usuario: creador.usuario, avatar: creador.avatar || '', banner: creador.banner || '', bio: creador.bio || '', verificado: creador.verificadoNivel || 0, seguidores: (creador.listaSeguidores || []).length },
                 live: live ? publico(live, sala(live._id)) : null,
-                top: live ? await topDonantes(live._id) : [],
+                top,
                 ultimo, repeticiones: reps.map(r => ({ titulo: r.titulo, inicio: r.inicio, item: r.repeticion })),
             });
         } catch (e) { logger.error(`[live] canal: ${e.message}`); err(res, 500, 'Error al cargar el canal'); }
