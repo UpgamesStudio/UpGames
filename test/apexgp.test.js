@@ -566,11 +566,9 @@ function crearMundo(monedas) {
         // Stock Car: casi siempre óvalos; F1 y GT nunca
         for (let k = 0; k < 20; k++) { assert.ok(!A.CIRCUITOS[A.circuitoRapida('f1')].ovalo); assert.ok(!A.CIRCUITOS[A.circuitoRapida('gt')].ovalo); }
         assert.ok(A.CIRCUITOS[A.circuitoRapida('stock', () => 0.1)].ovalo);
-        // unos 8 minutos de carrera
-        for (const [c, cat] of [['valle', 'f1'], ['valle', 'gt'], ['ovalo_corto', 'stock'], ['superovalo', 'stock']]) {
-            const v = A.vueltasRapida(c, cat), min = v * A.ritmoDe(c, cat) / 60;
-            assert.ok(v >= 3 && v <= 25 && min > 5 && min < 11, `${c} ${cat}: ${v} vueltas, ${min.toFixed(1)} min`);
-        }
+        // la carrera son siempre 10 vueltas (la clasificación, 2)
+        for (const [c, cat] of [['valle', 'f1'], ['ovalo_corto', 'stock'], ['superovalo', 'stock']]) assert.strictEqual(A.vueltasRapida(c, cat), 10);
+        assert.strictEqual(A.CLASIF_VUELTAS, 2);
         // los óvalos tienen vueltas cortas (un F1 en el óvalo corto no es un tramposo)
         assert.ok(A.minVueltaDe('ovalo_corto', 'stock') < 20 && A.minVueltaDe('ovalo_corto', 'stock') > 12);
         assert.strictEqual(A.minVueltaDe('valle', 'f1'), 62);

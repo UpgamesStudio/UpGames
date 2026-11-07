@@ -577,8 +577,9 @@ const ritmoDe = (circuito, cat = 'f1') => (CIRCUITOS[circuito]?.minVuelta || 60)
 const PREMIOS_RAPIDA = { 1: 12, 2: 9, 3: 7, 4: 6, 5: 5, 6: 4, 7: 3, 8: 3, 9: 2, 10: 2 };
 const TOP_RAPIDA = 10, RAPIDA_DIA = 10, CLASIF_VUELTAS = 2;
 const premioRapida = pos => PREMIOS_RAPIDA[pos] || 0;
-/** Vueltas de la carrera rápida: unos 8 minutos de carrera. */
-const vueltasRapida = (circuito, cat) => Math.max(3, Math.min(25, Math.round(480 / ritmoDe(circuito, cat))));
+/** Vueltas de la carrera rápida: siempre 10 (la clasificación son 2). */
+const VUELTAS_RAPIDA = 10;
+const vueltasRapida = () => VUELTAS_RAPIDA;
 /** Circuito de la carrera rápida: el Stock Car corre casi siempre en óvalos; los demás, nunca. */
 function circuitoRapida(cat, azar = Math.random) {
     const ovalos = Object.keys(CIRCUITOS).filter(c => CIRCUITOS[c].ovalo), normales = Object.keys(CIRCUITOS).filter(c => !CIRCUITOS[c].ovalo);
@@ -760,7 +761,7 @@ function oficialDe(ahora = Date.now()) {
 
 module.exports = {
     oficialDe, OFICIAL_CADA, OFICIAL_ABRE,
-    CIRCUITOS, CLIMAS, circuitoOk, CATEGORIAS, categoriaOk, factorCat, minVueltaDe, ritmoDe, PREMIOS_RAPIDA, TOP_RAPIDA, RAPIDA_DIA, CLASIF_VUELTAS, premioRapida, vueltasRapida, circuitoRapida, PREMIOS, TOP_PREMIADO, premioPosicion, PUNTOS_CARRERA, CARRERAS_DIA, carreraPuntuable, puntosCarrera, validarResultado,
+    CIRCUITOS, CLIMAS, circuitoOk, CATEGORIAS, categoriaOk, factorCat, minVueltaDe, ritmoDe, PREMIOS_RAPIDA, TOP_RAPIDA, RAPIDA_DIA, CLASIF_VUELTAS, VUELTAS_RAPIDA, premioRapida, vueltasRapida, circuitoRapida, PREMIOS, TOP_PREMIADO, premioPosicion, PUNTOS_CARRERA, CARRERAS_DIA, carreraPuntuable, puntosCarrera, validarResultado,
     semanaDe, semanaAnterior, FANTASMA_HZ, FANTASMA_MAX, validarVuelta, ELO_INICIAL, eloTras, nivelElo, SR_INICIAL, LICENCIAS, licenciaDe, nivelLicencia, limpiarIncidentes, srTras, REGIONES, regionOk, Emparejador,
     NIVELES, PRECIO_NIVEL, MEJORAS, COSMETICOS, EQUIPADO_DEF, MAX_JUGADORES, ESTADO_LARGO,
     catalogo, precioCompra, tieneCosmetico, validarEquipado, nivelesMejoras, limpiarNombre, Salas,

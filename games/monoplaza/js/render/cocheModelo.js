@@ -986,16 +986,16 @@ export function crearModelo(opc) {
     columna.position.add(new THREE.Vector3(dx, dy, dz));
     // retrovisores de verdad para el coche del jugador
     espejos.length = 0;
-    for (const m of cc.extras.children) if (m.geometry?.parameters?.width === 0.12 && m.geometry.parameters.depth === 0.16) {
+    for (const pe of cc.forma.espejos) {
       const e = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.07), matEspejo);
-      e.rotation.y = -Math.PI / 2; e.position.set(m.position.x - 0.062, m.position.y, m.position.z); e.userData.lado = Math.sign(m.position.z);
+      e.rotation.y = -Math.PI / 2; e.position.set(pe.x, pe.y, pe.z); e.userData.lado = Math.sign(pe.z);
       carroceria.add(e); espejos.push(e);
     }
     // cámara «a bordo» sobre el capó (dentro de un coche cerrado no se vería nada)
     const ojo = [0.17 + dx, 0.80 + dy, dz], capo = [cc.forma.cristal[0] - 0.08, cc.forma.cintura + 0.16, 0];
     camaras = { cabina: capo, mirarCabina: [30, capo[1] - 0.25, 0], cara: [ojo[0] + 0.55, ojo[1] + 0.02, dz], mirarCara: [ojo[0] - 0.1, ojo[1] - 0.08, dz],
       tcam: [-0.25, cc.forma.techo + 0.14, 0], mirarTcam: [30, 0.6, 0] };
-    calor.position.set(cc.forma.secciones[cc.forma.secciones.length - 1][0] - 0.1, 0.32, 0.55);
+    calor.position.set(cc.forma.secciones[1][0] - 0.1, 0.3, 0.35);
   }
 
   // Abolladuras: hunde la carrocería donde ha pegado cada golpe (se acumulan). Las caras que se

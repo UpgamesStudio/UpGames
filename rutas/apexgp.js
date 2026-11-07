@@ -675,7 +675,7 @@ function registrar(app, deps) {
             if (vivos.length < 2) { for (const x of vivos) emparejador.entrar(x.id, x.jugador, x.elo, x.region, x.sr, x.categoria); continue; }
             const [h, ...resto] = vivos;
             // carrera rápida: 22 coches (la IA completa la parrilla), 2 vueltas de clasificación y
-            // unos 8 minutos de carrera; el circuito depende de la categoría (Stock Car: óvalos)
+            // 10 vueltas de carrera (las que dan los UpCoins); el circuito depende de la categoría (Stock Car: óvalos)
             const categoria = h.categoria || 'f1', circ = A.circuitoRapida(categoria);
             const opciones = { tipo: 'abierta', max: A.MAX_JUGADORES, vueltas: A.vueltasRapida(circ, categoria), publica: false, rapida: true, nombre: 'Carrera rápida', clasifSeg: 0, clasifVueltas: A.CLASIF_VUELTAS,
                 categoria, emparejada: true, circuito: circ, clima: A.CIRCUITOS[circ]?.ovalo ? 'seco' : Math.random() < 0.2 ? 'variable' : 'seco' };
