@@ -477,6 +477,9 @@ function createTile(item, isFeatured=false) {
   const dl = item.descargasEfectivas||0;
   const lk = item.likesCount||0;
   const extraBadges = (item.serieInfo ? `<span class="tile-extra-badge tile-serie-badge"><ion-icon name="folder-open"></ion-icon>${item.serieInfo.partes} partes</span>` : '') + getTileExtras(item);
+  // Siempre hay una fila de etiquetas (vacía si no tiene): todas las tarjetas miden lo mismo
+  const insignias = extraBadges.replace(/<div class="tile-extras">([\s\S]*)<\/div>\s*$/, '$1').trim();
+  const extrasFila = insignias ? `<div class="tile-extras">${insignias}</div>` : '<div class="tile-extras tile-extras--vacia" aria-hidden="true"></div>';
 
   if(isFeatured) {
     const el = document.createElement('div');
@@ -548,7 +551,7 @@ function createTile(item, isFeatured=false) {
       </div>
       <div class="tile-info">
         <div class="tile-cat">${catLabel(cat)}${item.promocionado ? ' <span class="tile-promo" title="Su autor pagó para destacarla">Promocionado</span>' : ''}</div>
-        ${extraBadges}
+        ${extrasFila}
         <div class="tile-title">${escH(tituloT)}</div>
         <div class="tile-meta">
           <div class="tile-avatar">${avatarLetter(item.usuario)}</div>
@@ -773,7 +776,9 @@ function render(list, reset=true) {
     if(idx === 0 && conFilas) {
       const sh = document.createElement('div');
       sh.className = 'section-header';
-      sh.innerHTML = `<span class="section-title">Todo el catálogo</span><span class="section-count">${list.length} publicaciones</span>`;
+      sh.innerHTML = window.UGUX?.personalizado?.()
+        ? `<span class="section-title">✦ Para ti</span><span class="section-count">Nexus lo ordena según tus gustos</span>`
+        : `<span class="section-title">Todo el catálogo</span><span class="section-count">${list.length} publicaciones</span>`;
       frag.appendChild(sh);
     }
     if(idx > 0 && idx % 12 === 0) {
@@ -806,13 +811,15 @@ async function loadContent() {
     cachedUsers.forEach(u=>{ mapaUsuarios[u.usuario]=u.verificadoNivel||0; });
   }
 
+  // Nexus ordena el catálogo para este usuario (public/upgames-ranking.js vía upgames-ux.js)
+  const nexusOrdena = l => (window.UGUX?.ordenar ? window.UGUX.ordenar(l) : l);
   const cachedItems = cacheGet(CACHE_KEY_ITEMS);
   if(cachedItems && cachedItems.length) {
-    todosLosItems = cachedItems;
+    todosLosItems = nexusOrdena(cachedItems);
     // ← FIX: nunca mostrar videos en "Todos" — filtrar igual que la red
     filteredItems = activeCategory
-      ? cachedItems.filter(i=>i.category===activeCategory)
-      : cachedItems.filter(i=>i.category!=='Video');
+      ? todosLosItems.filter(i=>i.category===activeCategory)
+      : todosLosItems.filter(i=>i.category!=='Video');
     // Mostrar caché y cerrar preloader de inmediato — no esperar la red
     render(filteredItems);
     window.closePreloader && window.closePreloader();
@@ -831,12 +838,13 @@ async function loadContent() {
     await pUsers;   // las insignias de verificado necesitan el mapa antes de pintar
     cacheSet(CACHE_KEY_ITEMS, data);
 
-    const changed = data.length !== todosLosItems.length ||
-      data.some((it,i) => !todosLosItems[i] || it._id !== todosLosItems[i]._id || it.scoreRecomendacion !== todosLosItems[i].scoreRecomendacion);
-    todosLosItems = data;
+    const ordenados = nexusOrdena(data);
+    const changed = ordenados.length !== todosLosItems.length ||
+      ordenados.some((it,i) => !todosLosItems[i] || it._id !== todosLosItems[i]._id || it.descargasEfectivas !== todosLosItems[i].descargasEfectivas || it.likesCount !== todosLosItems[i].likesCount);
+    todosLosItems = ordenados;
     filteredItems = activeCategory
-      ? data.filter(i=>i.category===activeCategory)
-      : data.filter(i=>i.category!=='Video');
+      ? ordenados.filter(i=>i.category===activeCategory)
+      : ordenados.filter(i=>i.category!=='Video');
 
     window.closePreloader && window.closePreloader();
     if(changed || !cachedItems) render(filteredItems);
@@ -3018,8 +3026,8 @@ function pfOpenPostSheet(i) {
           ? `<span>⚡ <b>Revisión prioritaria activa</b>: va primera en la fila${item.prioridadReembolso ? ' (te devolvimos los UpCoins por la espera)' : ''}</span>`
           : `<span>⚡ <b>Revisión prioritaria</b>: pasa al frente de la fila por 🪙 <b data-ugx-precio="prioridad">30</b> UC. Si no se revisa en 24 h, te devolvemos los UpCoins.</span><button type="button" class="pf2-btn" onclick="UGX.prioridad('${item._id}', this)">Priorizar</button>`}</div>` : ''}
         ${!isPending && !isRejected ? `<div class="pf2-destacar" id="pf2-destacar">${item.destacadoHasta && new Date(item.destacadoHasta) > new Date()
-          ? `<span>🚀 Destacada hasta el ${new Date(item.destacadoHasta).toLocaleString('es-CO')}</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Extender 24 h</button>`
-          : `<span>🚀 <b>Destácala 24 h</b> arriba en el inicio por 🪙 50 UC</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Destacar</button>`}</div><div id="pf2-destacar-pago"></div>` : ''}
+          ? `<span>🚀 Promocionada${item.promoNivel ? ` (${({ estandar: 'Estándar', plus: 'Plus', max: 'Máx' })[item.promoNivel] || ''})` : ''} hasta el ${new Date(item.destacadoHasta).toLocaleString('es-CO')}</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Extender</button>`
+          : `<span>🚀 <b>Promociónala</b>: elige días y nivel desde 🪙 50 UC</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Promocionar</button>`}</div><div id="pf2-destacar-pago"></div>` : ''}
         <div class="pf2-sheet-actions">
           ${!isPending && !isRejected ? `<button type="button" class="pf2-btn pf2-btn-primary" onclick="pfVerPublicacion(${i})"><ion-icon name="open-outline"></ion-icon> Ver publicación</button>` : ''}
           <button type="button" class="pf2-btn" onclick="pfClosePostSheet();${isVideo ? `pfOpenEditVideoModal('${item._id}')` : `pfOpenEditModal('${item._id}')`}"><ion-icon name="create-outline"></ion-icon> Editar</button>
@@ -3031,11 +3039,37 @@ function pfOpenPostSheet(i) {
   document.body.style.overflow = 'hidden';
 }
 // Destacar una publicación propia con UpCoins (sale arriba marcada como "Promocionado")
+// Promocionar con UpCoins: el creador elige cuántos días y el nivel. Más UpCoins = más peso
+// de la promoción en el feed de Nexus (Estándar 30 %, Plus 40 %, Máx 50 %: public/upgames-ranking.js)
 async function pfDestacar(id) {
   const caja = document.getElementById('pf2-destacar-pago'); if (!caja) return;
-  caja.innerHTML = '<div class="eco-spin"><ion-icon name="sync-outline"></ion-icon></div>';
-  try { await ugPagosListo(); window.UGPagos.pagar(caja, { producto: `impulso:${id}`, alExito: () => { pfClosePostSheet(); ugContadorUC(); pfLoadHistorial(); } }); }
-  catch (_) { caja.innerHTML = ''; toast('No se pudo cargar el pago'); }
+  const R = window.UGRank;
+  if (!R) { toast('No se pudo cargar la promoción'); return; }
+  const item = (_pfMisItems || []).find(x => x._id === id);
+  const activo = item?.destacadoHasta && new Date(item.destacadoHasta) > new Date() ? (item.promoNivel || 'estandar') : null;
+  const ordenN = { estandar: 1, plus: 2, max: 3 };
+  let dias = 3, nivel = activo && ordenN[activo] > 1 ? activo : 'plus';
+  const pintar = () => {
+    const precio = R.precioPromo(dias, nivel), n = R.PROMO_NIVELES.find(x => x.id === nivel);
+    caja.innerHTML = `<div class="ugx-promo">
+      <div class="ugx-promo-h"><b>🚀 Promocionar</b><small>${activo ? 'Se suma al tiempo que ya tiene.' : 'Sale marcada como "Promocionado".'}</small></div>
+      <div class="ugx-promo-lbl">Duración</div>
+      <div class="ugx-promo-chips">${R.PROMO_DIAS.map(d => `<button type="button" class="${d === dias ? 'on' : ''}" data-dias="${d}">${d} día${d > 1 ? 's' : ''}</button>`).join('')}</div>
+      <div class="ugx-promo-lbl">Nivel · cuánto pesa la promoción en el feed de Nexus</div>
+      <div class="ugx-promo-niv">${R.PROMO_NIVELES.map(x => { const bloq = activo && ordenN[x.id] < ordenN[activo];
+        return `<button type="button" class="${x.id === nivel ? 'on' : ''}" data-nivel="${x.id}" ${bloq ? 'disabled title="Ya tienes un nivel mayor activo"' : ''}><b>${x.nombre}</b><span>${Math.round(x.peso * 100)} %</span><small>🪙 ${fmt(R.precioPromo(dias, x.id))}</small></button>`; }).join('')}</div>
+      <p class="ugx-promo-nota">La otra parte de la posición la gana tu publicación con sus reseñas, guardados, descargas y seguidores: una buena publicación promocionada rinde mucho más.</p>
+      <button type="button" class="pf2-btn pf2-btn-primary ugx-promo-ir">Continuar · 🪙 ${fmt(precio)} UC · ${dias} día${dias > 1 ? 's' : ''} ${n.nombre}</button>
+    </div>`;
+    caja.querySelectorAll('[data-dias]').forEach(b => b.onclick = () => { dias = +b.dataset.dias; pintar(); });
+    caja.querySelectorAll('[data-nivel]').forEach(b => b.onclick = () => { if (!b.disabled) { nivel = b.dataset.nivel; pintar(); } });
+    caja.querySelector('.ugx-promo-ir').onclick = async () => {
+      caja.innerHTML = '<div class="eco-spin"><ion-icon name="sync-outline"></ion-icon></div>';
+      try { await ugPagosListo(); window.UGPagos.pagar(caja, { producto: `impulso:${id}:${dias}:${nivel}`, alExito: () => { pfClosePostSheet(); ugContadorUC(); pfLoadHistorial(); } }); }
+      catch (_) { caja.innerHTML = ''; toast('No se pudo cargar el pago'); }
+    };
+  };
+  pintar();
 }
 function pfClosePostSheet() {
   const ov = document.getElementById('pf2-sheet');
@@ -6053,7 +6087,7 @@ let _ugPagosJs = null;
 const ugPagosListo = () => (_ugPagosJs = _ugPagosJs || new Promise((ok, ko) => {
   if (window.UGPagos) return ok();
   const s = document.createElement('script');
-  s.src = './upgames-pagos.js?v=20261028c'; s.onload = ok; s.onerror = () => { _ugPagosJs = null; ko(); };
+  s.src = './upgames-pagos.js?v=20261108a'; s.onload = ok; s.onerror = () => { _ugPagosJs = null; ko(); };
   document.head.appendChild(s);
 }));
 function ecoAbrirTienda() {

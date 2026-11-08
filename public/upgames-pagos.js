@@ -118,7 +118,10 @@
     if (t === 'plan') return c.planes.find(x => x.id === id).monedas;
     if (t === 'acceso') return c.acceso.monedas;
     if (t === 'ia') return c.ia?.find(x => x.id === id)?.monedas ?? null;
-    if (t === 'impulso') return c.impulso?.monedas ?? null;
+    if (t === 'impulso') {   // impulso:<id> (1 día Estándar) o impulso:<id>:<días>:<nivel>
+      const [, , dias, nivel] = producto.split(':');
+      return dias ? (c.impulso?.precios?.[nivel]?.[dias] ?? null) : (c.impulso?.monedas ?? null);
+    }
     return null;
   }
   const soloUC = producto => /^(ia|impulso):/.test(producto);
@@ -129,7 +132,7 @@
     const [ic, titulo, sub] = t === 'plan' ? ['⭐', '¡Has desbloqueado Premium!', `Activo hasta el ${new Date(d.hasta).toLocaleDateString('es-CO')}: sin anuncios, NEXUS ilimitado y más visibilidad.${d.monedasRegalo ? ` + 🪙 ${fmt(d.monedasRegalo)} UpCoins de regalo.` : ''}`]
       : t === 'monedas' ? ['🪙', `¡Has adquirido ${fmt(d.acreditadas || 0)} UpCoins!`, `${d.bono ? `Incluye ${fmt(d.bono)} extra por ser Premium. ` : ''}Úsalos en lives, NEXUS IA, Premium o para destacar tus publicaciones.`]
       : t === 'ia' ? ['🧠', `+${d.mensajes} mensajes de NEXUS`, 'Ya puedes seguir conversando.']
-      : t === 'impulso' ? ['🚀', '¡Publicación destacada!', `Aparece arriba en el inicio hasta el ${new Date(d.destacadoHasta).toLocaleString('es-CO')}.`]
+      : t === 'impulso' ? ['🚀', '¡Publicación promocionada!', `Nexus la mostrará con más fuerza en el feed hasta el ${new Date(d.destacadoHasta).toLocaleString('es-CO')}.`]
       : ['⚡', '¡Acceso directo desbloqueado!', 'El enlace se abre al instante, sin espera ni anuncios.'];
     const o = document.createElement('div');
     o.className = 'ugp-fiesta'; o.setAttribute('role', 'dialog');
@@ -168,7 +171,11 @@
     const recibes = plan ? `<b>${esc(plan.nombre)}</b> durante ${plan.dias} días: sin anuncios y enlaces directos, NEXUS IA ilimitado, más visibilidad para tus publicaciones, +10% de UpCoins en cada paquete e insignia ⭐ en los lives. <b>Pagando con dinero</b> recibes además 🪙 ${fmt(plan.monedasRegalo || 0)} UpCoins de regalo. Los días se suman si ya eres Premium.`
       : paq ? `<b>🪙 ${fmt(paq.monedas)} UpCoins</b>${est?.plan ? ` + ${fmt(paq.bonoPase ?? Math.floor(paq.monedas * (c.bonoPaquete || 0.1)))} extra por ser Premium` : ''}, para regalos en lives, NEXUS IA, Premium, accesos directos o destacar tus publicaciones. No vencen.`
       : pIA ? `<b>${pIA.mensajes} mensajes de NEXUS IA</b> para usar cuando se acaben tus mensajes gratis del día. No vencen.`
-      : producto.startsWith('impulso:') ? `<b>Destacar tu publicación ${c.impulso.horas} horas</b>: aparece arriba en el inicio, marcada como "Promocionado".`
+      : producto.startsWith('impulso:') ? (() => {
+          const [, , dias = '1', nivel = 'estandar'] = producto.split(':');
+          const n = c.impulso?.niveles?.find(x => x.id === nivel);
+          return `<b>Promocionar tu publicación ${dias} día${dias === '1' ? '' : 's'} · nivel ${esc(n?.nombre || 'Estándar')}</b>: la promoción pesa el ${Math.round((n?.peso || 0.3) * 100)} % de su posición en el feed de Nexus y sale marcada como "Promocionado".`;
+        })()
       : `<b>Acceso directo</b> a esta publicación: se abre al instante, sin espera ni anuncios, y queda desbloqueada en tu cuenta.`;
     const resumen = `<div class="ugp-resumen"><div>${recibes}</div><small>Pago único · <b>sin renovación automática</b> · retracto en 5 días hábiles si no lo has usado · <a href="./terminos_condiciones.html#pagos" target="_blank" rel="noopener">Términos</a></small></div>`;
     const usd = conDinero ? usdDe(c, producto) : 0;

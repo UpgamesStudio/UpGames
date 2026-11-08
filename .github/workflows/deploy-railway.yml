@@ -23,6 +23,7 @@ on:
       - 'nixpacks.toml'
       - 'railway.toml'
       - 'public/pb2-touch.js'
+      - 'public/upgames-ranking.js'
       - 'public/pb2-touch.css'
       - '.github/workflows/deploy-railway.yml'
   workflow_dispatch:

@@ -126,6 +126,14 @@ function registrar(app, deps) {
         res.json({ ok: true, historial: h.map(m => ({ rol: m.rol, texto: m.texto, items: m.items || [], acciones: m.acciones || [], fecha: m.fecha })) });
     });
 
+    // Gustos que Nexus aprendió del usuario (categorías): la web los mezcla con lo que ve en
+    // el teléfono para ordenar su feed (public/upgames-ranking.js)
+    app.get('/nexus/gustos', verificarToken, async (req, res) => {
+        const g = await memoria.gustos(req.usuario).catch(() => null);
+        res.set('Cache-Control', 'private, max-age=300');
+        res.json({ ok: true, categorias: Object.fromEntries((g?.categorias || []).map(c => [String(c.nombre).toLowerCase(), c.peso])) });
+    });
+
     app.delete('/nexus/historial', verificarToken, async (req, res) => {
         await memoria.borrarHistorial(req.usuario).catch(() => {});
         res.json({ ok: true });

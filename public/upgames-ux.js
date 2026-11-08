@@ -41,6 +41,39 @@
     items.forEach(it => { const t = createTile(it, false); t.setAttribute('role', 'listitem'); track.appendChild(t); });
     return sec;
   }
+  // ── Nexus ordena el feed para cada usuario (fórmula en upgames-ranking.js) ──
+  // Elecciones del usuario en este teléfono: abrió (v), descargó (d) o guardó (f).
+  const ELEC = 'ug_elecciones';
+  const leerElec = () => { try { const e = JSON.parse(localStorage.getItem(ELEC) || '[]'); return Array.isArray(e) ? e : []; } catch (_) { return []; } };
+  function elegir(it, k) {
+    if (!it || !it._id) return;
+    const e = { id: it._id, cat: String(it.category || '').toLowerCase(), u: String(it.usuario || '').toLowerCase(), k, t: Date.now() };
+    const g = window.UGRank?.juegoDe(it); if (g) e.g = g;
+    try { localStorage.setItem(ELEC, JSON.stringify([...leerElec(), e].slice(-300))); } catch (_) {}
+  }
+  const buscarItem = id => (typeof currentItem !== 'undefined' && currentItem?._id === id) ? currentItem
+    : (typeof todosLosItems !== 'undefined' ? todosLosItems.find(i => i._id === id) : null);
+  // Gustos aprendidos por Nexus en el servidor (con cuenta): se piden una vez por sesión
+  let gustosSrv = null;
+  try { gustosSrv = JSON.parse(sessionStorage.getItem('ug_gustos_srv') || 'null'); } catch (_) {}
+  (async () => {
+    const t = ls('token'); if (!t || gustosSrv) return;
+    try {
+      const r = await fetch(`${API}/nexus/gustos`, { headers: { Authorization: `Bearer ${t}` } });
+      const d = await r.json();
+      if (d?.ok) { gustosSrv = d.categorias || {}; sessionStorage.setItem('ug_gustos_srv', JSON.stringify(gustosSrv)); }
+    } catch (_) {}
+  })();
+  let perfilActual = null;
+  /** Ordena el catálogo con la fórmula de Nexus y el perfil de este usuario. */
+  function ordenar(lista) {
+    if (!window.UGRank || !Array.isArray(lista) || lista.length < 2) return lista;
+    let desc; try { desc = new Set(JSON.parse(localStorage.getItem('ug_descargadas') || '[]')); } catch (_) { desc = new Set(); }
+    perfilActual = window.UGRank.perfil(leerElec(), gustosSrv);
+    try { return window.UGRank.ordenar(lista, { perfil: perfilActual, yaDescargadas: desc }); } catch (_) { return lista; }
+  }
+  const personalizado = () => !!perfilActual && !perfilActual.vacio;
+
   // ── Historial: "Continúa donde lo dejaste" (solo en este teléfono, sin cuenta) ──
   const HIST = 'ug_historial';
   const leerHist = () => { try { const h = JSON.parse(localStorage.getItem(HIST) || '[]'); return Array.isArray(h) ? h : []; } catch (_) { return []; } };
@@ -54,12 +87,7 @@
     const h = [min, ...leerHist().filter(x => x._id !== it._id)].slice(0, 24);
     try { localStorage.setItem(HIST, JSON.stringify(h)); } catch (_) {}
   }
-  addEventListener('ug:detalle', e => {
-    const id = e.detail;
-    const it = (typeof currentItem !== 'undefined' && currentItem?._id === id) ? currentItem
-      : (typeof todosLosItems !== 'undefined' ? todosLosItems.find(i => i._id === id) : null);
-    guardarEnHistorial(it);
-  });
+  addEventListener('ug:detalle', e => { const it = buscarItem(e.detail); guardarEnHistorial(it); elegir(it, 'v'); });
   function filaHistorial() {
     const h = leerHist(); if (!h.length) return null;
     const frescos = typeof todosLosItems !== 'undefined' ? new Map(todosLosItems.map(i => [i._id, i])) : new Map();
@@ -191,11 +219,30 @@
     if (b) b.onclick = () => { if (typeof closeDetail === 'function') closeDetail(); setTimeout(() => typeof openDetail === 'function' && openDetail(video), 320); };
   }
 
+  // Descargas y favoritos también son elecciones (se envuelven las funciones de script.js)
+  function engancharElecciones() {
+    if (typeof window.marcarDescargada === 'function' && !window.marcarDescargada._ug) {
+      const orig = window.marcarDescargada;
+      window.marcarDescargada = function (id) { elegir(buscarItem(id), 'd'); return orig.apply(this, arguments); };
+      window.marcarDescargada._ug = true;
+    }
+    if (typeof window.fav === 'function' && !window.fav._ug) {
+      const orig = window.fav;
+      window.fav = function (id) {
+        let antes; try { antes = JSON.parse(localStorage.getItem('favoritos') || '[]').includes(id); } catch (_) { antes = false; }
+        if (!antes) elegir(buscarItem(id), 'f');
+        return orig.apply(this, arguments);
+      };
+      window.fav._ug = true;
+    }
+  }
+
   function iniciar() {
     vigilarCabecera();
+    engancharElecciones();
     document.querySelectorAll('.ugx-guia-form').forEach(pintarFormulario);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
-  window.UGUX = { filas, guiaDetalle, leerGuia, ponerGuia, limpiarGuia };
+  window.UGUX = { filas, guiaDetalle, leerGuia, ponerGuia, limpiarGuia, ordenar, personalizado };
 })();

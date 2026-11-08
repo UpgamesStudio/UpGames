@@ -75,6 +75,7 @@ const autoInfo        = require('./modulos/autoInfo');
 const memCache        = require('./modulos/cache');
 const Limites         = require('./modulos/limites');
 const StatsItems      = require('./modulos/statsItems');
+const Ranking         = require('./public/upgames-ranking');   // misma fórmula en la web
 const Referidos       = require('./modulos/referidos');
 const Seo             = require('./modulos/seo');
 const ContenidoLegal  = require('./modulos/contenidoLegal');
@@ -567,6 +568,8 @@ JuegoSchema.add({ imageOrigen: { type: String, default: '' }, portadaMigrada: { 
 // Visibilidad: impulsoHasta = el autor tiene Premium (sube en el inicio); destacadoHasta = lo
 // destacó pagando UpCoins (aparece arriba marcado como "Promocionado")
 JuegoSchema.add({ impulsoHasta: { type: Date, default: null }, destacadoHasta: { type: Date, default: null } });
+// Nivel de la promoción pagada (estandar | plus | max): más UpCoins, más peso en el feed (upgames-ranking.js)
+JuegoSchema.add({ promoNivel: { type: String, default: null } });
 // Revisión prioritaria pagada con UpCoins (rutas/extrasUC.js): va primero en la cola; si no se revisa en 24 h se devuelve
 // Revisión diaria de enlaces: cuándo se comprobó y desde cuándo parece caído
 JuegoSchema.add({ enlaceRevisado: { type: Date, default: null }, enlaceMuertoDesde: { type: Date, default: null } });
@@ -2094,22 +2097,33 @@ app.get("/items", async (req, res) => {
         const catalogo = await cacheado(`items:lista:${categoria}`, 30, async () => {
             const filtro = { status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } };
             if (categoria && categoria !== 'Todo') filtro.category = categoria;
-            // Orden: destacadas con UpCoins primero (marcadas "Promocionado"), luego el score,
-            // con +50 % para los autores Premium (más visibilidad mientras dure su plan)
-            const items = await Juego.aggregate([
+            // Orden: fórmula de Nexus (public/upgames-ranking.js): promoción con UpCoins según el
+            // nivel pagado + reseñas, guardados, seguidores del creador, descargas de la semana y
+            // novedad. La web luego lo ajusta a los gustos de cada usuario con la MISMA fórmula.
+            // Candidatas: las promocionadas y las 400 más relevantes/recientes; se devuelven 100.
+            const candidatas = await Juego.aggregate([
                 { $match: filtro },
                 { $addFields: {
                     promocionado: { $gt: [{ $ifNull: ['$destacadoHasta', new Date(0)] }, '$$NOW'] },
-                    _orden: { $multiply: [{ $ifNull: ['$scoreRecomendacion', 0] }, { $cond: [{ $gt: [{ $ifNull: ['$impulsoHasta', new Date(0)] }, '$$NOW'] }, 1.5, 1] }] },
+                    impulsado: { $gt: [{ $ifNull: ['$impulsoHasta', new Date(0)] }, '$$NOW'] },
                 } },
-                { $sort: { promocionado: -1, _orden: -1, createdAt: -1 } },
-                { $limit: 100 },
+                { $sort: { promocionado: -1, scoreRecomendacion: -1, createdAt: -1 } },
+                { $limit: 400 },
+                { $lookup: { from: 'usuarios', localField: 'usuario', foreignField: 'usuario', as: '_autor',
+                    pipeline: [{ $project: { _id: 0, n: { $size: { $ifNull: ['$listaSeguidores', []] } } } }] } },
+                { $addFields: { seguidoresAutor: { $ifNull: [{ $arrayElemAt: ['$_autor.n', 0] }, 0] } } },
                 { $project: { _id: 1, title: 1, description: 1, image: 1, images: 1, link: 1, category: 1, usuario: 1, resenas: 1, reportes: 1, linkStatus: 1, descargasEfectivas: 1, vistas: 1, likesCount: 1, extraData: 1, videoType: 1, featuredItemId: 1, scoreRecomendacion: 1, serie: 1, createdAt: 1, updatedAt: 1, promocionado: 1, tutorialId: 1,
-                    tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] } } },
+                    tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] },
+                    impulsado: 1, seguidoresAutor: 1, promoNivel: { $cond: ['$promocionado', { $ifNull: ['$promoNivel', 'estandar'] }, '$$REMOVE'] } } },
             ]);
             // Descargas de los últimos 7 días (stats_items): alimenta "Más descargados esta semana"
             const semana = await StatsItems.descargasRecientes(7);
-            items.forEach(i => { i.descargasSemana = semana[String(i._id)] || 0; });
+            candidatas.forEach(i => {
+                i.descargasSemana = semana[String(i._id)] || 0;
+                // Juego de la publicación (también en las antiguas sin detección guardada): gustos y recurrencia
+                i.juego = i.extraData?.detectedGame?.gameName || gameDetector.detectGame(i.title, i.description)?.gameName || i.extraData?.['juego-base'] || undefined;
+            });
+            const items = Ranking.ordenar(candidatas).slice(0, 100);
             // Series por partes: solo la primera parte aparece en el catálogo
             return series.colapsar(items, Juego, { status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } });
         });
@@ -2129,7 +2143,7 @@ app.get("/items/user/:usuario", async (req, res) => {
         if (t && t.length > 20) { try { yo = jwt.verify(t, JWT_SECRET).usuario; } catch (_) {} }
         const propio = yo && yo === String(req.params.usuario).toLowerCase();
         const filtro = propio ? { usuario: req.params.usuario, status: { $ne: 'privado' } } : { usuario: req.params.usuario, status: 'aprobado' };
-        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie guiaInstalacion tutorialId motivoRechazo nexusMentor destacadoHasta prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
+        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie guiaInstalacion tutorialId motivoRechazo nexusMentor destacadoHasta promoNivel prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
         res.json(propio ? aportes : await series.colapsar(aportes, Juego, { usuario: req.params.usuario, status: 'aprobado' }));
     } catch (error) {
         res.status(500).json([]);

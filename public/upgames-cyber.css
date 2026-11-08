@@ -313,6 +313,8 @@ html[data-tema="cyber"] .pf2-btn, html[data-tema="cyber"] .btn-mensaje, html[dat
   background: rgba(57,255,136,.05) !important; border: 1px solid rgba(57,255,136,.3) !important;
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
+/* El botón principal conserva su fondo verde (antes quedaba texto oscuro sobre fondo oscuro) */
+html[data-tema="cyber"] .pf2-btn.pf2-btn-primary { background: var(--g) !important; border-color: var(--g) !important; color: #02140A !important; }
 html[data-tema="cyber"] .pf2-btn-live { color: var(--cy) !important; border-color: rgba(255,255,255,.5) !important; }
 html[data-tema="cyber"] .pf2-create { border-radius: 0 !important; border-color: rgba(57,255,136,.45) !important; background: rgba(57,255,136,.04) !important; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
 html[data-tema="cyber"] .pf2-create-ico { border-radius: 0 !important; background: var(--cb-y) !important; color: #02140A !important; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
