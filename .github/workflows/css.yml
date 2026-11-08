@@ -1,0 +1,42 @@
+# Regenera public/upgames-app.css (scripts/unir-css.js) cuando cambian las hojas de
+# estilo de la biblioteca. Así se siguen editando los archivos de siempre y la página
+# carga una sola hoja minificada, sin olvidarse de reconstruirla.
+name: CSS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/biblioteca.css'
+      - 'public/upgames-glass.css'
+      - 'public/upgames-estilo.css'
+      - 'public/upgames-cyber.css'
+      - 'public/upgames-videos.css'
+      - 'public/upgames-ux.css'
+      - 'scripts/unir-css.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: css
+  cancel-in-progress: true
+
+jobs:
+  unir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/unir-css.js
+      - name: Publicar si cambió
+        run: |
+          git add public/upgames-app.css public/biblioteca.html
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git config user.name "upgames-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "CSS: paquete de la biblioteca regenerado"
+          git push

@@ -31,8 +31,8 @@
     if (/android/i.test(`${ex.plataforma || ''} ${ex.so || ''}`)) return true;
     return /\b(android|apk|obb|winlator|gamehub|m[óo]vil|mobile)\b/i.test(`${i.title} ${(i.tags || []).join(' ')}`);
   };
-  function fila(titulo, sub, items, clase) {
-    if (typeof createTile !== 'function' || items.length < 3) return null;
+  function fila(titulo, sub, items, clase, min = 3) {
+    if (typeof createTile !== 'function' || items.length < min) return null;
     const sec = document.createElement('section');
     sec.className = 'ugx-fila' + (clase ? ' ' + clase : '');
     sec.setAttribute('aria-label', titulo);
@@ -41,10 +41,56 @@
     items.forEach(it => { const t = createTile(it, false); t.setAttribute('role', 'listitem'); track.appendChild(t); });
     return sec;
   }
+  // ── Historial: "Continúa donde lo dejaste" (solo en este teléfono, sin cuenta) ──
+  const HIST = 'ug_historial';
+  const leerHist = () => { try { const h = JSON.parse(localStorage.getItem(HIST) || '[]'); return Array.isArray(h) ? h : []; } catch (_) { return []; } };
+  function guardarEnHistorial(it) {
+    if (!it || !it._id) return;
+    const ex = it.extraData || {};
+    const min = { _id: it._id, title: it.title, image: it.image, category: it.category, usuario: it.usuario, linkStatus: it.linkStatus,
+      descargasEfectivas: it.descargasEfectivas || 0, likesCount: it.likesCount || 0, vistas: it.vistas || 0, createdAt: it.createdAt, updatedAt: it.updatedAt,
+      videoType: it.videoType, link: it.category === 'Video' ? it.link : undefined,
+      extraData: { plataforma: ex.plataforma, so: ex.so, size: ex.size, version: ex.version, 'juego-base': ex['juego-base'], duracion: ex.duracion }, t: Date.now() };
+    const h = [min, ...leerHist().filter(x => x._id !== it._id)].slice(0, 24);
+    try { localStorage.setItem(HIST, JSON.stringify(h)); } catch (_) {}
+  }
+  addEventListener('ug:detalle', e => {
+    const id = e.detail;
+    const it = (typeof currentItem !== 'undefined' && currentItem?._id === id) ? currentItem
+      : (typeof todosLosItems !== 'undefined' ? todosLosItems.find(i => i._id === id) : null);
+    guardarEnHistorial(it);
+  });
+  function filaHistorial() {
+    const h = leerHist(); if (!h.length) return null;
+    const frescos = typeof todosLosItems !== 'undefined' ? new Map(todosLosItems.map(i => [i._id, i])) : new Map();
+    let desc; try { desc = new Set(JSON.parse(localStorage.getItem('ug_descargadas') || '[]')); } catch (_) { desc = new Set(); }
+    const items = h.map(x => frescos.get(x._id) || x).filter(i => i.linkStatus !== 'caido').slice(0, 12);
+    const sec = fila('⏯ Continúa donde lo dejaste', null, items, 'ugx-fila--hist', 1);
+    if (!sec) return null;
+    sec.querySelectorAll('.game-tile').forEach(t => { if (desc.has(t.dataset.id)) t.classList.add('ugx-descargado'); });
+    const borrar = document.createElement('button');
+    borrar.type = 'button'; borrar.className = 'ugx-fila-borrar'; borrar.textContent = 'Borrar';
+    borrar.setAttribute('aria-label', 'Borrar historial de este teléfono');
+    borrar.onclick = () => { try { localStorage.removeItem(HIST); } catch (_) {} sec.remove(); };
+    sec.querySelector('.ugx-fila-h').appendChild(borrar);
+    return sec;
+  }
+
+  // Al cerrar una ficha, la fila del historial se actualiza sin repintar el catálogo
+  addEventListener('ug:detalle-cerrado', () => {
+    const out = document.getElementById('output'); if (!out || !out.querySelector('.ugx-fila')) return;
+    const nueva = filaHistorial(); if (!nueva) return;
+    const vieja = out.querySelector('.ugx-fila--hist');
+    if (vieja) vieja.replaceWith(nueva); else out.querySelector('.ugx-fila')?.before(nueva);
+    window.UGX?.estilizarTiles?.(nueva);
+  });
+
   /** Agrega las filas a `frag` (antes del catálogo). Devuelve cuántas se agregaron. */
   function filas(frag, lista) {
+    const hist = filaHistorial();
+    if (hist) frag.appendChild(hist);
     const base = lista.filter(i => i.category !== 'Video');
-    if (base.length < 8) return 0;
+    if (base.length < 8) return hist ? 1 : 0;
     const top = [...base].filter(i => (i.descargasSemana || 0) > 0).sort((a, b) => b.descargasSemana - a.descargasSemana).slice(0, 12);
     const hayTopSemana = top.length >= 3;
     const masDesc = hayTopSemana ? top : [...base].filter(i => i.descargasEfectivas > 0).sort((a, b) => b.descargasEfectivas - a.descargasEfectivas).slice(0, 12);
@@ -57,8 +103,8 @@
       fila('📱 Para Android', 'Juegos, mods y apps para tu móvil', android),
     ].filter(Boolean);
     secs.forEach(s => frag.appendChild(s));
-    if (secs.length) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
-    return secs.length;
+    if (secs.length || hist) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
+    return secs.length + (hist ? 1 : 0);
   }
 
   // ── Guía de instalación: formulario (publicar y editar) ──

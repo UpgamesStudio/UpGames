@@ -89,3 +89,9 @@ html[data-tema="cyber"] .ugx-guia summary b { font-family: var(--ff-disp); text-
 .ugx-fila-h h2 { white-space: nowrap; flex-shrink: 0; }
 html[data-tema="cyber"] .ugx-fila-h h2 { font-size: .82rem !important; line-height: 1.2; }
 @media (max-width: 420px) { .ugx-fila-h small { display: none; } }
+
+/* ── Historial: "Continúa donde lo dejaste" ── */
+.ugx-fila-borrar { margin-left: auto; flex-shrink: 0; border: 0; background: none; color: var(--txt3); font: inherit; font-size: .72rem; cursor: pointer; padding: 4px 2px; }
+.ugx-fila-borrar:hover { color: var(--txt); }
+.ugx-descargado .thumb-wrap::after { content: '✓ Descargado'; position: absolute; left: 6px; bottom: 6px; z-index: 3; padding: 2px 7px; border-radius: 6px;
+  background: rgba(7,8,12,.82); color: var(--g, #32D583); font-size: .6rem; font-weight: 800; letter-spacing: .03em; }

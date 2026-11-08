@@ -344,4 +344,41 @@ function enrichGameData(doc) {
   return doc;
 }
 
-module.exports = { detectGame, enrichGameData, GAMES_DATABASE };
+// ── Búsqueda tolerante a errores: "gta san andres", "resident evl 4", "god of wr" ──
+function distancia(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length; if (!m || !n) return m || n;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+const KW_APROX = Object.entries(GAMES_DATABASE).flatMap(([key, data]) =>
+  data.keywords.map(kw => ({ key, data, kw: normalizar(kw), palabras: normalizar(kw).split(' ').length })).filter(x => x.kw.replace(/ /g, '').length >= 4));
+
+/** Juego al que se refiere una búsqueda (exacto o con 1–2 letras de diferencia). */
+function juegoDeBusqueda(q) {
+  const exacto = detectGame(q, '');
+  if (exacto) return exacto;
+  const pal = normalizar(q).split(' ').filter(Boolean);
+  if (!pal.length) return null;
+  let mejor = null;
+  for (const x of KW_APROX) {
+    const tope = x.kw.length >= 10 ? 2 : 1;
+    for (const k of [x.palabras - 1, x.palabras, x.palabras + 1]) {
+      if (k < 1 || k > pal.length) continue;
+      for (let i = 0; i + k <= pal.length; i++) {
+        const d = distancia(pal.slice(i, i + k).join(' '), x.kw);
+        if (d <= tope && (!mejor || d < mejor.d || (d === mejor.d && x.kw.length > mejor.x.kw.length))) mejor = { d, x };
+      }
+    }
+  }
+  if (!mejor) return null;
+  const { key, data } = mejor.x;
+  return { gameName: data.name, gameKey: key, platform: data.platform, purchaseLink: data.purchaseLink };
+}
+
+module.exports = { detectGame, enrichGameData, GAMES_DATABASE, juegoDeBusqueda, normalizar, distancia };

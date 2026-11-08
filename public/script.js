@@ -470,7 +470,7 @@ function createTile(item, isFeatured=false) {
   // Portadas al tamaño de la tarjeta (antes se bajaba la imagen original completa)
   const media = isVid
     ? `<video data-src="${escH(ugVideoSrc(imgSrc))}" muted loop playsinline preload="none" class="lazy-vid"></video>`
-    : `<img src="${escH(cldOpt(imgSrc, CLD_TILE_FEED))}" alt="${escH(tituloT)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=window.UG_PH">`;
+    : `<img src="${escH(cldOpt(imgSrc, CLD_TILE_FEED))}"${cldSrcset(imgSrc, UG_SS_TILE, UG_SIZES_TILE)} alt="${escH(tituloT)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.removeAttribute('srcset');this.src=window.UG_PH">`;
 
   const favIds = LS.getJSON('favoritos', []);
   const isFav = favIds.includes(item._id);
@@ -484,7 +484,7 @@ function createTile(item, isFeatured=false) {
     el.dataset.id=item._id;
     const ftMedia = isVid
       ? `<video data-src="${escH(ugVideoSrc(imgSrc))}" muted loop playsinline preload="none" class="lazy-vid"></video>`
-      : `<img src="${escH(cldOpt(imgSrc, CLD_DESTACADA))}" alt="${escH(tituloT)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=window.UG_PH">`;
+      : `<img src="${escH(cldOpt(imgSrc, CLD_DESTACADA))}"${cldSrcset(imgSrc, UG_SS_GRANDE, '100vw')} alt="${escH(tituloT)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.removeAttribute('srcset');this.src=window.UG_PH">`;
     el.innerHTML=`
       <div class="thumb-wrap">${ftMedia}
         ${isVideo?'<div class="tile-video-overlay"><ion-icon name="play-circle"></ion-icon></div>':''}
@@ -630,7 +630,7 @@ function initHeroCarousel(items, isVideoMode) {
       : '';
 
     slide.innerHTML = `
-      <img src="${escH(cldOpt(mediaSrc, CLD_DESTACADA))}" alt="${escH(item.title)}" loading="${i===0?'eager':'lazy'}" decoding="async"
+      <img src="${escH(cldOpt(mediaSrc, CLD_DESTACADA))}"${cldSrcset(mediaSrc, UG_SS_GRANDE, '(min-width: 1100px) 1100px, 100vw')} alt="${escH(item.title)}" loading="${i===0?'eager':'lazy'}"${i===0?' fetchpriority="high"':''} decoding="async"
            onerror="this.onerror=null;this.src=window.UG_PH">
       ${isYT || isMp4 || isVideoMode ? '<div class="yt-play-badge large"><ion-icon name="play-circle"></ion-icon></div>' : ''}
       <div class="hero-info">
@@ -896,9 +896,15 @@ document.getElementById('buscador').addEventListener('input', function(e) {
         (i.tags&&i.tags.some(t=>t.toLowerCase().includes(q)))
       );
       // Frase sin coincidencias literales: Nexus la está interpretando, no mostrar "Sin resultados" mientras tanto
-      if (!res.length && q.split(/\s+/).length >= 3) return;
+      // Sin coincidencias en lo cargado: se espera al servidor antes de decir "Sin resultados"
+      // (con 3+ palabras Nexus la interpreta y tampoco se muestra el vacío)
+      if (!res.length) { ugBuscarServidor(q, q.split(/\s+/).length < 3); return; }
       filteredItems = res;
+      render(filteredItems);
+      ugBuscarServidor(q);   // todo el catálogo, tolerante a errores ("gta san andres" → GTA SA)
+      return;
     } else {
+      _busqSeq++;   // cancela una búsqueda en el servidor que aún no respondió
       filteredItems = activeCategory
         ? todosLosItems.filter(i=>i.category===activeCategory)
         : todosLosItems.filter(i=>i.category!=='Video');
@@ -906,6 +912,30 @@ document.getElementById('buscador').addEventListener('input', function(e) {
     render(filteredItems);
   }, 280);
 });
+
+// Búsqueda en el servidor: todo el catálogo (no solo las 100 publicaciones de la portada),
+// sin importar tildes, letras de más/menos o cambiadas, y reconociendo juegos ("gta sa").
+let _busqSeq = 0;
+async function ugBuscarServidor(q, vacioSiNada = false) {
+  if (q.length < 2) return;
+  const n = ++_busqSeq;
+  try {
+    const cat = activeCategory ? `&categoria=${encodeURIComponent(activeCategory)}` : '';
+    const r = await fetchTimeout(`${API_URL}/search/query?q=${encodeURIComponent(q)}&limit=48${cat}`, 8000);
+    const d = await r.json();
+    const actual = document.getElementById('buscador').value.toLowerCase().trim();
+    if (n !== _busqSeq || actual !== q || !d?.success || window.UG_NEXUS_Q === q) return;
+    const srv = Array.isArray(d.items) ? d.items : [];
+    if (!srv.length) { if (vacioSiNada) { filteredItems = []; render([]); } return; }   // sin resultados: lo local (o Nexus)
+    // Orden del servidor (relevancia), completando con los datos ya cargados de cada publicación
+    const porId = new Map(todosLosItems.map(i => [i._id, i]));
+    const vistos = new Set();
+    const lista = srv.map(i => { vistos.add(i._id); return porId.get(i._id) ? { ...i, ...porId.get(i._id) } : i; });
+    filteredItems.forEach(i => { if (!vistos.has(i._id)) lista.push(i); });
+    filteredItems = lista;
+    render(filteredItems);
+  } catch (_) { if (vacioSiNada && n === _busqSeq) { filteredItems = []; render([]); } }
+}
 
 // ── CATEGORY CHIPS ────────────────────────────────────────
 document.querySelectorAll('.chip').forEach(c=>{
@@ -982,6 +1012,9 @@ function registrarVista(item) {
 
 // ── OPEN DETAIL SHEET ─────────────────────────────────────
 // ── SEO por publicación: título, descripción, imagen y datos estructurados ──
+// Las páginas estáticas /p/ se generan cada hora y al aprobar una publicación (ver sitemap.yml):
+// pasadas 3 h ya existen seguro.
+const UG_PAGINA_LISTA_MS = 3 * 3600e3;
 const UG_SEO_BASE = { title: document.title, url: 'https://upgames.games/public/biblioteca.html' };
 function ugMeta(attr, key, val) {
   let m = document.head.querySelector(`meta[${attr}="${key}"]`);
@@ -999,10 +1032,10 @@ function ugSeo(item) {
     }
     // Si ya tiene su página estática (public/p/, se genera a diario) esa es la canónica: evita contenido duplicado
     const slug = String(item.title || 'publicacion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '') || 'publicacion';
-    const estatica = item.status === 'aprobado' && item.createdAt && Date.now() - new Date(item.createdAt) > 36 * 3600e3;
+    const estatica = (!item.status || item.status === 'aprobado') && item.createdAt && Date.now() - new Date(item.createdAt) > UG_PAGINA_LISTA_MS;
     const url = estatica ? `https://upgames.games/public/p/${slug}-${item._id}.html` : `${UG_SEO_BASE.url}?id=${item._id}`;
     const desc = String(item.description || `${item.category || 'Contenido'} compartido por @${item.usuario} en UpGames.`).replace(/\s+/g, ' ').slice(0, 160);
-    const img = /^https:\/\//.test(item.image || '') ? item.image : 'https://upgames.games/public/og-cover.png';
+    const img = ugTarjeta(item) || (/^https:\/\//.test(item.image || '') ? item.image : 'https://upgames.games/public/og-cover.png');
     document.title = `${item.title} — ${item.category || 'Descargar'} | UpGames`;
     canon.href = url;
     ugMeta('name', 'description', desc);
@@ -1136,8 +1169,11 @@ function openDetail(item) {
       // Imagen estática
       vid2.style.display = 'none'; vid2.src = '';
       if(overlay) overlay.style.display = '';
-      img2.style.display = 'block'; img2.src = mediaUrl;
-      img2.onerror = () => { img2.src = window.UG_PH; };
+      // Tamaño justo para la pantalla (antes se bajaba la imagen original completa)
+      const ss = cldSrcset(mediaUrl, UG_SS_GRANDE, '(min-width: 700px) 640px, 100vw', true);
+      if (ss) { img2.srcset = ss.srcset; img2.sizes = ss.sizes; } else { img2.removeAttribute('srcset'); img2.removeAttribute('sizes'); }
+      img2.style.display = 'block'; img2.src = cldOpt(mediaUrl, 'c_limit,w_1280,q_auto,f_auto');
+      img2.onerror = () => { img2.onerror = null; img2.removeAttribute('srcset'); img2.src = window.UG_PH; };
     }
   }
   loadSheetMedia(primaryMedia);
@@ -1633,13 +1669,49 @@ async function fav(id) {
 }
 
 // ── SHARE ─────────────────────────────────────────────────
+// Tarjeta para compartir: portada + título + descargas + marca, compuesta por Cloudinary
+// (la misma que usan las páginas /p/ para WhatsApp y Facebook: modulos/seo.js → tarjeta)
+function ugTarjeta(it) {
+  const m = String(it?.image || '').match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)((?:[^/]+\/)*?)(v\d+\/.+)$/);
+  if (!m || ugEsVideoArchivo(it.image)) return null;
+  const enc = t => encodeURIComponent(String(t).replace(/[\u{10000}-\u{10FFFF}]/gu, '').replace(/\s+/g, ' ').trim())
+    .replace(/%2C/g, '%252C').replace(/%2F/g, '%252F').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
+  const corta = (t, n) => { t = String(t || '').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
+  const esV = it.category === 'Video', n = esV ? vistasVideo(it) : (it.descargasEfectivas || 0);
+  const l2 = [n > 0 ? `${n.toLocaleString('es-CO')} ${esV ? 'vistas' : 'descargas'}` : catLabel(it.category), it.usuario ? '@' + it.usuario : ''].filter(Boolean).join(' · ');
+  return m[1] + m[2] + ['c_fill,g_auto,w_1200,h_630', 'e_gradient_fade:40,y_-0.6,b_rgb:07080c',
+    `l_text:Arial_60_bold:${enc(corta(it.title, 64))},co_white,c_fit,w_1080`, 'fl_layer_apply,g_south_west,x_60,y_120',
+    `l_text:Arial_32_bold:${enc(l2)},co_rgb:32D583`, 'fl_layer_apply,g_south_west,x_60,y_62',
+    'l_text:Arial_30_bold:UPGAMES,co_rgb:32D583,b_rgb:07080c,bo_14px_solid_rgb:07080c', 'fl_layer_apply,g_north_east,x_40,y_36',
+    'q_auto:good,f_jpg'].join('/') + '/' + m[3];
+}
+// Enlace para compartir: la página estática (/p/…) si ya existe, que trae la vista previa lista
+function ugUrlCompartir(it) {
+  if (!it) return '';
+  const slug = String(it.title || 'publicacion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '') || 'publicacion';
+  const estatica = (!it.status || it.status === 'aprobado') && it.createdAt && Date.now() - new Date(it.createdAt) > UG_PAGINA_LISTA_MS;
+  return estatica ? `https://upgames.games/public/p/${slug}-${it._id}.html` : `https://upgames.games/public/biblioteca.html?id=${it._id}`;
+}
 async function share(id) {
-  const url=`${location.origin}${location.pathname}?id=${id}`;
+  const it = (currentItem && currentItem._id === id) ? currentItem : todosLosItems.find(i => i._id === id);
+  const url = it ? ugUrlCompartir(it) : `${location.origin}${location.pathname}?id=${id}`;
+  const titulo = it ? `${it.title} en UpGames` : 'Mira este contenido en UpGames';
   if(navigator.share) {
+    // En el celular se comparte la tarjeta como imagen + el enlace (WhatsApp, TikTok, historias…)
+    let files;
+    const img = ugTarjeta(it);
+    if (img && navigator.canShare) {
+      try {
+        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 4000);
+        const blob = await (await fetch(img, { signal: ctl.signal })).blob(); clearTimeout(to);
+        const f = new File([blob], 'upgames.jpg', { type: 'image/jpeg' });
+        if (navigator.canShare({ files: [f] })) files = [f];
+      } catch (_) {}
+    }
     try {
-      await navigator.share({url,title:'Mira este contenido en UpGames',text:'Compartido desde UpGames'});
-      toast('✅ Enlace compartido');
-    } catch(_){ copyToClipboard(url); }
+      await navigator.share(files ? { files, title: titulo, text: `${titulo}\n${url}` } : { url, title: titulo, text: titulo });
+      toast('✅ Compartido');
+    } catch(e) { if (e?.name !== 'AbortError') copyToClipboard(url); }
   } else {
     copyToClipboard(url);
   }
@@ -2832,6 +2904,17 @@ function cldOpt(url, t) {
   // Ya trae transformaciones (recorte del widget, q_auto…): no anteponer otra o el recorte se descuadra
   if (/\/image\/upload\/(?!v\d+\/)[a-z]{1,3}_[^/]*\//.test(u)) return u.replace(/\.(heic|heif)(\?|$)/i, '.jpg$2');
   return u.replace('/image/upload/', `/image/upload/${t}/`).replace(/\.(heic|heif)(\?|$)/i, '.jpg$2');
+}
+// srcset: cada pantalla recibe su tamaño exacto. En móviles premium (DPR 3) las
+// portadas se ven nítidas y en los demás no se baja de más.
+const UG_SS_TILE = [320, 480, 640, 800, 1000], UG_SS_GRANDE = [640, 960, 1280, 1600, 2000];
+const UG_SIZES_TILE = '(min-width: 1100px) 22vw, (min-width: 700px) 31vw, 47vw';
+function cldSrcset(url, anchos, sizes, comoObjeto) {
+  const u = String(url || '');
+  const t = w => `c_limit,w_${w},q_auto,f_auto`;
+  if (!/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(u) || cldOpt(u, t(1)) === u) return comoObjeto ? null : '';
+  const srcset = anchos.map(w => `${cldOpt(u, t(w))} ${w}w`).join(', ');
+  return comoObjeto ? { srcset, sizes } : ` srcset="${escH(srcset)}" sizes="${escH(sizes)}"`;
 }
 const CLD_BANNER = 'c_fill,g_auto,w_1500,h_500,q_auto,f_auto';
 const CLD_AVATAR = 'c_fill,g_face,w_400,h_400,q_auto,f_auto';

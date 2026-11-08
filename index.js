@@ -556,7 +556,7 @@ JuegoSchema.pre('save', function(next) {
 // Cambios en publicaciones invalidan el catálogo cacheado (ver cacheado()). Los que
 // solo suben contadores (cada descarga, like o vista) no: vaciarían la caché a cada
 // descarga y el TTL de 30 s ya los refresca.
-const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas']);
+const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas', 'enlaceRevisado', 'enlaceMuertoDesde']);
 const soloContadores = u => !!u && !Array.isArray(u) && Object.keys(u).length > 0 &&
     Object.entries(u).every(([op, campos]) => (op === '$inc' || op === '$set') && campos && Object.keys(campos).every(f => CONTADORES_JUEGO.has(f)));
 JuegoSchema.post(['save', 'insertMany', 'updateOne', 'updateMany', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'findOneAndReplace', 'replaceOne'], function () {
@@ -568,6 +568,8 @@ JuegoSchema.add({ imageOrigen: { type: String, default: '' }, portadaMigrada: { 
 // destacó pagando UpCoins (aparece arriba marcado como "Promocionado")
 JuegoSchema.add({ impulsoHasta: { type: Date, default: null }, destacadoHasta: { type: Date, default: null } });
 // Revisión prioritaria pagada con UpCoins (rutas/extrasUC.js): va primero en la cola; si no se revisa en 24 h se devuelve
+// Revisión diaria de enlaces: cuándo se comprobó y desde cuándo parece caído
+JuegoSchema.add({ enlaceRevisado: { type: Date, default: null }, enlaceMuertoDesde: { type: Date, default: null } });
 // Guía de instalación opcional escrita por el autor (texto) y/o un video tutorial suyo en UpGames
 JuegoSchema.add({ guiaInstalacion: { type: String, default: '', maxlength: 3000 }, tutorialId: { type: String, default: '' } });
 JuegoSchema.add({ prioridadDesde: { type: Date, default: null }, prioridadReembolso: { type: Boolean, default: false } });
@@ -2294,6 +2296,7 @@ app.post("/items/add", [verificarToken, body('title').notEmpty().trim().isLength
 
         logger.info(`Nuevo item agregado: ${nuevoJuego.title} por @${nuevoJuego.usuario}`);
         res.status(201).json({ success: true, ok: true, item: nuevoJuego, id: nuevoJuego._id });
+        paginasSeoPronto();   // su página para Google y WhatsApp en minutos, no al día siguiente
         moderarPublicacion(nuevoJuego._id);   // NEXUS revisa texto y portada; si es sexual la quita sola
 
         // Fire & forget — Nexus revisa la publicación y deja consejos al autor
@@ -2348,7 +2351,7 @@ app.put("/items/:id", verificarToken, [
         }
         // Cambiar el enlace de una publicación ya verificada la devuelve a revisión:
         // evita publicar un enlace bueno y luego cambiarlo por otro distinto sin control.
-        if (updates.link !== undefined && String(updates.link).trim() !== String(item.link || '').trim()) updates.linkStatus = 'revision';
+        if (updates.link !== undefined && String(updates.link).trim() !== String(item.link || '').trim()) { updates.linkStatus = 'revision'; updates.enlaceMuertoDesde = null; }
         const legalE = ContenidoLegal.revisar({ title: updates.title ?? item.title, description: updates.description ?? item.description });
         if (legalE.bloquear) return res.status(400).json({ success: false, error: `No se puede guardar: ${legalE.bloquear}.` });
         const modE = Moderacion.reglas(`${updates.title ?? item.title} ${updates.description ?? item.description ?? ''}`, 'publicacion');
@@ -3878,6 +3881,49 @@ function iniciarJobsAutomaticos() {
     setInterval(autoMarcarCaidos, 6 * 60 * 60 * 1000);
     logger.info('JOB 5: Auto-marcado de links caídos activo (cada 6h)');
 
+    // JOB 5b: Revisión diaria de enlaces. Comprueba los enlaces publicados (los más antiguos
+    // sin revisar primero) y avisa al creador ANTES de que los usuarios lo reporten.
+    // 1.ª vez muerto → aviso para que lo cambie; sigue muerto al día siguiente → "caído".
+    // Ante la duda (anti-bots, MEGA/GoFile con JavaScript) no se toca nada.
+    async function revisarEnlacesDiario() {
+        const LOTE = Math.max(20, Number(process.env.ENLACES_LOTE) || 300);
+        let vivos = 0, muertos = 0, caidos = 0, dudas = 0;
+        try {
+            const items = await Juego.find({ status: 'aprobado', linkStatus: 'online', category: { $ne: 'Video' } })
+                .select('_id title link usuario image enlaceMuertoDesde').sort({ enlaceRevisado: 1, createdAt: 1 }).limit(LOTE).lean();
+            const cola = [...items];
+            const trabajador = async () => {
+                for (let it; (it = cola.shift());) {
+                    let estado = 'no_verificable';
+                    try { estado = await revisionIA.estadoEnlace(it.link); } catch (_) {}
+                    const set = { enlaceRevisado: new Date() }, unset = {};
+                    const titulo = String(it.title || '').replace(/[<>&"']/g, '').slice(0, 80);
+                    if (estado === 'vivo') { vivos++; if (it.enlaceMuertoDesde) unset.enlaceMuertoDesde = 1; }
+                    else if (estado === 'muerto') {
+                        if (!it.enlaceMuertoDesde) {
+                            muertos++; set.enlaceMuertoDesde = new Date();
+                            crearNotif({ destinatario: it.usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(it._id), itemTitle: 'Enlace', itemImage: it.image || '',
+                                mensaje: `⚠️ El enlace de “${titulo}” parece caído. Cámbialo hoy desde tu perfil para no perder descargas: mañana lo volvemos a revisar.` });
+                        } else if (Date.now() - new Date(it.enlaceMuertoDesde) > 20 * 3600e3) {
+                            caidos++; set.linkStatus = 'caido';
+                            crearNotif({ destinatario: it.usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(it._id), itemTitle: 'Enlace', itemImage: it.image || '',
+                                mensaje: `❌ “${titulo}” quedó marcado como caído porque su enlace sigue sin funcionar. Pega uno nuevo y vuelve a estar disponible.` });
+                        }
+                    } else dudas++;
+                    await Juego.updateOne({ _id: it._id }, { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}) }, { timestamps: false }).catch(() => {});
+                    await new Promise(r => setTimeout(r, 400));   // sin saturar a los sitios de descarga
+                }
+            };
+            await Promise.all([trabajador(), trabajador(), trabajador()]);
+            logger.info(`JOB 5b Enlaces: ${items.length} revisados · ${vivos} vivos · ${muertos} avisados · ${caidos} caídos · ${dudas} sin verificar`);
+        } catch (err) { logger.error(`JOB 5b Error: ${err.message}`); }
+    }
+    if (process.env.REVISAR_ENLACES !== '0') {
+        setTimeout(revisarEnlacesDiario, 15 * 60000).unref();
+        setInterval(revisarEnlacesDiario, 24 * 60 * 60 * 1000).unref();
+        logger.info('JOB 5b: Revisión diaria de enlaces activa');
+    }
+
     // JOB: agrupar en series las publicaciones existentes ("… parte 1", "… parte 2")
     async function backfillSeries() {
         try {
@@ -4152,10 +4198,10 @@ const SITIO = 'https://upgames.games/public';
 const xmlEsc = v => String(v).replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
 app.get('/seo/sitemap.xml', async (req, res) => {
     try {
-        const xml = await cacheado('seo:sitemap', 3600, async () => {
+        const xml = await cacheado('seo:sitemap', 900, async () => {
             const items = await Juego.find({ status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } })
                 .select('_id usuario title updatedAt createdAt').sort({ createdAt: -1 }).limit(40000).lean();
-            const hace36h = new Date(Date.now() - 36 * 3600e3);
+            const hace36h = new Date(Date.now() - 3 * 3600e3);   // las páginas /p/ se generan cada hora (y al publicar)
             const autores = new Map();
             for (const j of items) { const f = j.updatedAt || j.createdAt; if (!autores.has(j.usuario) || f > autores.get(j.usuario)) autores.set(j.usuario, f); }
             const dia = f => (f ? new Date(f) : new Date()).toISOString().slice(0, 10);
@@ -4163,6 +4209,8 @@ app.get('/seo/sitemap.xml', async (req, res) => {
             return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + [
                 url(`${SITIO}/biblioteca.html`, dia(items[0]?.createdAt), 'hourly', '1.0'),
                 url(`${SITIO}/live.html`, null, 'hourly', '0.8'),
+                // Páginas por juego y por tema (public/j/…): mismas reglas que scripts/generar-paginas.js
+                ...Seo.grupos(await datosPaginasSeo()).map(g => url(Seo.urlGrupo(g), dia(g.items.reduce((m, it) => (it.fecha > m ? it.fecha : m), '')), 'daily', '0.8')),
                 // Publicaciones: su página estática (public/p/…), ya generada si tiene más de un día
                 ...items.map(j => url(new Date(j.createdAt || 0) < hace36h ? Seo.urlPagina({ id: String(j._id), title: j.title }) : `${SITIO}/biblioteca.html?id=${j._id}`, dia(j.updatedAt || j.createdAt), 'weekly', '0.7')),
                 // Perfiles: su página estática (public/u/…), generada en la misma acción diaria
@@ -4175,16 +4223,50 @@ app.get('/seo/sitemap.xml', async (req, res) => {
     } catch (e) { logger.error(`[seo] sitemap: ${e.message}`); res.status(500).type('text/plain').send('error'); }
 });
 
-// Datos para las páginas estáticas por publicación (scripts/generar-paginas.js las escribe a diario)
+// Datos de las páginas estáticas (publicaciones, y de ahí las de juego/tema)
+function datosPaginasSeo() {
+    return cacheado('seo:paginas', 600, async () => {
+        const items = await Juego.find({ status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } })
+            .select('_id title description image category usuario createdAt descargasEfectivas vistas likesCount extraData').sort({ createdAt: -1 }).limit(20000).lean();
+        return items.map(j => {
+            const ex = j.extraData || {};
+            const juego = ex.detectedGame?.gameName || gameDetector.detectGame(j.title, j.description)?.gameName || '';
+            return { id: String(j._id), title: j.title || '', description: String(j.description || '').slice(0, 3000), image: j.image || '', category: j.category || '',
+                usuario: j.usuario, fecha: (j.createdAt || new Date()).toISOString(), descargas: j.descargasEfectivas || 0, vistas: j.vistas || 0, likes: j.likesCount || 0,
+                juego, plataforma: [ex.plataforma, ex.so].filter(Boolean).join(' ') };
+        });
+    });
+}
+
+// Páginas estáticas al momento: pide a GitHub que corra ya la acción del sitemap
+// (.github/workflows/sitemap.yml). Agrupa las publicaciones de 10 minutos en una sola
+// ejecución. Necesita GITHUB_DISPATCH_TOKEN (token con permiso "Actions: write" sobre el
+// repositorio); sin él, la acción igual corre cada hora.
+let _seoPronto = null;
+function paginasSeoPronto() {
+    const token = process.env.GITHUB_DISPATCH_TOKEN;
+    if (!token || _seoPronto) return;
+    _seoPronto = setTimeout(async () => {
+        _seoPronto = null;
+        memCache.invalidate('seo:*');
+        try {
+            const repo = process.env.GITHUB_REPO || 'UpgamesStudio/UpGames';
+            const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sitemap.yml/dispatches`, {
+                method: 'POST', headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'upgames-backend' },
+                body: JSON.stringify({ ref: 'main' }),
+            });
+            if (!r.ok) logger.warn(`[seo] no se pudo pedir las páginas: ${r.status}`);
+            else logger.info('[seo] páginas estáticas solicitadas');
+        } catch (e) { logger.warn(`[seo] ${e.message}`); }
+    }, 10 * 60000);
+    _seoPronto.unref?.();
+}
+
+// Datos para las páginas estáticas por publicación (scripts/generar-paginas.js las escribe cada hora)
 app.get('/seo/paginas.json', async (req, res) => {
     try {
-        const data = await cacheado('seo:paginas', 3600, async () => {
-            const items = await Juego.find({ status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } })
-                .select('_id title description image category usuario createdAt descargasEfectivas vistas likesCount').sort({ createdAt: -1 }).limit(20000).lean();
-            return items.map(j => ({ id: String(j._id), title: j.title || '', description: String(j.description || '').slice(0, 3000), image: j.image || '', category: j.category || '',
-                usuario: j.usuario, fecha: (j.createdAt || new Date()).toISOString(), descargas: j.descargasEfectivas || 0, vistas: j.vistas || 0, likes: j.likesCount || 0 }));
-        });
-        res.set('Cache-Control', 'public, max-age=3600').json({ success: true, total: data.length, items: data });
+        const data = await datosPaginasSeo();
+        res.set('Cache-Control', 'public, max-age=600').json({ success: true, total: data.length, items: data });
     } catch (e) { logger.error(`[seo] paginas: ${e.message}`); res.status(500).json({ success: false }); }
 });
 

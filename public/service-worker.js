@@ -11,7 +11,7 @@
 // IMPORTANTE: bump CACHE_VERSION cuando cambies archivos estáticos.
 // ========================================
 
-const CACHE_VERSION = 'upgames-v6.41.0';
+const CACHE_VERSION = 'upgames-v6.42.0';
 const CACHE_STATIC  = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 const CACHE_API     = `${CACHE_VERSION}-api`;
@@ -24,15 +24,15 @@ const IMG_REVALIDAR = 7 * 24 * 3600 * 1000;      // las que no son de Cloudinary
 const PRECACHE_URLS = [
     './',
     './biblioteca.html',
+    './upgames-app.css',
+    './upgames-estilo.css',
+    './upgames-cyber.css',
     './perfil-publico.html',
     './chats.html',
     './live.html',
     './puente.html',
     './politica-privacidad.html',
     './terminos_condiciones.html',
-    './biblioteca.css',
-    './upgames-glass.css',
-    './upgames-estilo.css',
     './upgames-extras.js',
     './upgames-social.js',
     './upgames-guia.js',
@@ -40,14 +40,11 @@ const PRECACHE_URLS = [
     './script.js',
     './upgames-autoinfo.js',
     './upgames-motion.js',
-    './upgames-cyber.css',
     './upgames-tema.js',
     './upgames-nexus-plus.js',
     './upgames-musica.js',
     './upgames-videos.js',
     './upgames-ux.js',
-    './upgames-ux.css',
-    './upgames-videos.css',
     './og-cover.png',
     './manifest.json',
     './icons/icon-192.png?v=2',

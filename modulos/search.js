@@ -24,6 +24,7 @@
 const mongoose = require('mongoose');
 const logger   = require('./logger');
 const cache    = require('./cache');
+const gameDetector = require('./gameDetector');
 
 function getModels() {
     return {
@@ -61,13 +62,20 @@ function escapeRegExp(str) {
  * Construye un regex fuzzy simple que tolera un typo cada 4 chars.
  * Ejemplo: "gta" → /g.?t.?a/i
  */
+// Letras que en los títulos pueden venir con tilde (la búsqueda ya llega sin tildes)
+const TILDES = { a: '[aáàäâ]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöô]', u: '[uúùüû]', n: '[nñ]', c: '[cç]' };
+const letra = ch => TILDES[ch] || escapeRegExp(ch);
 function buildFuzzyRegex(term) {
-    const t = String(term).slice(0, 60);
-    if (t.length < 4) return new RegExp(escapeRegExp(t), 'i');
-    // Escapar CADA carácter por separado: antes se escapaba todo y luego se partía,
-    // separando la "\\" de lo que escapaba ("c++" → regex inválida → error 500)
-    return new RegExp([...t].map(escapeRegExp).join('.?'), 'i');
+    const t = String(term).slice(0, 40);
+    if (t.length < 4) return new RegExp([...t].map(letra).join(''), 'i');
+    // Tolera una letra de más o de menos ("andres" ↔ "andreas")…
+    const alts = [[...t].map(letra).join('.?')];
+    // …y, en palabras de 5+ letras, una letra cambiada ("resident evel", "zomboyd")
+    if (t.length >= 5) for (let i = 1; i < t.length; i++) alts.push([...t].map((c, j) => (j === i ? '.' : letra(c))).join(''));
+    return new RegExp(alts.map(a => `(?:${a})`).join('|'), 'i');
 }
+// Palabra clave de un juego como regex: sin importar tildes ni separadores ("gta-sa", "GTA: SA")
+const kwFuente = kw => [...gameDetector.normalizar(kw)].map(c => (c === ' ' ? '[\\s:._-]*' : letra(c))).join('');
 
 // ======================================================================
 // BÚSQUEDA PRINCIPAL
@@ -155,6 +163,17 @@ async function buscar(opts = {}) {
             orConditions.push({ tags: { $in: [regex] } });
         }
 
+        // Juego reconocido (aunque esté mal escrito): "gta san andres" → GTA San Andreas
+        const juego = gameDetector.juegoDeBusqueda(q);
+        const kwJuego = juego ? (gameDetector.GAMES_DATABASE[juego.gameKey]?.keywords || []) : [];
+        if (juego) {
+            orConditions.push({ 'extraData.detectedGame.gameKey': juego.gameKey });
+            for (const kw of kwJuego) {
+                const r = new RegExp(kwFuente(kw), 'i');
+                orConditions.push({ title: { $regex: r } }, { description: { $regex: r } }, { tags: { $in: [r] } });
+            }
+        }
+
         filtro.$or = orConditions;
 
         pipeline.push({ $match: filtro });
@@ -163,7 +182,13 @@ async function buscar(opts = {}) {
         pipeline.push({
             $addFields: {
                 _relevance: {
-                    $add: terminos.flatMap(t => {
+                    $add: [
+                        // Es del juego que se busca: pesa más que cualquier palabra suelta
+                        ...(juego ? [{ $cond: [{ $eq: ['$extraData.detectedGame.gameKey', juego.gameKey] }, 160, 0] }] : []),
+                        ...kwJuego.map(kw => ({ $cond: [{ $regexMatch: { input: { $ifNull: ['$title', ''] }, regex: kwFuente(kw), options: 'i' } }, 120, 0] })),
+                        // Coincidencia aproximada en el título (letras de más, de menos o cambiadas)
+                        ...terminos.map(t => ({ $cond: [{ $regexMatch: { input: { $ifNull: ['$title', ''] }, regex: buildFuzzyRegex(t).source, options: 'i' } }, 25, 0] })),
+                        ...terminos.flatMap(t => {
                         const r = escapeRegExp(t);
                         return [
                             // Match exacto en título pesa más
@@ -176,6 +201,7 @@ async function buscar(opts = {}) {
                             { $cond: [{ $regexMatch: { input: { $ifNull: ['$description', ''] }, regex: r, options: 'i' } }, 15, 0] }
                         ];
                     })
+                    ]
                 }
             }
         });
@@ -221,7 +247,8 @@ async function buscar(opts = {}) {
             title: 1, description: 1, image: 1, images: 1, link: 1,
             category: 1, tags: 1, usuario: 1, reportes: 1, linkStatus: 1,
             descargasEfectivas: 1, likesCount: 1, videoType: 1,
-            featuredItemId: 1, extraData: 1, createdAt: 1,
+            featuredItemId: 1, extraData: 1, createdAt: 1, updatedAt: 1, vistas: 1,
+            serie: 1, tutorialId: 1, tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] },
             _relevance: 1
         }
     });
@@ -244,6 +271,7 @@ async function buscar(opts = {}) {
         pages: Math.ceil(total / limitNum),
         limit: limitNum,
         query: q || null,
+        juego: tieneQuery ? (gameDetector.juegoDeBusqueda(q)?.gameName || null) : null,
         orden,
         facets
     };
@@ -391,6 +419,7 @@ function busquedasPopulares(limit = 10) {
 }
 
 module.exports = {
+    _internos: { buildFuzzyRegex, kwFuente, normalize },
     buscar,
     autocomplete,
     registrarBusqueda,

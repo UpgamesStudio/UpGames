@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Escribe public/p/<slug>-<id>.html para cada publicación aprobada (ver modulos/seo.js).
- * Lo corre a diario .github/workflows/sitemap.yml. Borra las páginas de publicaciones
+ * Escribe public/p/<slug>-<id>.html para cada publicación aprobada (ver modulos/seo.js)
+ * y public/j/<slug>.html para cada juego o tema con varias publicaciones.
+ * Lo corre cada hora .github/workflows/sitemap.yml (y el backend al publicar). Borra las páginas de publicaciones
  * que ya no están (eliminadas o rechazadas) para no dejar páginas huérfanas indexadas.
  *
  *   node scripts/generar-paginas.js [archivo.json | URL]
@@ -17,15 +18,32 @@ const Seo = require('../modulos/seo');
     const dir = process.env.SEO_DIR || path.join(__dirname, '..', 'public', 'p');   // SEO_DIR: carpeta de pruebas
     fs.mkdirSync(dir, { recursive: true });
     const quedan = new Set();
-    for (const it of data.items) {
-        if (!/^[a-f\d]{24}$/i.test(it.id) || !it.title) continue;
+    const validos = data.items.filter(it => /^[a-f\d]{24}$/i.test(it.id) && it.title);
+    const grupos = Seo.grupos(validos);
+    // Cada publicación enlaza a su juego (o, si no tiene, a su primer tema)
+    const grupoDe = new Map();
+    for (const g of [...grupos.filter(g => g.juego), ...grupos.filter(g => !g.juego)]) for (const it of g.items) if (!grupoDe.has(it.id)) grupoDe.set(it.id, g);
+    for (const it of validos) {
         const f = Seo.archivo(it); quedan.add(f);
-        const html = Seo.pagina(it), ruta = path.join(dir, f);
+        const html = Seo.pagina(it, grupoDe.get(it.id)), ruta = path.join(dir, f);
         if (!fs.existsSync(ruta) || fs.readFileSync(ruta, 'utf8') !== html) fs.writeFileSync(ruta, html);
     }
     let borradas = 0;
     for (const f of fs.readdirSync(dir)) if (f.endsWith('.html') && !quedan.has(f)) { fs.unlinkSync(path.join(dir, f)); borradas++; }
     console.log(`Páginas: ${quedan.size} · borradas: ${borradas}`);
+
+    // Juegos y temas → public/j/<slug>.html
+    const dirJ = process.env.SEO_DIR_J || path.join(dir, '..', 'j');
+    fs.mkdirSync(dirJ, { recursive: true });
+    const quedanJ = new Set();
+    for (const g of grupos) {
+        const f = `${g.slug}.html`; quedanJ.add(f);
+        const html = Seo.paginaGrupo(g, grupos), ruta = path.join(dirJ, f);
+        if (!fs.existsSync(ruta) || fs.readFileSync(ruta, 'utf8') !== html) fs.writeFileSync(ruta, html);
+    }
+    let bj = 0;
+    for (const f of fs.readdirSync(dirJ)) if (f.endsWith('.html') && !quedanJ.has(f)) { fs.unlinkSync(path.join(dirJ, f)); bj++; }
+    console.log(`Juegos y temas: ${quedanJ.size} · borradas: ${bj}`);
 
     // Perfiles de creadores → public/u/<usuario>.html
     const fuenteP = process.argv[3] || fuente.replace(/paginas\.json$/, 'perfiles.json');

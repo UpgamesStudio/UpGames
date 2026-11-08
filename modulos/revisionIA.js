@@ -240,4 +240,16 @@ async function analizar(item, deps) {
     };
 }
 
-module.exports = { analizar, sondear, hostPublico, ipPrivada, PIRATERIA, SENSIBLE };
+/**
+ * Estado del enlace de descarga: 'vivo' | 'muerto' | 'no_verificable'.
+ * Lo usa la revisión diaria de enlaces (index.js). 'muerto' solo cuando la página lo
+ * dice claramente (404/410 o "archivo eliminado"): ante la duda, 'no_verificable'.
+ */
+async function estadoEnlace(link) {
+    const yt = ytId(link);
+    const s = await sondear(yt ? `https://www.youtube.com/oembed?url=${encodeURIComponent(link)}&format=json` : link, { leerTexto: true });
+    if (s.status === 404 || s.status === 410 || (s.texto && ARCHIVO_MUERTO.some(r => r.test(s.texto)))) return 'muerto';
+    return s.ok ? 'vivo' : 'no_verificable';
+}
+
+module.exports = { analizar, sondear, hostPublico, ipPrivada, PIRATERIA, SENSIBLE, estadoEnlace };
