@@ -1,0 +1,103 @@
+/* UpGames · Patrocinio — estilos comunes de los dos videos (1080×1920).
+   Identidad: verde neón #39FF88 dominante, blanco, grises fríos y negro azulado.
+   Tipos: Orbitron (titulares), Rajdhani (texto), Share Tech Mono (HUD/datos). */
+:root {
+  --g: #39FF88; --g2: #1FAF5E; --g3: #0B5E31; --w: #F2F5F7; --gr: #8A94A6; --gr2: #4A5361; --gr3: #262D38;
+  --bg: #03060C; --navy: #07101F; --navy2: #0C1526; --rojo: #FF3B4E; --ambar: #FFC94D;
+  --neon: 0 0 10px rgba(57,255,136,.85), 0 0 34px rgba(57,255,136,.45), 0 0 80px rgba(57,255,136,.25);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); font-family: 'Rajdhani', sans-serif; color: var(--w); }
+#bg, #fx { position: absolute; inset: 0; }
+#mundo { position: absolute; inset: 0; transform-origin: 50% 42%; }
+.capa { position: absolute; inset: 0; display: none; perspective: 1400px; }
+.abs { position: absolute; }
+.c { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; }
+.orb { font-family: 'Orbitron', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+.mono { font-family: 'Share Tech Mono', monospace; }
+.raj { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.verde { color: var(--g); }
+.gris { color: var(--gr); }
+.glow { text-shadow: var(--neon); }
+.glow-w { text-shadow: 0 0 12px rgba(255,255,255,.7), 0 0 40px rgba(255,255,255,.25); }
+.bisel { clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 28px 100%, 0 calc(100% - 28px)); }
+.bisel-s { clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+.hex { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.l { display: inline-block; white-space: pre; will-change: transform, opacity; }
+
+/* Titulares cinéticos */
+.tit { font-family: 'Orbitron'; font-weight: 900; text-transform: uppercase; line-height: .98; text-align: center; letter-spacing: .02em; }
+.t-xxl { font-size: 150px; } .t-xl { font-size: 118px; } .t-l { font-size: 92px; } .t-m { font-size: 70px; } .t-s { font-size: 52px; }
+.etq { font-family: 'Share Tech Mono'; font-size: 34px; letter-spacing: .32em; color: var(--g); text-transform: uppercase; }
+.etq::before { content: '// '; color: var(--gr); }
+
+/* Ventana estilo SaaS (vidrio + bisel) */
+.vent { position: absolute; background: linear-gradient(165deg, rgba(16,26,44,.92), rgba(6,11,21,.94)); border: 2px solid rgba(57,255,136,.28); box-shadow: 0 50px 120px -30px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.04) inset, 0 0 60px -20px rgba(57,255,136,.35); overflow: hidden; }
+.vent.gris { border-color: rgba(138,148,166,.35); box-shadow: 0 50px 120px -30px rgba(0,0,0,.95); }
+.vent .barra { height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.025); font-family: 'Share Tech Mono'; font-size: 24px; color: var(--gr); }
+.vent .barra i { width: 16px; height: 16px; border-radius: 50%; background: #2A313C; display: inline-block; }
+.vent .barra i:nth-child(1) { background: #3a4250; } .vent .barra span { margin-left: 14px; }
+.brillo { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.16) 48%, rgba(57,255,136,.12) 52%, transparent 65%); background-size: 300% 100%; mix-blend-mode: screen; }
+
+/* Tarjeta de proyecto */
+.proy { position: absolute; width: 620px; height: 820px; background: linear-gradient(170deg, #0E1A2E, #050A14); border: 3px solid rgba(138,148,166,.4); overflow: hidden; }
+.proy .arte { position: absolute; left: 24px; right: 24px; top: 24px; height: 470px; overflow: hidden; }
+.proy .nom { position: absolute; left: 34px; top: 520px; font-family: 'Orbitron'; font-weight: 900; font-size: 52px; }
+.proy .aut { position: absolute; left: 34px; top: 588px; font-family: 'Share Tech Mono'; font-size: 28px; color: var(--gr); }
+.proy .meta { position: absolute; left: 34px; right: 34px; top: 650px; display: flex; gap: 14px; }
+.proy .meta span { padding: 10px 18px; font-size: 26px; font-weight: 700; border: 2px solid rgba(138,148,166,.4); color: var(--gr); }
+.proy .cta { position: absolute; left: 34px; right: 34px; bottom: 30px; height: 0; }
+
+.chip { display: inline-flex; align-items: center; gap: 12px; padding: 14px 26px; font-size: 36px; font-weight: 700; letter-spacing: .03em; background: rgba(57,255,136,.1); border: 2px solid var(--g); color: var(--w); white-space: nowrap; }
+.chip b { color: var(--g); font-family: 'Share Tech Mono'; font-weight: 400; }
+.chip.gris { background: rgba(138,148,166,.08); border-color: var(--gr2); color: var(--gr); }
+.boton { display: inline-flex; align-items: center; justify-content: center; gap: 20px; padding: 36px 70px; background: var(--g); color: #02140A; font-family: 'Orbitron'; font-weight: 900; font-size: 50px; letter-spacing: .05em; white-space: nowrap; box-shadow: 0 0 60px rgba(57,255,136,.55); }
+
+/* Indicadores (KPI) */
+.kpi { position: absolute; width: 440px; height: 210px; padding: 28px 32px; background: rgba(10,18,32,.92); border: 2px solid rgba(57,255,136,.3); }
+.kpi small { display: block; font-family: 'Share Tech Mono'; font-size: 26px; color: var(--gr); letter-spacing: .12em; text-transform: uppercase; }
+.kpi b { display: block; margin-top: 10px; font-family: 'Orbitron'; font-weight: 900; font-size: 76px; color: var(--w); }
+.kpi em { font-style: normal; position: absolute; right: 26px; top: 26px; font-family: 'Share Tech Mono'; font-size: 28px; color: var(--g); }
+
+.hexav { position: absolute; width: 150px; height: 168px; display: grid; place-items: center; font-family: 'Orbitron'; font-weight: 900; font-size: 54px; color: #02140A; }
+.cursor { position: absolute; width: 70px; height: 70px; z-index: 30; filter: drop-shadow(0 6px 10px rgba(0,0,0,.7)); }
+.onda { position: absolute; border: 4px solid var(--g); border-radius: 50%; transform: translate(-50%, -50%); }
+
+/* Teléfono */
+.tel { position: absolute; width: 620px; height: 1260px; border-radius: 80px; background: #0B0F16; padding: 22px; box-shadow: 0 0 0 4px #2A313C, 0 0 0 6px rgba(57,255,136,.6), 0 0 80px rgba(57,255,136,.35), 0 60px 140px rgba(0,0,0,.9); }
+.tel .pant { position: relative; width: 100%; height: 100%; border-radius: 60px; overflow: hidden; background: linear-gradient(180deg, #050A14, #03060C); }
+.tel .isla { position: absolute; left: 50%; top: 20px; width: 170px; height: 46px; border-radius: 24px; background: #000; transform: translateX(-50%); z-index: 20; }
+.burb { position: absolute; max-width: 460px; padding: 22px 28px; font-size: 34px; font-weight: 600; line-height: 1.15; border-radius: 30px; }
+.burb.yo { right: 26px; background: var(--g); color: #02140A; border-bottom-right-radius: 6px; }
+.burb.ug { left: 26px; background: #18202C; border: 2px solid rgba(57,255,136,.35); border-bottom-left-radius: 6px; }
+
+/* Barra de dirección */
+.url { position: absolute; width: 920px; height: 160px; background: #0A1220; border: 4px solid var(--g); display: flex; align-items: center; gap: 30px; padding: 0 46px; font-size: 76px; font-weight: 700; box-shadow: 0 0 70px rgba(57,255,136,.4); }
+.url .cur { display: inline-block; width: 6px; height: 76px; background: var(--g); vertical-align: middle; margin-left: 6px; }
+
+/* Subtítulos karaoke */
+#subs { position: absolute; left: 60px; right: 60px; top: 1440px; height: 200px; z-index: 40; text-align: center; pointer-events: none; }
+#subs .lin { position: absolute; left: 0; right: 0; top: 0; font-family: 'Rajdhani'; font-weight: 700; font-size: 70px; line-height: 1.05; text-transform: uppercase; letter-spacing: .01em; }
+#subs .w { display: inline-block; margin: 0 .14em; color: #fff; text-shadow: 0 4px 0 #000, 0 0 18px rgba(0,0,0,.95), 0 0 4px #000; }
+#subs .w.on { color: var(--g); text-shadow: 0 4px 0 #000, 0 0 22px rgba(57,255,136,.8), 0 0 4px #000; }
+
+/* HUD permanente */
+#hud { position: absolute; inset: 0; z-index: 45; pointer-events: none; font-family: 'Share Tech Mono'; color: rgba(255,255,255,.55); font-size: 24px; letter-spacing: .14em; }
+#hud .esq { position: absolute; width: 70px; height: 70px; border-color: rgba(57,255,136,.7); border-style: solid; border-width: 0; }
+#hud .tl { left: 40px; top: 120px; border-left-width: 4px; border-top-width: 4px; }
+#hud .tr { right: 40px; top: 120px; border-right-width: 4px; border-top-width: 4px; }
+#hud .bl { left: 40px; bottom: 260px; border-left-width: 4px; border-bottom-width: 4px; }
+#hud .br { right: 40px; bottom: 260px; border-right-width: 4px; border-bottom-width: 4px; }
+#hud .lab { position: absolute; left: 130px; top: 128px; }
+#hud .lab b { color: var(--g); font-weight: 400; }
+#hud .rec { position: absolute; right: 130px; top: 128px; }
+#hud .rec i { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: var(--g); margin-right: 10px; box-shadow: 0 0 12px var(--g); }
+#hud .marca { position: absolute; left: 50%; bottom: 290px; transform: translateX(-50%); width: 230px; opacity: .0; }
+
+#glitch { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+#glitch div { position: absolute; left: 0; right: 0; mix-blend-mode: screen; }
+#flash { position: absolute; inset: 0; z-index: 55; background: #fff; opacity: 0; pointer-events: none; }
+#scan { position: absolute; inset: 0; z-index: 60; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 2px, transparent 2px 5px); }
+#vigneta { position: absolute; inset: 0; z-index: 61; pointer-events: none; background: radial-gradient(ellipse 75% 60% at 50% 45%, transparent 50%, rgba(0,0,0,.7) 100%); }
+#barrido { position: absolute; left: 0; right: 0; height: 6px; z-index: 62; background: linear-gradient(90deg, transparent, #39FF88 20%, #fff 50%, #39FF88 80%, transparent); box-shadow: 0 0 30px 8px rgba(57,255,136,.55); opacity: 0; }

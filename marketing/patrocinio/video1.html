@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>UpGames · Patrocinio · Video 1</title>
+<!--
+  Video 1 — «¿Eres un desarrollador indie…?» (vertical 1080×1920).
+  Locución: primera mitad de voz_video.mp3 (0,00–43,0 s). Música: «If You Open Up»
+  (Infraction) desde 116,25 s, con su caída exactamente en «En UpGames» (8,0 s).
+  ?t=12.5 muestra un instante; ?play lo reproduce en tiempo real.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=block" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="motor.js"></script>
+<script src="piezas.js"></script>
+<script src="ritmo1.js"></script>
+<script>
+'use strict';
+const { h, st, clamp, lerp, E, en, win, R, fmt, golpe, glitch, barrido, sfx } = M;
+const { C, ic, arte, hexav, cursor, ruta, anillos, choque, chispas, explotar, grafica, red, titular } = P;
+const TY = 330;            // altura de los titulares
+const DUR = 44.6;
+
+/* ── Fondo a lo largo del video ── */
+M.fondoKeys([
+  { t: 0, verde: .15, rejilla: .4, vel: .7, glow: .35, hor: 1250, part: .45 },
+  { t: 4.2, verde: 0, rojo: .3, glow: .3, rejilla: .3, vel: .5 },
+  { t: 7.2, rejilla: .1, glow: .1, part: .2, vel: .25, rojo: .15 },
+  { t: 7.9, rejilla: 0, glow: 0, part: 0, vel: .2, rojo: 0, d: .35 },
+  { t: 8.0, verde: 1, rejilla: 1, techo: .7, vel: 9, glow: 1, part: 1, hor: 1020, d: .05 },
+  { t: 9.6, vel: 2.2, techo: .35 },
+  { t: 13.45, vel: 2.2, verde: 1 },
+  { t: 13.75, vel: 6, d: .3 },
+  { t: 14.4, vel: .9, verde: .2, glow: .45, techo: 0, hor: 1250 },
+  { t: 16.5, vel: .9, verde: .2 },
+  { t: 16.62, vel: 7, verde: 1, glow: 1.1, d: .1 },
+  { t: 17.8, vel: 1.6, hor: 1100 },
+  { t: 20.1, vel: 1.6 },
+  { t: 20.4, vel: 4.5, d: .3 },
+  { t: 21.2, vel: 1.6, hor: 1300 },
+  { t: 22.2, vel: 1.6, techo: 0 },
+  { t: 22.5, vel: 4, techo: .6, d: .3 },
+  { t: 24.8, vel: 1.4, techo: 0 },
+  { t: 27.4, vel: 1.2, glow: 1.3 },
+  { t: 29.4, vel: 2.6, glow: 1 },
+  { t: 32.35, vel: 2.6 },
+  { t: 32.5, vel: 8, d: .1 },
+  { t: 33.4, vel: 1.8 },
+  { t: 41.5, vel: 1.4 },
+  { t: 41.65, vel: 9, techo: .7, glow: 1.3, d: .1 },
+  { t: 43, vel: 1.6 },
+  { t: 44.6, glow: .4, rejilla: .5, part: .3 },
+]);
+M.ritmo(window.BEATS);
+
+/* ════════ 1 · ¿Desarrollador indie? ¿Dónde publicar? (0 – 3.75) ════════ */
+M.escena(0, 3.75, r => {
+  r.t1 = titular(r, 'DESARROLLADOR\nINDIE', 't-m', TY);
+  r.t2 = titular(r, '¿DÓNDE\nPUBLICAR?', 't-xl verde glow', TY, { modo: 'zoom', stag: .03 });
+  const v = r.v = h('div', 'vent gris bisel', `<div class="barra"><i></i><i></i><i></i><span>mi_juego / main.js</span></div><div class="cod mono"></div>`, r);
+  M.pos(v, 110, 560, 860, 640);
+  r.cod = v.querySelector('.cod'); r.cod.style.cssText = 'padding:30px 36px;font-size:30px;line-height:1.55;color:#C9D2DC;white-space:pre';
+  r.lineas = [
+    ['<span style="color:#8A94A6">// v0.9 · 14 meses de trabajo</span>'],
+    ['<span style="color:#39FF88">const</span> juego = <span style="color:#39FF88">new</span> Motor({'],
+    ['  nivel: <span style="color:#FFC94D">42</span>, fps: <span style="color:#FFC94D">60</span>,'],
+    ['  jugador: <span style="color:#C4F0D6">"tú"</span>,'],
+    ['});'],
+    ['juego.<span style="color:#39FF88">compilar</span>(); <span style="color:#8A94A6">// ✔ listo</span>'],
+    ['juego.<span style="color:#39FF88">publicar</span>(<span style="color:#FF6B7A">???</span>);'],
+  ];
+  // archivo que se arrastra y zonas vacías
+  r.zip = h('div', 'chip', `${ic('zip', 44, '#39FF88')} mi_proyecto.zip`, r); r.zip.style.position = 'absolute';
+  r.zonas = [0, 1, 2].map(i => { const z = h('div', 'abs mono', '?', r); z.style.cssText += 'width:220px;height:220px;border:4px dashed rgba(138,148,166,.6);display:grid;place-items:center;font-size:120px;color:#8A94A6;'; return z; });
+  r.cur = cursor(r);
+  sfx(.05, 'zumbido', .5); sfx(.5, 'swish', .4);
+  for (let i = 0; i < 14; i++) sfx(.35 + i * .11, 'tecla', .35);
+  sfx(2.2, 'whoosh', .55); glitch(2.26, .2, .6);
+  [2.7, 2.95, 3.2].forEach(t => sfx(t, 'error', .35));
+}, (t, r) => {
+  r.t1.anim(t, .3, 2.1);
+  r.t2.anim(t, 2.26, 3.5);
+  const ve = en(t, 0, .7, E.out5);
+  st(r.v, { o: ve * (1 - en(t, 2.1, .4)), y: lerp(120, 0, ve) - en(t, 2.1, .5, E.in) * 140, s: lerp(.92, 1, ve) - en(t, 2.1, .5) * .08, rx: lerp(18, 0, ve), b: en(t, 2.1, .5) * 10 });
+  const nl = Math.floor(clamp((t - .35) / 1.6) * r.lineas.length + .0001);
+  r.cod.innerHTML = r.lineas.slice(0, nl).map(l => l[0]).join('\n') + (Math.floor(t * 4) % 2 ? '<span style="color:#39FF88">▍</span>' : '');
+  // el archivo sale y busca dónde publicarse
+  const zk = en(t, 2.15, .4, E.out5);
+  const [zx, zy] = ruta(t, [[2.2, 540, 980], [2.6, 540, 900], [2.85, 250, 900], [3.1, 830, 900], [3.4, 540, 900]]);
+  C(r.zip, { o: zk * (1 - en(t, 3.5, .2)), x: zx - 540, y: zy - 960 + 960 - 960, s: lerp(.6, 1.05, zk), r: Math.sin(t * 9) * 3 * zk });
+  r.zip.style.left = '540px'; r.zip.style.top = '960px';
+  r.zonas.forEach((z, i) => {
+    const k = en(t, 2.45 + i * .1, .35, E.back);
+    const fallo = t > 2.7 + i * .25 && t < 2.95 + i * .25;
+    z.style.left = 110 + i * 310 + 'px'; z.style.top = '1110px';
+    z.style.borderColor = fallo ? 'rgba(255,59,78,.9)' : 'rgba(138,148,166,.6)';
+    z.style.color = fallo ? '#FF3B4E' : '#8A94A6';
+    st(z, { o: k * (1 - en(t, 3.5, .2)), s: k * (fallo ? 1.06 : 1), x: fallo ? Math.sin(t * 90) * 10 : 0 });
+  });
+  r.cur.style.display = t > 2.15 ? 'block' : 'none';
+  r.cur.mover(zx + 120, zy + 30, null, t);
+});
+
+/* ════════ 2 · ¿Visibilidad en redes? (3.75 – 6.55) ════════ */
+M.escena(3.75, 6.6, r => {
+  r.t = titular(r, '¿VISIBILIDAD\nEN REDES?', 't-l', TY, { modo: 'blur' });
+  const p = r.post = h('div', 'vent gris bisel', `<div class="barra"><i></i><i></i><i></i><span>tu_publicación · hace 3 días</span></div>`, r);
+  M.pos(p, 150, 520, 780, 800);
+  const a = h('div', 'abs', null, p); M.pos(a, 30, 94, 720, 400); r.arte = arte(a, 'MI JUEGO'); a.style.filter = 'grayscale(.85) brightness(.7)';
+  r.stats = h('div', 'abs', '', p); M.pos(r.stats, 30, 520, 720, 80);
+  r.stats.style.cssText += 'display:flex;gap:46px;font-size:46px;font-weight:700;color:#8A94A6;align-items:center';
+  r.graf = grafica(p, 720, 150, [.08, .1, .06, .09, .05, .07, .04, .05, .03, .04], '#8A94A6'); M.pos(r.graf, 30, 620);
+  r.toasts = ['0 comentarios nuevos', 'Alcance: 0,3 %', 'Nadie compartió tu post'].map(s => { const e = h('div', 'chip gris', `${ic('alerta', 36, '#FF6B7A')} ${s}`, r); e.style.position = 'absolute'; return e; });
+  sfx(3.78, 'whoosh', .5); sfx(5.1, 'swish', .3);
+  [4.55, 5.0, 5.45].forEach(t => sfx(t, 'notif_mala', .4));
+}, (t, r) => {
+  r.t.anim(t, 3.95, 6.3);
+  const k = en(t, 3.75, .6, E.out5);
+  st(r.post, { o: k * (1 - en(t, 6.3, .25)), y: lerp(300, 0, k), ry: lerp(-25, 0, k) + Math.sin(t) * 2, s: 1 - en(t, 6.3, .3, E.in) * .3, b: en(t, 6.3, .3) * 12 });
+  r.arte.anim(t);
+  const vistas = t < 5.2 ? 3 : (Math.floor(t * 8) % 3 ? 3 : 2);
+  r.stats.innerHTML = `<span>${ic('ojo', 52)} ${vistas} vistas</span><span>${ic('cor', 46)} 0</span><span>${ic('chat', 46)} 0</span>`;
+  r.graf.anim(en(t, 4.1, 1.4, E.io));
+  r.toasts.forEach((e, i) => {
+    const a = 4.55 + i * .45, kk = en(t, a, .4, E.back);
+    e.style.left = (i % 2 ? 520 : 60) + 'px'; e.style.top = 650 + i * 130 + 'px';
+    st(e, { o: clamp((t - a) * 4) * (1 - en(t, 6.25, .2)), x: lerp(i % 2 ? 200 : -200, 0, kk), s: kk });
+  });
+});
+
+/* ════════ 3 · «No te preocupes más» (6.55 – 8.0) ════════ */
+M.escena(6.55, 8.0, r => {
+  r.t = titular(r, 'NO TE\nPREOCUPES\nMÁS', 't-xl', 760, { modo: 'cae', stag: .035 });
+  r.punto = h('div', 'abs', null, r); r.punto.style.cssText += 'left:540px;top:760px;width:40px;height:40px;margin:-20px;border-radius:50%;background:#fff;box-shadow:0 0 30px 10px #39FF88,0 0 120px 40px rgba(57,255,136,.6)';
+  r.linea = h('div', 'abs', null, r); r.linea.style.cssText += 'left:0;right:0;top:758px;height:4px;background:linear-gradient(90deg,transparent,#39FF88,#fff,#39FF88,transparent)';
+  glitch(6.6, .3, 1); sfx(6.55, 'riser', 1);
+}, (t, r) => {
+  r.t.anim(t, 6.6);
+  const enc = en(t, 7.35, .5, E.in);
+  st(r.t.el, { c: true, s: 1 - enc * .95, b: enc * 6, o: 1 - en(t, 7.75, .1) });
+  r.t.el.style.color = enc > .1 ? '#39FF88' : '#fff';
+  r.t.el.style.textShadow = `0 0 ${20 + enc * 80}px rgba(57,255,136,${.3 + enc * .7})`;
+  const pk = en(t, 7.6, .3, E.in);
+  st(r.punto, { o: pk, s: lerp(.2, 1.4, pk) });
+  st(r.linea, { o: en(t, 7.8, .15), sx: en(t, 7.8, .2, E.out), sy: 1 });
+});
+
+/* ════════ 4 · UpGames patrocina a creadores como tú (8.0 – 13.6) ════════ */
+M.escena(8.0, 13.62, r => {
+  r.logo = h('img', 'abs', null, r); r.logo.src = 'logo.png'; r.logo.style.width = '900px'; r.logo.style.left = '540px'; r.logo.style.top = '700px';
+  r.anl = anillos(r, 3);
+  r.sub = h('div', 'abs etq c', '', r); r.sub.style.top = '930px';
+  r.cs = chispas(r, 60);
+  // insignia de patrocinio
+  r.ins = h('div', 'abs bisel', `<div style="display:flex;align-items:center;gap:30px">${ic('escudo', 130, '#39FF88')}<div><div class="mono" style="font-size:30px;color:#8A94A6;letter-spacing:.3em">PROGRAMA OFICIAL</div><div class="orb" style="font-size:78px;line-height:1">PATROCI<span class="verde">NADO</span></div></div></div>`, r);
+  r.ins.style.cssText += 'left:540px;top:800px;padding:44px 56px;background:linear-gradient(160deg,rgba(57,255,136,.18),rgba(7,16,31,.95));border:3px solid #39FF88;box-shadow:0 0 80px rgba(57,255,136,.45)';
+  r.insBr = h('div', 'brillo', null, r.ins);
+  r.tc = titular(r, 'CREADORES\nINDEPENDIENTES', 't-m', TY, { stag: .02 });
+  r.ttu = titular(r, 'EXACTAMENTE\nCOMO', 't-m', TY - 30, { stag: .03 });
+  r.tu = h('div', 'abs orb verde glow c', 'TÚ', r); r.tu.style.cssText += 'font-size:200px;top:1240px';
+  // panal de creadores
+  r.panal = h('div', 'abs', null, r); r.panal.style.inset = '0';
+  r.hx = [];
+  const filas = [[-1.5, -1], [-.5, -1], [.5, -1], [1.5, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1.5, 1], [-.5, 1], [.5, 1], [1.5, 1], [-1, 2], [0, 2], [1, 2], [-1, -2], [0, -2], [1, -2]];
+  filas.forEach(([q, f], i) => { const e = hexav(r.panal, i, 150); e.q = q; e.f = f; e.d = Math.hypot(q, f); r.hx.push(e); });
+  r.yo = r.hx[6]; r.yo.innerHTML = 'TÚ'; r.yo.style.background = 'linear-gradient(160deg,#ffffff,#39FF88)';
+  r.mira = h('div', 'abs', `<svg width="300" height="300" viewBox="0 0 300 300" fill="none" stroke="#39FF88" stroke-width="6"><circle cx="150" cy="150" r="128" stroke-dasharray="60 40"/><path d="M150 0v50M150 250v50M0 150h50M250 150h50"/></svg>`, r);
+  r.mira.style.cssText += 'left:540px;top:820px;filter:drop-shadow(0 0 12px #39FF88)';
+  golpe(8.0, 1.6, 'boom'); sfx(8.0, 'impacto', .9);
+  sfx(8.6, 'decode', .4);
+  barrido(9.75); golpe(9.88, .7, 'sello');
+  sfx(10.5, 'whoosh', .5); for (let i = 0; i < 10; i++) sfx(10.62 + i * .05, 'pop', .25);
+  sfx(11.7, 'zoom', .6); golpe(12.94, .6, 'impacto'); sfx(12.94, 'brillo', .5);
+  sfx(13.35, 'whoosh', .7);
+}, (t, r) => {
+  // logo: entra con golpe, luego sube y se reduce
+  const lk = en(t, 8.0, .7, E.out5), ls = en(t, 9.7, .6, E.io);
+  st(r.logo, { c: true, o: lk * (1 - en(t, 10.45, .25)), s: lerp(1.9, 1, lk) * lerp(1, .62, ls) + Math.sin(t * 3) * .005, y: lerp(0, -330, ls), b: (1 - lk) * 20 + en(t, 10.45, .25) * 10 });
+  choque(r.anl, t, 8.0, 540, 700, 1600);
+  explotar(r.cs, t, 8.0, 540, 700, 1.2);
+  M.decode(r.sub, 'PROGRAMA DE PATROCINIO · 2026', t, 8.55, .8);
+  st(r.sub, { c: true, o: (t > 8.5 ? 1 : 0) * (1 - en(t, 9.65, .2)) });
+  // insignia
+  const ik = en(t, 9.86, .45, E.spr);
+  st(r.ins, { c: true, o: clamp((t - 9.86) * 6) * (1 - en(t, 10.5, .2)), s: lerp(1.8, 1, ik) * (1 + en(t, 10.5, .3, E.in) * .3), b: en(t, 10.5, .2) * 14 });
+  r.insBr.style.backgroundPosition = `${lerp(160, -60, en(t, 10.0, .6, E.io))}% 0`;
+  // panal
+  const zoom = en(t, 11.74, 1.0, E.io);
+  r.tc.anim(t, 10.58, 11.6);
+  r.ttu.anim(t, 11.8, 13.35);
+  r.hx.forEach((e, i) => {
+    const k = en(t, 10.6 + e.d * .12, .5, E.spr);
+    const x = 540 + e.q * 172, y = 820 + e.f * 150;
+    const esYo = e === r.yo;
+    const dim = esYo ? 1 : 1 - zoom * .75;
+    const sc = k * lerp(1, esYo ? 1.7 : 1.1, zoom);
+    e.style.left = x + 'px'; e.style.top = y + 'px';
+    st(e, { c: true, o: clamp((t - 10.6 - e.d * .12) * 5) * dim * (1 - en(t, 13.4, .2)), s: sc, x: (x - 540) * zoom * .35, y: (y - 820) * zoom * .35 + Math.sin(t * 2 + i) * 6, b: esYo ? 0 : zoom * 3 });
+    e.style.boxShadow = 'none';
+    e.style.filter = esYo && zoom > 0 ? `drop-shadow(0 0 ${30 * zoom}px #39FF88)` + (e.style.filter || '') : e.style.filter;
+  });
+  const mk = en(t, 11.9, .5, E.out5);
+  st(r.mira, { c: true, o: mk * (1 - en(t, 13.4, .2)), s: lerp(2.2, 1.05, mk) + Math.sin(t * 5) * .02, r: t * 40 });
+  const tk = en(t, 12.94, .45, E.spr);
+  st(r.tu, { c: true, o: clamp((t - 12.94) * 8) * (1 - en(t, 13.4, .2)), s: lerp(2.5, 1, tk), b: (1 - clamp((t - 12.94) * 4)) * 10 });
+  // salida: atravesamos el panal
+  const sal = en(t, 13.35, .27, E.in);
+  st(r.panal, { s: 1 + sal * 2, o: 1 - sal, b: sal * 10 });
+});
+
+/* ════════ 5 · Sabemos lo que cuesta crear → + profesionalismo (13.6 – 20.15) ════════ */
+M.escena(13.6, 20.2, r => {
+  r.t1 = titular(r, 'SABEMOS LO QUE\nCUESTA CREAR', 't-m', TY, { stag: .02 });
+  r.t2 = titular(r, 'PROFESIONALISMO', 't-m verde glow', TY + 30, { modo: 'zoom', stag: .025 });
+  r.t3 = titular(r, 'LISTO PARA\nEL PÚBLICO', 't-l', TY, { stag: .03 });
+  r.foco = h('div', 'abs', null, r); r.foco.style.cssText += 'left:140px;top:0;width:800px;height:1400px;background:radial-gradient(ellipse 50% 100% at 50% 0%,rgba(220,255,235,.22),transparent 70%);clip-path:polygon(40% 0,60% 0,100% 100%,0 100%);mix-blend-mode:screen';
+  // tarjeta: primero borrador, luego premium
+  const c = r.card = h('div', 'proy', null, r); c.style.left = '540px'; c.style.top = '930px';
+  r.ph = h('div', 'abs', null, c); M.pos(r.ph, 24, 24, 572, 470); r.ph.style.cssText += 'border:3px dashed rgba(138,148,166,.45);display:grid;place-items:center;font-family:Share Tech Mono;font-size:34px;color:#4A5361';
+  r.ph.innerHTML = '[ sin portada ]';
+  r.arteW = h('div', 'abs', null, c); M.pos(r.arteW, 24, 24, 572, 470); r.arte = arte(r.arteW, 'NEON RUNNER');
+  r.nom = h('div', 'nom', '', c); r.aut = h('div', 'aut', '', c);
+  r.barras = h('div', 'abs', '<div style="height:22px;width:70%;background:#1A222E;margin-bottom:16px"></div><div style="height:22px;width:45%;background:#1A222E"></div>', c); M.pos(r.barras, 34, 680, 540);
+  r.meta = h('div', 'meta', `<span>${ic('mando', 30)} ACCIÓN</span><span>PC · ANDROID</span><span>${ic('estrella', 28, '#39FF88')} 4.9</span>`, c);
+  r.jugar = h('div', 'abs boton', 'JUGAR GRATIS', c); r.jugar.style.cssText += 'left:34px;right:34px;bottom:30px;padding:24px;font-size:38px';
+  r.ver = h('div', 'abs', ic('check', 44, '#02140A'), c); r.ver.style.cssText += 'right:30px;top:520px;width:70px;height:70px;border-radius:50%;background:#39FF88;display:grid;place-items:center;box-shadow:0 0 30px #39FF88';
+  r.br = h('div', 'brillo', null, c);
+  r.costos = [['reloj', '1.840 HORAS'], ['luna', '312 NOCHES'], ['bug', '97 BUGS']].map(([i, s]) => { const e = h('div', 'chip gris', `${ic(i, 40)} ${s}`, r); e.style.position = 'absolute'; return e; });
+  r.mas = h('div', 'abs orb verde', '+', r); r.mas.style.cssText += 'left:540px;top:900px;font-size:700px;line-height:1;text-shadow:0 0 40px #39FF88,0 0 140px rgba(57,255,136,.6)';
+  r.nivel = h('div', 'abs', `<div class="mono" style="display:flex;justify-content:space-between;font-size:30px;color:#8A94A6;margin-bottom:12px"><span>NIVEL PROFESIONAL</span><b class="verde pct" style="font-weight:400">0%</b></div><div style="height:22px;background:#111925;border:2px solid rgba(57,255,136,.35)"><div class="fill" style="height:100%;width:0;background:linear-gradient(90deg,#1FAF5E,#39FF88);box-shadow:0 0 20px #39FF88"></div></div>`, r);
+  M.pos(r.nivel, 190, 425, 700);
+  r.cs = chispas(r, 50);
+  sfx(13.62, 'whoosh', .5); [14.2, 14.5, 14.8].forEach(t => sfx(t, 'pop', .35));
+  sfx(15.6, 'riser_corto', .6);
+  golpe(16.56, 1.2, 'boom'); sfx(16.62, 'brillo', .6); sfx(16.7, 'decode', .4);
+  sfx(17.1, 'carga', .5); sfx(17.95, 'exito', .6);
+  sfx(18.75, 'foco', .6); sfx(19.95, 'whoosh', .6);
+}, (t, r) => {
+  r.t1.anim(t, 13.66, 16.3);
+  r.t2.anim(t, 16.65, 18.5);
+  r.t3.anim(t, 18.8, 19.95);
+  const pro = en(t, 16.56, .5, E.out5); // 0 borrador → 1 premium
+  const k = en(t, 13.6, .6, E.out5);
+  const salida = en(t, 19.95, .25, E.in);
+  const ry = lerp(30, 0, k) + (t > 18.8 ? Math.sin((t - 18.8) * 1.6) * 10 : 0);
+  st(r.card, { c: true, o: k * (1 - salida), y: lerp(200, 0, k) - salida * 600 + 40, s: .94 * lerp(.85, 1, k) * (1 + (pro > 0 && pro < 1 ? Math.sin(pro * Math.PI) * .08 : 0)), ry, b: salida * 12 });
+  r.card.style.borderColor = pro > .05 ? '#39FF88' : 'rgba(138,148,166,.4)';
+  r.card.style.boxShadow = `0 0 ${80 * pro}px rgba(57,255,136,${.5 * pro}), 0 60px 120px rgba(0,0,0,.8)`;
+  r.ph.style.opacity = 1 - pro; r.arteW.style.opacity = pro; r.arteW.style.clipPath = `inset(0 ${100 - pro * 100}% 0 0)`; r.arte.anim(t);
+  M.decode(r.nom, pro > 0 ? 'NEON RUNNER' : 'sin_titulo', t, pro > 0 ? 16.7 : 13.9, .6);
+  r.nom.style.color = pro > 0 ? '#fff' : '#4A5361';
+  r.aut.innerHTML = pro > 0 ? '@tu_estudio · creador verificado' : 'v0.1 · borrador';
+  r.barras.style.opacity = 1 - pro; r.meta.style.opacity = pro; r.jugar.style.opacity = pro;
+  st(r.jugar, { s: 1 + (t > 19 ? Math.sin(t * 6) * .015 : 0) });
+  const vk = en(t, 17.3, .4, E.back); st(r.ver, { s: vk, o: vk > 0 ? 1 : 0 });
+  r.br.style.backgroundPosition = `${lerp(160, -60, en(t, 16.7, .8, E.io))}% 0`;
+  // costos de crear (se los lleva el +)
+  r.costos.forEach((e, i) => {
+    const a = 14.2 + i * .3, kk = en(t, a, .45, E.back);
+    const pos = [[70, 620], [610, 780], [90, 1170]][i];
+    e.style.left = pos[0] + 'px'; e.style.top = pos[1] + 'px';
+    const vuela = en(t, 16.5, .4, E.in);
+    st(e, { o: clamp((t - a) * 4) * (1 - vuela), s: kk, x: (pos[0] - 400) * vuela * 1.5, y: (pos[1] - 900) * vuela * 1.5, b: vuela * 10, r: Math.sin(t * 2 + i) * 3 });
+  });
+  const mk = en(t, 16.56, .35, E.out5);
+  st(r.mas, { c: true, o: (t > 16.5 ? 1 : 0) * (1 - en(t, 16.9, .4)), s: lerp(.2, 1.4, mk) + en(t, 16.9, .4) * .8, r: lerp(-90, 0, mk), b: en(t, 16.9, .4) * 20 });
+  explotar(r.cs, t, 16.56, 540, 900, 1);
+  // barra de nivel
+  const nk = en(t, 17.1, .85, E.io);
+  r.nivel.style.opacity = clamp((t - 17.0) * 4) * (1 - en(t, 18.6, .25));
+  r.nivel.querySelector('.fill').style.width = nk * 100 + '%';
+  r.nivel.querySelector('.pct').textContent = Math.round(nk * 100) + '%';
+  st(r.foco, { o: en(t, 18.75, .5) * (1 - salida) * (.85 + Math.sin(t * 20) * .05) });
+});
+
+/* ════════ 6 · Visibilidad real → miles de personas → comunidad (20.15 – 27.4) ════════ */
+M.escena(20.15, 27.45, r => {
+  r.t1 = titular(r, 'VISIBILIDAD\nREAL', 't-xl', TY, { stag: .03 });
+  r.t2 = titular(r, 'MILES DE\nPERSONAS', 't-xl verde glow', TY, { modo: 'zoom', stag: .03 });
+  r.t3 = titular(r, 'TU PROPIA\nCOMUNIDAD', 't-l', TY, { stag: .03 });
+  // panel
+  const v = r.panel = h('div', 'vent bisel', `<div class="barra"><i></i><i></i><i></i><span>upgames.games / panel del creador</span></div>`, r);
+  M.pos(v, 90, 520, 900, 760);
+  r.k1 = h('div', 'kpi', `<small>${ic('ojo', 30)} Vistas</small><b>0</b><em>▲ 0%</em>`, v); M.pos(r.k1, 30, 94, 410);
+  r.k2 = h('div', 'kpi', `<small>${ic('mando', 30)} Jugadas</small><b>0</b><em>▲ 0%</em>`, v); M.pos(r.k2, 460, 94, 410);
+  r.g = grafica(v, 830, 330, [.05, .08, .07, .15, .13, .25, .3, .28, .45, .52, .6, .74, .82, .95], '#39FF88'); M.pos(r.g, 35, 360);
+  r.red = red(r, 48, 540, 820, 440);
+  r.centro = h('div', 'abs', null, r); r.centro.style.cssText += 'left:540px;top:820px;width:220px;height:220px;';
+  r.centroA = arte(h('div', 'abs hex', null, r.centro), ''); r.centroA.parentNode.style.cssText += 'inset:0;border:0';
+  r.cnt = h('div', 'abs c orb', '', r); r.cnt.style.cssText += 'top:1330px;font-size:64px';
+  // comunidad
+  const cm = r.com = h('div', 'vent bisel', `<div class="barra"><i></i><i></i><i></i><span>comunidad · @tu_estudio</span></div>`, r);
+  M.pos(cm, 140, 540, 800, 760);
+  r.seg = h('div', 'abs', '', cm); M.pos(r.seg, 0, 120, 800); r.seg.style.textAlign = 'center';
+  r.av = []; for (let i = 0; i < 14; i++) { const e = hexav(cm, i + 3, 110); e.style.position = 'absolute'; r.av.push(e); }
+  r.btn = h('div', 'abs boton', `${ic('users', 46)} SEGUIR`, cm); r.btn.style.cssText += 'left:200px;top:580px;width:400px;padding:26px 0;font-size:40px';
+  r.cur = cursor(r);
+  sfx(20.2, 'whoosh', .6); sfx(20.5, 'contador', .5); sfx(20.78, 'decode', .3);
+  barrido(22.25); sfx(22.3, 'zoom', .6); for (let i = 0; i < 16; i++) sfx(22.4 + i * .06, 'pop', .18);
+  sfx(24.9, 'whoosh', .6); sfx(25.5, 'click', .7); sfx(25.55, 'contador', .5); sfx(26.8, 'exito', .55);
+}, (t, r) => {
+  r.t1.anim(t, 20.5, 22.1);
+  r.t2.anim(t, 22.3, 24.75);
+  r.t3.anim(t, 25.0, 27.25);
+  // panel
+  const pk = en(t, 20.15, .6, E.out5), ps = en(t, 22.1, .5, E.in);
+  st(r.panel, { o: pk * (1 - ps), y: lerp(260, 0, pk), rx: lerp(-20, 0, pk), s: 1 - ps * .7, b: ps * 10 });
+  const ck = en(t, 20.5, 1.7, E.out);
+  r.k1.querySelector('b').textContent = fmt(ck * 12480);
+  r.k1.querySelector('em').textContent = `▲ ${fmt(ck * 2340)}%`;
+  r.k2.querySelector('b').textContent = fmt(ck * 3912);
+  r.k2.querySelector('em').textContent = `▲ ${fmt(ck * 870)}%`;
+  r.g.anim(en(t, 20.5, 1.6, E.io));
+  // red de personas
+  const rk = t > 22.2 ? 1 : 0, rs = en(t, 24.75, .35, E.in);
+  r.red.style.display = rk ? 'block' : 'none';
+  r.red.anim(t, 22.35); st(r.red, { o: 1 - rs, s: 1 + Math.sin(t) * .01 + rs * .4 });
+  const ck2 = en(t, 22.3, .5, E.back);
+  st(r.centro, { c: true, o: rk * (1 - rs), s: ck2 * (1 + Math.sin(t * 6) * .03) });
+  r.centro.style.filter = 'drop-shadow(0 0 30px #39FF88)'; r.centroA.anim(t);
+  r.cnt.innerHTML = `+${fmt(en(t, 22.4, 2, E.out) * 12480)} <span class="verde">PERSONAS</span>`;
+  st(r.cnt, { c: true, o: clamp((t - 22.5) * 4) * (1 - rs) });
+  // comunidad
+  const mk = en(t, 24.95, .55, E.out5), ms = en(t, 27.2, .25, E.in);
+  st(r.com, { o: mk * (1 - ms), y: lerp(240, 0, mk), s: lerp(.9, 1, mk) + ms * .3, b: ms * 12 });
+  const sk = t < 25.5 ? 0 : en(t, 25.55, 1.3, E.out);
+  const desde = t > 26.4 && t < 26.95;
+  r.seg.innerHTML = `<div class="mono" style="font-size:30px;color:#8A94A6;letter-spacing:.2em">SEGUIDORES</div><div class="orb" style="font-size:150px;line-height:1.1;color:${sk > 0 ? '#39FF88' : '#fff'};text-shadow:${sk > 0 ? 'var(--neon)' : 'none'}">${fmt(sk * 1280)}</div><div class="mono" style="font-size:28px;color:#8A94A6">${desde ? 'DESDE CERO ↗' : '&nbsp;'}</div>`;
+  r.av.forEach((e, i) => {
+    const a = 25.6 + i * .08, k = en(t, a, .45, E.back);
+    e.style.left = 40 + (i % 7) * 104 + 'px'; e.style.top = 400 + Math.floor(i / 7) * 0 + (i >= 7 ? 0 : 0) + 'px';
+    if (i >= 7) { e.style.left = 92 + (i - 7) * 104 + 'px'; e.style.top = '470px'; }
+    st(e, { s: k * .9, o: clamp((t - a) * 5) });
+  });
+  const sigue = t > 25.5;
+  r.btn.innerHTML = sigue ? `${ic('check', 44)} SIGUIENDO` : `${ic('users', 46)} SEGUIR`;
+  r.btn.style.background = sigue ? '#0E1A2E' : '#39FF88'; r.btn.style.color = sigue ? '#39FF88' : '#02140A'; r.btn.style.border = sigue ? '3px solid #39FF88' : '0';
+  r.btn.style.top = '640px';
+  const [cx, cy] = ruta(t, [[25.0, 960, 1500], [25.42, 540, 1225]]);
+  r.cur.style.display = t > 25.0 && t < 26.6 ? 'block' : 'none';
+  r.cur.mover(cx, cy, 25.5, t);
+  r.cur.style.opacity = 1 - en(t, 26.3, .3);
+});
+
+/* ════════ 7 · Tu trabajo merece ser reconocido (27.4 – 29.45) ════════ */
+M.escena(27.4, 29.45, r => {
+  r.rayos = h('div', 'abs', null, r);
+  r.rayos.style.cssText += 'left:540px;top:820px;width:1800px;height:1800px;background:repeating-conic-gradient(from 0deg,rgba(57,255,136,.16) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 60%)';
+  r.med = h('div', 'abs', `<svg width="440" height="490" viewBox="0 0 440 490"><defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CFFC8"/><stop offset="1" stop-color="#0B5E31"/></linearGradient></defs>
+    <polygon points="220,10 430,125 430,365 220,480 10,365 10,125" fill="#07101F" stroke="url(#mg)" stroke-width="14"/>
+    <polygon points="220,60 385,150 385,340 220,430 55,340 55,150" fill="none" stroke="rgba(57,255,136,.4)" stroke-width="4"/>
+    <path d="M220 130l30 68 74 6-56 49 17 72-65-39-65 39 17-72-56-49 74-6z" fill="#39FF88" style="filter:drop-shadow(0 0 18px #39FF88)"/></svg>`, r);
+  r.med.style.cssText += 'left:540px;top:820px';
+  r.t1 = titular(r, 'TU TRABAJO\nMERECE SER', 't-m', TY, { stag: .025 });
+  r.t2 = titular(r, 'RECONOCIDO', 't-xl verde glow', 1250, { modo: 'zoom', stag: .035 });
+  r.cs = chispas(r, 80);
+  sfx(27.4, 'whoosh', .5); sfx(27.5, 'brillo', .5); golpe(28.82, 1, 'boom'); sfx(28.85, 'exito', .6);
+}, (t, r) => {
+  r.t1.anim(t, 27.46, 29.25);
+  r.t2.anim(t, 28.82, 29.25);
+  const k = en(t, 27.4, .7, E.spr);
+  st(r.med, { c: true, o: clamp((t - 27.4) * 5) * (1 - en(t, 29.25, .2)), s: lerp(.3, 1, k) * (1 + en(t, 28.82, .3, E.out) * .1 - en(t, 29.0, .4) * .05), ry: lerp(180, 0, k) + Math.sin(t * 2) * 8 });
+  st(r.rayos, { c: true, r: t * 25, o: en(t, 27.5, .6) * (1 - en(t, 29.25, .2)), s: 1 + en(t, 28.82, .5) * .3 });
+  explotar(r.cs, t, 28.82, 540, 820, 1.3);
+});
+
+/* ════════ 8 · ¿Qué esperas? Totalmente gratis (29.4 – 33.3) ════════ */
+M.escena(29.4, 33.3, r => {
+  r.t1 = titular(r, '¿QUÉ\nESPERAS?', 't-xxl', 820, { modo: 'zoom', stag: .045 });
+  r.tag = h('div', 'abs bisel', `<div class="mono" style="font-size:32px;color:#8A94A6;letter-spacing:.2em">PUBLICAR TU PROYECTO</div><div class="precio orb" style="position:relative;font-size:180px;line-height:1.1">$49<span style="font-size:90px">.99</span><div class="tacha" style="position:absolute;left:-10px;top:52%;height:14px;background:#FF3B4E;box-shadow:0 0 20px #FF3B4E;width:0"></div></div>`, r);
+  r.tag.style.cssText += 'left:540px;top:820px;padding:50px 70px;background:#0A1220;border:3px solid #4A5361;text-align:center';
+  r.cero = h('div', 'abs orb verde', '$0', r); r.cero.style.cssText += 'left:540px;top:830px;font-size:360px;text-shadow:0 0 40px #39FF88,0 0 140px rgba(57,255,136,.6)';
+  r.gr = h('div', 'abs bisel orb', '100% GRATIS', r); r.gr.style.cssText += 'left:540px;top:1250px;padding:24px 50px;background:#39FF88;color:#02140A;font-size:72px';
+  r.anl = anillos(r, 3);
+  sfx(29.42, 'boom_suave', .6); sfx(30.8, 'whoosh', .5); sfx(31.74, 'tachar', .6);
+  golpe(32.4, 1.3, 'boom'); sfx(32.45, 'moneda', .5); sfx(32.7, 'sello', .6);
+}, (t, r) => {
+  const sube = en(t, 30.85, .5, E.io);
+  r.t1.anim(t, 29.42, 33.1);
+  st(r.t1.el, { c: true, y: -sube * 480, s: lerp(1, .55, sube) });
+  const k = en(t, 30.9, .5, E.out5);
+  st(r.tag, { c: true, o: k * (1 - en(t, 32.35, .1)), y: lerp(300, 0, k), s: 1 - en(t, 32.35, .12) * .3 });
+  r.tag.querySelector('.tacha').style.width = en(t, 31.74, .35, E.out) * 110 + '%';
+  const ck = en(t, 32.4, .4, E.spr);
+  st(r.cero, { c: true, o: clamp((t - 32.4) * 8) * (1 - en(t, 33.1, .2)), s: lerp(2.4, 1, ck), b: (1 - clamp((t - 32.4) * 5)) * 16 });
+  const gk = en(t, 32.7, .35, E.back);
+  st(r.gr, { c: true, o: clamp((t - 32.7) * 6) * (1 - en(t, 33.1, .2)), s: lerp(1.6, 1, gk), r: lerp(-8, -3, gk) });
+  choque(r.anl, t, 32.4, 540, 830, 1500);
+});
+
+/* ════════ 9 · Entra ya a upgames.games (33.25 – 35.3) ════════ */
+M.escena(33.25, 35.3, r => {
+  r.u = h('div', 'url bisel', `${ic('globo', 70, '#39FF88')}<span class="tx"></span><span class="cur"></span>`, r); r.u.style.left = '540px'; r.u.style.top = '800px';
+  r.et = h('div', 'abs etq c', 'ENTRA YA', r); r.et.style.top = '620px';
+  r.b = h('div', 'abs boton bisel', `ENTRAR ${ic('subir', 50)}`, r); r.b.style.left = '540px'; r.b.style.top = '1060px';
+  r.cur = cursor(r);
+  sfx(33.3, 'whoosh', .5); for (let i = 0; i < 13; i++) sfx(33.6 + i * .085, 'tecla', .45); sfx(34.7, 'click', .7); sfx(34.75, 'exito', .4);
+}, (t, r) => {
+  const k = en(t, 33.25, .5, E.out5), sal = en(t, 35.05, .25, E.in);
+  st(r.u, { c: true, o: k * (1 - sal), s: lerp(.8, 1, k) * (1 + sal * 1.5), b: sal * 12 });
+  const n = Math.floor(clamp((t - 33.6) / 1.1) * 13.999);
+  r.u.querySelector('.tx').innerHTML = 'upgames.games'.slice(0, n).replace('upgames', '<span style="color:#fff">upgames</span>').replace('.games', '<span class="verde">.games</span>');
+  r.u.querySelector('.cur').style.opacity = Math.floor(t * 4) % 2;
+  st(r.et, { c: true, o: en(t, 33.4, .3) * (1 - sal) });
+  const bk = en(t, 34.3, .4, E.back);
+  const presion = t > 34.7 && t < 34.85 ? .93 : 1;
+  st(r.b, { c: true, o: clamp((t - 34.3) * 5) * (1 - sal), s: bk * presion });
+  const [cx, cy] = ruta(t, [[34.2, 900, 1400], [34.65, 600, 1080]]);
+  r.cur.style.display = t > 34.2 && t < 35.1 ? 'block' : 'none';
+  r.cur.mover(cx, cy, 34.7, t);
+});
+
+/* ════════ 10 · Escríbenos por DM → promoción exclusiva sin costo (35.2 – 41.55) ════════ */
+M.escena(35.2, 41.6, r => {
+  r.t1 = titular(r, 'ESCRÍBENOS\nPOR DM', 't-l', TY - 20, { stag: .03 });
+  r.t2 = titular(r, 'PROMOCIÓN\nEXCLUSIVA', 't-l verde glow', TY - 20, { modo: 'zoom', stag: .03 });
+  const tel = r.tel = h('div', 'tel', `<div class="pant"><div class="isla"></div>
+    <div class="abs" style="left:0;right:0;top:0;height:200px;padding:96px 34px 0;display:flex;align-items:center;gap:22px;border-bottom:2px solid rgba(57,255,136,.35);background:rgba(3,6,12,.95)">
+      <div class="hex" style="width:84px;height:94px;background:linear-gradient(160deg,#39FF88,#0B5E31);display:grid;place-items:center;font-family:Orbitron;font-weight:900;color:#02140A;font-size:34px">UG</div>
+      <div><div style="font-size:40px;font-weight:700">UpGames <span style="color:#39FF88">${ic('check', 30, '#39FF88')}</span></div><div class="mono" style="font-size:24px;color:#39FF88">● en línea</div></div></div>
+    <div class="chat abs" style="left:0;right:0;top:200px;bottom:0"></div></div>`, r);
+  tel.style.left = '540px'; tel.style.top = '900px';
+  const ch = tel.querySelector('.chat');
+  r.b1 = h('div', 'burb yo', '¡Hola! Quiero dar a conocer mi proyecto', ch); r.b1.style.top = '60px';
+  r.esc = h('div', 'burb ug', '<span class="dots" style="font-size:50px;letter-spacing:6px">•••</span>', ch); r.esc.style.top = '270px';
+  r.b2 = h('div', 'burb ug', '¡Bienvenido, creador! Te preparamos una <b style="color:#39FF88">promoción exclusiva</b>', ch); r.b2.style.top = '270px';
+  r.b3 = h('div', 'burb ug', `${ic('check', 34, '#39FF88')} Sin ningún costo`, ch); r.b3.style.top = '560px';
+  r.redes = ['chat', 'env', 'arroba'].map((n, i) => { const e = h('div', 'abs bisel-s', ic(n, 80, '#39FF88'), r); e.style.cssText += 'width:150px;height:150px;display:grid;place-items:center;background:rgba(10,18,32,.95);border:3px solid rgba(57,255,136,.5);box-shadow:0 0 40px rgba(57,255,136,.3)'; return e; });
+  r.tick = h('div', 'abs bisel', `<div style="display:flex;gap:30px;align-items:center"><div>${ic('estrella', 90, '#02140A')}</div><div><div class="mono" style="font-size:28px;letter-spacing:.2em">CUPÓN · CREADOR INDIE</div><div class="orb" style="font-size:60px;line-height:1.05">PROMOCIÓN<br>EXCLUSIVA</div><div class="mono" style="font-size:30px;margin-top:8px">COSTO: <b class="cst">$0</b></div></div></div>`, r);
+  r.tick.style.cssText += 'left:540px;top:980px;padding:40px 50px;background:linear-gradient(120deg,#39FF88,#9CFFC8);color:#02140A;box-shadow:0 0 90px rgba(57,255,136,.6)';
+  r.tbr = h('div', 'brillo', null, r.tick);
+  r.sello = h('div', 'abs orb', 'SIN COSTO', r); r.sello.style.cssText += 'left:540px;top:1240px;font-size:84px;color:#fff;border:10px solid #fff;padding:4px 30px;box-shadow:0 0 40px rgba(255,255,255,.5)';
+  r.cs = chispas(r, 50);
+  sfx(35.24, 'whoosh', .6); sfx(35.9, 'enviar', .6); sfx(36.6, 'escribiendo', .4); sfx(37.4, 'recibir', .6); sfx(38.3, 'recibir', .4);
+  barrido(38.7); golpe(38.76, .8, 'impacto'); sfx(38.8, 'brillo', .5);
+  golpe(40.2, 1, 'sello'); sfx(40.25, 'exito', .5); sfx(41.35, 'whoosh', .6);
+}, (t, r) => {
+  r.t1.anim(t, 35.6, 38.5);
+  r.t2.anim(t, 38.76, 41.35);
+  const k = en(t, 35.24, .7, E.out5), baja = en(t, 38.6, .5, E.io), sal = en(t, 41.35, .25, E.in);
+  st(r.tel, { c: true, o: k * (1 - sal), y: lerp(900, 0, k) + baja * 140, s: .62 * lerp(1, .82, baja), ry: lerp(-30, 0, k) + Math.sin(t * 1.3) * 4, rx: 4, b: baja * 4 + sal * 10 });
+  const b1 = en(t, 35.9, .4, E.back); st(r.b1, { s: b1, o: clamp((t - 35.9) * 5) });
+  r.b1.style.transformOrigin = '100% 100%';
+  r.esc.style.display = t > 36.6 && t < 37.4 ? 'block' : 'none';
+  r.esc.querySelector('.dots').style.opacity = .4 + .6 * Math.abs(Math.sin(t * 8));
+  const b2 = en(t, 37.4, .4, E.back); st(r.b2, { s: b2, o: clamp((t - 37.4) * 5) }); r.b2.style.transformOrigin = '0 100%';
+  const b3 = en(t, 38.3, .4, E.back); st(r.b3, { s: b3, o: clamp((t - 38.3) * 5) }); r.b3.style.transformOrigin = '0 100%';
+  r.redes.forEach((e, i) => {
+    const a = 35.5 + i * .15, kk = en(t, a, .5, E.back);
+    const ang = t * .8 + i * 2.1;
+    e.style.left = 540 + Math.cos(ang) * 400 - 75 + 'px'; e.style.top = 960 + Math.sin(ang) * 380 - 75 + 'px';
+    st(e, { s: kk * (1 - baja * .6), o: clamp((t - a) * 4) * (1 - baja) });
+  });
+  const tk = en(t, 38.76, .55, E.spr);
+  st(r.tick, { c: true, o: clamp((t - 38.76) * 6) * (1 - sal), s: lerp(.3, 1, tk), r: lerp(25, -4, tk) + Math.sin(t * 2) * 1, y: Math.sin(t * 2.2) * 8 });
+  r.tbr.style.backgroundPosition = `${lerp(160, -60, ((t - 38.9) % 1.4) / 1.4)}% 0`;
+  r.tick.querySelector('.cst').style.fontSize = t > 40.2 ? '40px' : '30px';
+  const sk = en(t, 40.2, .3, E.out5);
+  st(r.sello, { c: true, o: clamp((t - 40.2) * 8) * (1 - sal), s: lerp(2.6, 1, sk), r: -8 });
+  explotar(r.cs, t, 40.2, 540, 1240, .9);
+});
+
+/* ════════ 11 · ¡Únete a UpGames ahora! (41.5 – fin) ════════ */
+M.escena(41.5, DUR + 1, r => {
+  r.logo = h('img', 'abs', null, r); r.logo.src = 'logo.png'; r.logo.style.cssText += 'width:900px;left:540px;top:640px';
+  r.anl = anillos(r, 3);
+  r.tag = h('div', 'abs etq c', '', r); r.tag.style.top = '880px';
+  r.b = h('div', 'abs boton bisel', `ÚNETE AHORA ${ic('subir', 54)}`, r); r.b.style.cssText += 'left:540px;top:1080px;font-size:60px;padding:42px 80px';
+  r.br = h('div', 'brillo', null, r.b);
+  r.url = h('div', 'abs mono c', '<span style="color:#fff">upgames</span><span class="verde">.games</span>', r); r.url.style.cssText += 'top:1270px;font-size:64px;letter-spacing:.08em';
+  r.cs = chispas(r, 70);
+  r.cur = cursor(r);
+  r.neg = h('div', 'abs', null, r); r.neg.style.cssText += 'inset:0;background:#000;z-index:80';
+  golpe(41.6, 1.6, 'boom'); sfx(41.6, 'impacto', .8); sfx(42.0, 'decode', .4); sfx(42.4, 'click', .7); sfx(42.45, 'exito', .7);
+}, (t, r) => {
+  const lk = en(t, 41.6, .7, E.out5);
+  st(r.logo, { c: true, o: clamp((t - 41.55) * 8), s: lerp(2.2, 1, lk) + Math.sin(t * 2.5) * .006, b: (1 - lk) * 22 });
+  choque(r.anl, t, 41.6, 540, 640, 1700);
+  explotar(r.cs, t, 41.6, 540, 640, 1.3);
+  M.decode(r.tag, 'PATROCINIO PARA CREADORES INDIE', t, 42.0, .7);
+  st(r.tag, { c: true, o: t > 42 ? 1 : 0 });
+  const bk = en(t, 42.1, .45, E.back), pres = t > 42.4 && t < 42.55 ? .93 : 1;
+  st(r.b, { c: true, o: clamp((t - 42.1) * 6), s: bk * pres * (1 + Math.max(0, Math.sin((t - 42.6) * 5)) * .025 * (t > 42.6)) });
+  r.b.style.boxShadow = `0 0 ${60 + 40 * Math.abs(Math.sin(t * 3))}px rgba(57,255,136,.7)`;
+  r.br.style.backgroundPosition = `${lerp(160, -60, ((t - 42.5) % 1.6) / 1.6)}% 0`;
+  st(r.url, { c: true, o: en(t, 42.6, .4), y: lerp(30, 0, en(t, 42.6, .5)) });
+  const [cx, cy] = ruta(t, [[41.9, 980, 1500], [42.35, 640, 1100]]);
+  r.cur.style.display = t > 41.9 && t < 43.2 ? 'block' : 'none';
+  r.cur.style.opacity = 1 - en(t, 42.9, .3);
+  r.cur.mover(cx, cy, 42.4, t);
+  r.neg.style.opacity = en(t, DUR - .6, .6, E.in);
+});
+
+/* HUD: logo pequeño de marca durante el cuerpo del video */
+const hudAct0 = () => {};
+M.subtitulos([
+  ['¿Eres', 0.00], ['un', .36], ['desarrollador', .56], ['indie', 1.16], ['y', 1.48], ['no', 1.72], ['sabes', 2.02], ['dónde', 2.26], ['publicar', 2.52], ['tus', 3.02], ['proyectos', 3.26],
+  ['o', 3.78], ['cómo', 4.0], ['conseguir', 4.32], ['más', 4.7], ['visibilidad', 5.1], ['en', 5.64], ['redes?', 5.86],
+  ['No', 6.6], ['te', 6.84], ['preocupes', 7.14], ['más.', 7.46],
+  ['En', 8.06], ['UpGames', 8.22], ['estamos', 8.78], ['buscando', 9.14], ['y', 9.64], ['patrocinando', 9.86], ['a', 10.42], ['creadores', 10.58], ['independientes', 10.9],
+  ['exactamente', 11.74], ['como', 12.66], ['tú.', 12.94],
+  ['Sabemos', 13.66], ['lo', 14.06], ['que', 14.24], ['cuesta', 14.36], ['crear.', 14.62],
+  ['Por', 15.3], ['eso,', 15.5], ['te', 15.8], ['damos', 16.0], ['ese', 16.22], ['plus', 16.56], ['de', 16.78], ['profesionalismo', 17.12], ['que', 17.68], ['necesitas', 17.94],
+  ['para', 18.44], ['presentarte', 18.8], ['al', 19.26], ['público.', 19.4],
+  ['Te', 20.22], ['ofrecemos', 20.44], ['visibilidad', 20.78], ['real', 21.36], ['para', 21.78], ['que', 22.1], ['miles', 22.3], ['de', 22.56], ['personas', 22.92],
+  ['descubran', 23.14], ['tus', 23.64], ['creaciones', 23.88], ['y', 24.38], ['puedas', 24.64], ['construir', 25.0], ['tu', 25.4], ['propia', 25.7], ['comunidad', 26.02], ['desde', 26.48], ['cero.', 26.8],
+  ['Tu', 27.46], ['trabajo', 27.66], ['merece', 28.1], ['ser', 28.62], ['reconocido.', 28.82],
+  ['¿Qué', 29.42], ['esperas', 30.0], ['para', 30.34], ['dar', 30.56], ['a', 30.72], ['conocer', 30.9], ['tu', 31.14], ['proyecto', 31.38], ['totalmente', 31.74], ['gratis?', 32.4],
+  ['Entra', 33.3], ['ya', 33.62], ['a', 33.9], ['upgames.games', 34.08],
+  ['o', 35.24], ['escríbenos', 35.6], ['por', 36.04], ['mensaje', 36.2], ['directo', 36.6], ['en', 36.92], ['nuestras', 37.14], ['redes', 37.26], ['sociales', 37.54],
+  ['para', 37.94], ['darte', 38.26], ['una', 38.48], ['promoción', 38.76], ['exclusiva', 39.16], ['y', 39.88], ['sin', 40.2], ['ningún', 40.44], ['costo.', 40.78],
+  ['¡Únete', 41.6], ['a', 41.84], ['UpGames', 41.92], ['ahora!', 42.32],
+]);
+M.iniciar({ duracion: DUR, etiqueta: 'UPGAMES // CREADORES INDIE' });
+// la marca de agua aparece tras el logo y se va en el cierre
+const _r = window.render;
+window.render = t => { _r(t); M.hud.marca.style.opacity = .55 * clamp((t - 10.5) * 2) * (1 - clamp((t - 41.3) * 4)); M.hud.el.style.opacity = clamp(t * 3) * (1 - en(t, DUR - .6, .6)); };
+</script>
+</body>
+</html>
