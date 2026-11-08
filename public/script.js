@@ -1598,7 +1598,7 @@ function ugFavInvitado(id) {
   if (favs.length >= 3 && !LS.get('ug_fav_aviso')) {
     LS.set('ug_fav_aviso', '1');
     setTimeout(() => ugPedirSesion(`no perder tus ${favs.length} favoritos`), 600);
-  } else toast(favs.length === 1 ? '❤️ Guardado en este teléfono' : `❤️ Guardado · llevas ${favs.length}`);
+  } else toast(favs.length === 1 ? '🔖 Guardado en Favoritos (en este teléfono)' : `🔖 Guardado · llevas ${favs.length} en Favoritos`);
 }
 async function ugSubirFavsInvitado() {
   const pend = LS.getJSON('favoritos_inv', []), token = LS.get('token');
@@ -1613,7 +1613,7 @@ async function ugSubirFavsInvitado() {
   const quedan = LS.getJSON('favoritos_inv', []).filter(f => !hechos.includes(f));
   if (quedan.length) LS.setJSON('favoritos_inv', quedan); else LS.remove('favoritos_inv');
   const local = LS.getJSON('favoritos', []); hechos.forEach(f => { if (!local.includes(f)) local.push(f); }); LS.setJSON('favoritos', local);
-  if (hechos.length) toast(`❤️ ${hechos.length} favorito${hechos.length > 1 ? 's' : ''} guardado${hechos.length > 1 ? 's' : ''} en tu cuenta`);
+  if (hechos.length) toast(`🔖 ${hechos.length} favorito${hechos.length > 1 ? 's' : ''} guardado${hechos.length > 1 ? 's' : ''} en tu cuenta`);
 }
 setTimeout(ugSubirFavsInvitado, 2500);
 
@@ -1640,7 +1640,7 @@ async function fav(id) {
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${LS.get('token')}`},
         body:JSON.stringify({itemId:id})
       });
-      toast('❤️ Añadido a favoritos');
+      toast('🔖 Guardado en Favoritos');
       window.dispatchEvent(new CustomEvent('ug:guia', { detail: 'favorito' }));
       let local=LS.getJSON('favoritos', []);
       if(!local.includes(id)){local.push(id); LS.setJSON('favoritos', local);}
@@ -3026,7 +3026,7 @@ function pfOpenPostSheet(i) {
           ? `<span>⚡ <b>Revisión prioritaria activa</b>: va primera en la fila${item.prioridadReembolso ? ' (te devolvimos los UpCoins por la espera)' : ''}</span>`
           : `<span>⚡ <b>Revisión prioritaria</b>: pasa al frente de la fila por 🪙 <b data-ugx-precio="prioridad">30</b> UC. Si no se revisa en 24 h, te devolvemos los UpCoins.</span><button type="button" class="pf2-btn" onclick="UGX.prioridad('${item._id}', this)">Priorizar</button>`}</div>` : ''}
         ${!isPending && !isRejected ? `<div class="pf2-destacar" id="pf2-destacar">${item.destacadoHasta && new Date(item.destacadoHasta) > new Date()
-          ? `<span>🚀 Promocionada${item.promoNivel ? ` (${({ estandar: 'Estándar', plus: 'Plus', max: 'Máx' })[item.promoNivel] || ''})` : ''} hasta el ${new Date(item.destacadoHasta).toLocaleString('es-CO')}</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Extender</button>`
+          ? `<span>🚀 Promocionada${item.promoUCDia && window.UGRank ? ` (pesa ${Math.round(window.UGRank.pesoDeUCDia(item.promoUCDia) * 100)} %)` : ''} hasta el ${new Date(item.destacadoHasta).toLocaleString('es-CO')}</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Extender</button>`
           : `<span>🚀 <b>Promociónala</b>: elige días y nivel desde 🪙 50 UC</span><button type="button" class="pf2-btn" onclick="pfDestacar('${item._id}')">Promocionar</button>`}</div><div id="pf2-destacar-pago"></div>` : ''}
         <div class="pf2-sheet-actions">
           ${!isPending && !isRejected ? `<button type="button" class="pf2-btn pf2-btn-primary" onclick="pfVerPublicacion(${i})"><ion-icon name="open-outline"></ion-icon> Ver publicación</button>` : ''}
@@ -3039,33 +3039,50 @@ function pfOpenPostSheet(i) {
   document.body.style.overflow = 'hidden';
 }
 // Destacar una publicación propia con UpCoins (sale arriba marcada como "Promocionado")
-// Promocionar con UpCoins: el creador elige cuántos días y el nivel. Más UpCoins = más peso
-// de la promoción en el feed de Nexus (Estándar 30 %, Plus 40 %, Máx 50 %: public/upgames-ranking.js)
+// Promocionar con UpCoins: el creador elige los días y cuánto invertir (niveles rápidos o una
+// cantidad libre). Más UpCoins por día = más peso en el feed de Nexus (30 % → hasta 85 %), con
+// toda su fuerza para quienes les gusta ese tipo de contenido (public/upgames-ranking.js).
 async function pfDestacar(id) {
   const caja = document.getElementById('pf2-destacar-pago'); if (!caja) return;
   const R = window.UGRank;
   if (!R) { toast('No se pudo cargar la promoción'); return; }
   const item = (_pfMisItems || []).find(x => x._id === id);
-  const activo = item?.destacadoHasta && new Date(item.destacadoHasta) > new Date() ? (item.promoNivel || 'estandar') : null;
-  const ordenN = { estandar: 1, plus: 2, max: 3 };
-  let dias = 3, nivel = activo && ordenN[activo] > 1 ? activo : 'plus';
+  const activo = item?.destacadoHasta && new Date(item.destacadoHasta) > new Date();
+  let dias = 7, nivel = 'plus', libre = null;   // libre: monto escrito por el creador
+  const monto = () => (libre != null ? libre : R.precioPromo(dias, nivel));
   const pintar = () => {
-    const precio = R.precioPromo(dias, nivel), n = R.PROMO_NIVELES.find(x => x.id === nivel);
+    const min = R.precioPromo(dias, 'estandar'), m = monto(), valido = !!R.montoPromoValido(dias, m);
+    const peso = valido ? R.pesoDeUCDia(R.ucDiaEquivalente(m, dias)) : 0;
     caja.innerHTML = `<div class="ugx-promo">
-      <div class="ugx-promo-h"><b>🚀 Promocionar</b><small>${activo ? 'Se suma al tiempo que ya tiene.' : 'Sale marcada como "Promocionado".'}</small></div>
+      <div class="ugx-promo-h"><b>🚀 Promocionar</b><small>${activo ? 'Se suma a la promoción que ya tiene.' : 'Sale marcada como "Promocionado".'}</small></div>
       <div class="ugx-promo-lbl">Duración</div>
       <div class="ugx-promo-chips">${R.PROMO_DIAS.map(d => `<button type="button" class="${d === dias ? 'on' : ''}" data-dias="${d}">${d} día${d > 1 ? 's' : ''}</button>`).join('')}</div>
-      <div class="ugx-promo-lbl">Nivel · cuánto pesa la promoción en el feed de Nexus</div>
-      <div class="ugx-promo-niv">${R.PROMO_NIVELES.map(x => { const bloq = activo && ordenN[x.id] < ordenN[activo];
-        return `<button type="button" class="${x.id === nivel ? 'on' : ''}" data-nivel="${x.id}" ${bloq ? 'disabled title="Ya tienes un nivel mayor activo"' : ''}><b>${x.nombre}</b><span>${Math.round(x.peso * 100)} %</span><small>🪙 ${fmt(R.precioPromo(dias, x.id))}</small></button>`; }).join('')}</div>
-      <p class="ugx-promo-nota">La otra parte de la posición la gana tu publicación con sus reseñas, guardados, descargas y seguidores: una buena publicación promocionada rinde mucho más.</p>
-      <button type="button" class="pf2-btn pf2-btn-primary ugx-promo-ir">Continuar · 🪙 ${fmt(precio)} UC · ${dias} día${dias > 1 ? 's' : ''} ${n.nombre}</button>
+      <div class="ugx-promo-lbl">Inversión · cuánto pesa la promoción en el feed de Nexus</div>
+      <div class="ugx-promo-niv">${R.PROMO_NIVELES.map(x => `<button type="button" class="${libre == null && x.id === nivel ? 'on' : ''}" data-nivel="${x.id}"><b>${x.nombre}</b><span>${Math.round(x.peso * 100)} %</span><small>🪙 ${fmt(R.precioPromo(dias, x.id))}</small></button>`).join('')}</div>
+      <label class="ugx-promo-libre ${libre != null ? 'on' : ''}"><span>Otra cantidad</span><input type="number" inputmode="numeric" min="${min}" step="50" placeholder="Desde ${fmt(min)} UC" value="${libre != null ? libre : ''}"><b>UC</b></label>
+      <div class="ugx-promo-medidor" aria-hidden="true"><i style="width:${Math.round(peso / R.PROMO_PESO_MAX * 100)}%"></i></div>
+      <p class="ugx-promo-res">${valido ? `Peso de la promoción: <b>${Math.round(peso * 100)} %</b> de su posición${peso >= R.PROMO_PESO_MAX ? ' (el máximo)' : ''}.` : `Mínimo 🪙 ${fmt(min)} UC para ${dias} día${dias > 1 ? 's' : ''}.`}</p>
+      <p class="ugx-promo-nota">🎯 Nexus la muestra a todos, pero con toda su fuerza a quienes ya eligieron contenido parecido (mismo juego o género, p. ej. carreras). El resto de la posición la gana tu publicación con sus reseñas, me gusta, guardados y descargas.</p>
+      <button type="button" class="pf2-btn pf2-btn-primary ugx-promo-ir" ${valido ? '' : 'disabled'}>Continuar · 🪙 ${Number(m || 0).toLocaleString('es-CO')} UC · ${dias} día${dias > 1 ? 's' : ''}</button>
     </div>`;
     caja.querySelectorAll('[data-dias]').forEach(b => b.onclick = () => { dias = +b.dataset.dias; pintar(); });
-    caja.querySelectorAll('[data-nivel]').forEach(b => b.onclick = () => { if (!b.disabled) { nivel = b.dataset.nivel; pintar(); } });
+    caja.querySelectorAll('[data-nivel]').forEach(b => b.onclick = () => { nivel = b.dataset.nivel; libre = null; pintar(); });
+    const inp = caja.querySelector('.ugx-promo-libre input');
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10); libre = Number.isFinite(v) && v > 0 ? v : null;
+      const val = libre != null ? libre : 0, ok = !!R.montoPromoValido(dias, val), p = ok ? R.pesoDeUCDia(R.ucDiaEquivalente(val, dias)) : 0;
+      caja.querySelectorAll('[data-nivel]').forEach(b => b.classList.toggle('on', libre == null && b.dataset.nivel === nivel));
+      caja.querySelector('.ugx-promo-libre').classList.toggle('on', libre != null);
+      caja.querySelector('.ugx-promo-medidor i').style.width = Math.round(p / R.PROMO_PESO_MAX * 100) + '%';
+      caja.querySelector('.ugx-promo-res').innerHTML = ok ? `Peso de la promoción: <b>${Math.round(p * 100)} %</b> de su posición${p >= R.PROMO_PESO_MAX ? ' (el máximo)' : ''}.` : `Mínimo 🪙 ${fmt(R.precioPromo(dias, 'estandar'))} UC para ${dias} día${dias > 1 ? 's' : ''}.`;
+      const ir = caja.querySelector('.ugx-promo-ir'); ir.disabled = !ok && libre != null; ir.textContent = `Continuar · 🪙 ${Number(monto() || 0).toLocaleString('es-CO')} UC · ${dias} día${dias > 1 ? 's' : ''}`;
+    };
     caja.querySelector('.ugx-promo-ir').onclick = async () => {
+      const m2 = monto();
+      if (!R.montoPromoValido(dias, m2)) { toast(`Mínimo ${fmt(R.precioPromo(dias, 'estandar'))} UC para ${dias} días`); return; }
+      const producto = libre != null ? `impulso:${id}:${dias}:uc${m2}` : `impulso:${id}:${dias}:${nivel}`;
       caja.innerHTML = '<div class="eco-spin"><ion-icon name="sync-outline"></ion-icon></div>';
-      try { await ugPagosListo(); window.UGPagos.pagar(caja, { producto: `impulso:${id}:${dias}:${nivel}`, alExito: () => { pfClosePostSheet(); ugContadorUC(); pfLoadHistorial(); } }); }
+      try { await ugPagosListo(); window.UGPagos.pagar(caja, { producto, alExito: () => { pfClosePostSheet(); ugContadorUC(); pfLoadHistorial(); } }); }
       catch (_) { caja.innerHTML = ''; toast('No se pudo cargar el pago'); }
     };
   };
@@ -6087,7 +6104,7 @@ let _ugPagosJs = null;
 const ugPagosListo = () => (_ugPagosJs = _ugPagosJs || new Promise((ok, ko) => {
   if (window.UGPagos) return ok();
   const s = document.createElement('script');
-  s.src = './upgames-pagos.js?v=20261108a'; s.onload = ok; s.onerror = () => { _ugPagosJs = null; ko(); };
+  s.src = './upgames-pagos.js?v=20261108b'; s.onload = ok; s.onerror = () => { _ugPagosJs = null; ko(); };
   document.head.appendChild(s);
 }));
 function ecoAbrirTienda() {

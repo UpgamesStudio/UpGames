@@ -557,7 +557,7 @@ JuegoSchema.pre('save', function(next) {
 // Cambios en publicaciones invalidan el catálogo cacheado (ver cacheado()). Los que
 // solo suben contadores (cada descarga, like o vista) no: vaciarían la caché a cada
 // descarga y el TTL de 30 s ya los refresca.
-const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas', 'enlaceRevisado', 'enlaceMuertoDesde']);
+const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'meGustaCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas', 'enlaceRevisado', 'enlaceMuertoDesde']);
 const soloContadores = u => !!u && !Array.isArray(u) && Object.keys(u).length > 0 &&
     Object.entries(u).every(([op, campos]) => (op === '$inc' || op === '$set') && campos && Object.keys(campos).every(f => CONTADORES_JUEGO.has(f)));
 JuegoSchema.post(['save', 'insertMany', 'updateOne', 'updateMany', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'findOneAndReplace', 'replaceOne'], function () {
@@ -570,6 +570,10 @@ JuegoSchema.add({ imageOrigen: { type: String, default: '' }, portadaMigrada: { 
 JuegoSchema.add({ impulsoHasta: { type: Date, default: null }, destacadoHasta: { type: Date, default: null } });
 // Nivel de la promoción pagada (estandar | plus | max): más UpCoins, más peso en el feed (upgames-ranking.js)
 JuegoSchema.add({ promoNivel: { type: String, default: null } });
+// UpCoins por día de la promoción vigente: cuanto más invierte el creador, más pesa (upgames-ranking.js)
+JuegoSchema.add({ promoUCDia: { type: Number, default: 0 } });
+// Me gusta (distinto de guardar en favoritos): contador para las tarjetas y el feed de videos
+JuegoSchema.add({ meGustaCount: { type: Number, default: 0, min: 0 } });
 // Revisión prioritaria pagada con UpCoins (rutas/extrasUC.js): va primero en la cola; si no se revisa en 24 h se devuelve
 // Revisión diaria de enlaces: cuándo se comprobó y desde cuándo parece caído
 JuegoSchema.add({ enlaceRevisado: { type: Date, default: null }, enlaceMuertoDesde: { type: Date, default: null } });
@@ -2114,12 +2118,14 @@ app.get("/items", async (req, res) => {
                 { $addFields: { seguidoresAutor: { $ifNull: [{ $arrayElemAt: ['$_autor.n', 0] }, 0] } } },
                 { $project: { _id: 1, title: 1, description: 1, image: 1, images: 1, link: 1, category: 1, usuario: 1, resenas: 1, reportes: 1, linkStatus: 1, descargasEfectivas: 1, vistas: 1, likesCount: 1, extraData: 1, videoType: 1, featuredItemId: 1, scoreRecomendacion: 1, serie: 1, createdAt: 1, updatedAt: 1, promocionado: 1, tutorialId: 1,
                     tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] },
-                    impulsado: 1, seguidoresAutor: 1, promoNivel: { $cond: ['$promocionado', { $ifNull: ['$promoNivel', 'estandar'] }, '$$REMOVE'] } } },
+                    impulsado: 1, seguidoresAutor: 1, meGustaCount: 1, promoUCDia: 1, promoNivel: { $cond: ['$promocionado', { $ifNull: ['$promoNivel', 'estandar'] }, '$$REMOVE'] } } },
             ]);
             // Descargas de los últimos 7 días (stats_items): alimenta "Más descargados esta semana"
-            const semana = await StatsItems.descargasRecientes(7);
+            const semana = await StatsItems.actividadReciente(7);
             candidatas.forEach(i => {
-                i.descargasSemana = semana[String(i._id)] || 0;
+                const a = semana[String(i._id)];
+                i.descargasSemana = a?.d || 0;
+                i.vistasSemana = a?.v || 0;   // videos: "elecciones" de la semana
                 // Juego de la publicación (también en las antiguas sin detección guardada): gustos y recurrencia
                 i.juego = i.extraData?.detectedGame?.gameName || gameDetector.detectGame(i.title, i.description)?.gameName || i.extraData?.['juego-base'] || undefined;
             });
@@ -2143,7 +2149,7 @@ app.get("/items/user/:usuario", async (req, res) => {
         if (t && t.length > 20) { try { yo = jwt.verify(t, JWT_SECRET).usuario; } catch (_) {} }
         const propio = yo && yo === String(req.params.usuario).toLowerCase();
         const filtro = propio ? { usuario: req.params.usuario, status: { $ne: 'privado' } } : { usuario: req.params.usuario, status: 'aprobado' };
-        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie guiaInstalacion tutorialId motivoRechazo nexusMentor destacadoHasta promoNivel prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
+        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie guiaInstalacion tutorialId motivoRechazo nexusMentor destacadoHasta promoNivel promoUCDia meGustaCount prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
         res.json(propio ? aportes : await series.colapsar(aportes, Juego, { usuario: req.params.usuario, status: 'aprobado' }));
     } catch (error) {
         res.status(500).json([]);
@@ -3064,6 +3070,67 @@ app.delete('/comentarios/:id', verificarAdmin, async (req, res) => {
 });
 
 // ========== FAVORITOS ==========
+
+// ── ME GUSTA ─────────────────────────────────────────────────────────
+// Distinto de guardar: "me gusta" es una reacción rápida (doble toque en los videos);
+// guardar (favoritos) es para volver a ello. Los dos pesan en el feed de Nexus.
+const MeGusta = mongoose.model('MeGusta', new mongoose.Schema({
+    usuario: { type: String, required: true },
+    itemId:  { type: String, required: true },
+    fecha:   { type: Date, default: Date.now },
+}, { collection: 'megusta', versionKey: false }).index({ usuario: 1, itemId: 1 }, { unique: true }).index({ itemId: 1 }));
+
+async function ponerMeGusta(usuario, itemId, quiere) {
+    const item = await Juego.findById(itemId).select('usuario title image category tags').lean();
+    if (!item) return null;
+    if (quiere) {
+        try { await MeGusta.create({ usuario, itemId }); }
+        catch (e) { if (e.code !== 11000) throw e; return { megusta: true, item }; }   // ya estaba
+        await Juego.updateOne({ _id: itemId }, { $inc: { meGustaCount: 1 } });
+        nexusMemoria.aprender(usuario, 'like', { item }).catch(() => {});
+        crearNotif({ destinatario: item.usuario, tipo: 'favorito', emisor: usuario, itemId, itemTitle: item.title, itemImage: item.image || '', mensaje: `❤️ A @${usuario} le gustó "${item.title}"` });
+        return { megusta: true, item, nuevo: true };
+    }
+    const r = await MeGusta.deleteOne({ usuario, itemId });
+    if (r.deletedCount) {
+        await Juego.updateOne({ _id: itemId, meGustaCount: { $gt: 0 } }, { $inc: { meGustaCount: -1 } });
+        nexusMemoria.aprender(usuario, 'unlike', { item }).catch(() => {});
+    }
+    return { megusta: false, item };
+}
+
+// POST /items/:id/megusta { megusta: true|false }  (sin cuerpo: alterna)
+app.post('/items/:id/megusta', [verificarToken, param('id').isMongoId()], async (req, res) => {
+    try {
+        if (!validationResult(req).isEmpty()) return res.status(400).json({ success: false, error: 'Datos inválidos' });
+        if (!(await Limites.permitir(`megusta:${req.usuario}`, [[Limites.MIN, 60], [Limites.DIA, 3000]]))) return res.status(429).json({ success: false, error: 'Vas muy rápido' });
+        const itemId = req.params.id;
+        const quiere = typeof req.body?.megusta === 'boolean' ? req.body.megusta : !(await MeGusta.exists({ usuario: req.usuario, itemId }));
+        const r = await ponerMeGusta(req.usuario, itemId, quiere);
+        if (!r) return res.status(404).json({ success: false, error: 'Publicación no encontrada' });
+        const n = (await Juego.findById(itemId).select('meGustaCount').lean())?.meGustaCount || 0;
+        res.json({ success: true, megusta: r.megusta, n });
+    } catch (e) {
+        logger.error(`[megusta] ${e.message}`);
+        res.status(500).json({ success: false, error: 'No se pudo guardar tu me gusta' });
+    }
+});
+// GET /megusta/mios → ids a los que el usuario dio me gusta (para pintar los corazones en cualquier dispositivo)
+app.get('/megusta/mios', verificarToken, async (req, res) => {
+    try {
+        const l = await MeGusta.find({ usuario: req.usuario }).select('itemId -_id').sort({ fecha: -1 }).limit(2000).lean();
+        res.json({ success: true, ids: l.map(x => x.itemId) });
+    } catch (_) { res.status(500).json({ success: false, ids: [] }); }
+});
+// POST /megusta/sync { ids } → los me gusta que dio sin cuenta, al crearla o iniciar sesión
+app.post('/megusta/sync', verificarToken, async (req, res) => {
+    try {
+        const ids = (Array.isArray(req.body?.ids) ? req.body.ids : []).filter(x => mongoose.Types.ObjectId.isValid(x)).slice(0, 100);
+        let n = 0;
+        for (const id of ids) { const r = await ponerMeGusta(req.usuario, String(id), true).catch(() => null); if (r?.nuevo) n++; }
+        res.json({ success: true, agregados: n });
+    } catch (_) { res.status(500).json({ success: false }); }
+});
 
 app.post('/favoritos/add', [verificarToken, body('itemId').isMongoId()], async (req, res) => {
     try {

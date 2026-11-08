@@ -47,7 +47,6 @@ const PAQUETES_IA = [
 ];
 // Destacar una publicación (aparece arriba en el inicio, marcada como "Promocionado")
 const IMPULSO = { horas: 24, monedas: 50 };   // compatibilidad: "impulso:<id>" = 1 día Estándar
-const ORDEN_NIVEL = { estandar: 1, plus: 2, max: 3 };
 const plan = id => PLANES.find(p => p.id === id) || null;
 // Premium dado desde el panel admin (cortesía, soporte): mismos beneficios, sin precio
 const nombrePlan = id => plan(id)?.nombre || (id === 'cortesia' ? 'Premium (cortesía)' : 'Premium');
@@ -63,11 +62,14 @@ function parsear(producto) {
     if ((m = /^acceso:([a-f\d]{24})$/i.exec(s))) return { tipo: 'acceso', juegoId: m[1].toLowerCase(), id: s };
     if ((m = /^plan:(\w+)$/.exec(s)) && plan(m[1])) return { tipo: 'plan', plan: plan(m[1]), id: s };
     if ((m = /^ia:(\w+)$/.exec(s)) && paqueteIA(m[1])) return { tipo: 'ia', paquete: paqueteIA(m[1]), id: s };
-    // Promoción: impulso:<id> (1 día Estándar) o impulso:<id>:<días>:<nivel>
-    if ((m = /^impulso:([a-f\d]{24})(?::(\d{1,2}):(estandar|plus|max))?$/i.exec(s))) {
-        const dias = m[2] ? Number(m[2]) : 1, nivel = (m[3] || 'estandar').toLowerCase();
-        const monedas = Ranking.precioPromo(dias, nivel);
-        return monedas ? { tipo: 'impulso', juegoId: m[1].toLowerCase(), dias, nivel, monedas, id: s } : null;
+    // Promoción: impulso:<id> (1 día Estándar), impulso:<id>:<días>:<nivel>
+    // o impulso:<id>:<días>:uc<monto> (inversión libre: más UpCoins por día, más peso)
+    if ((m = /^impulso:([a-f\d]{24})(?::(\d{1,2}):(estandar|plus|max|uc\d{1,9}))?$/i.exec(s))) {
+        const dias = m[2] ? Number(m[2]) : 1, sel = (m[3] || 'estandar').toLowerCase();
+        const monedas = sel.startsWith('uc') ? Ranking.montoPromoValido(dias, Number(sel.slice(2))) : Ranking.precioPromo(dias, sel);
+        if (!monedas) return null;
+        const nivel = sel.startsWith('uc') ? Ranking.nivelDeUCDia(monedas / dias) : sel;
+        return { tipo: 'impulso', juegoId: m[1].toLowerCase(), dias, nivel, monedas, ucDia: Ranking.ucDiaEquivalente(monedas, dias), id: s };
     }
     return null;
 }
@@ -87,7 +89,7 @@ function precioUsd(p) {
     return r2((precioUC(p) || 0) * L.MONEDA_USD);
 }
 const descripcion = p => p.tipo === 'monedas' ? `${p.paquete.monedas} UpCoins` : p.tipo === 'acceso' ? 'Acceso directo UpGames (sin anuncios)'
-    : p.tipo === 'plan' ? `${p.plan.nombre} UpGames` : p.tipo === 'ia' ? `${p.paquete.mensajes} mensajes de NEXUS IA` : `Promocionar publicación ${p.dias} día${p.dias > 1 ? 's' : ''} (${Ranking.PROMO_NIVELES.find(n => n.id === p.nivel)?.nombre || 'Estándar'})`;
+    : p.tipo === 'plan' ? `${p.plan.nombre} UpGames` : p.tipo === 'ia' ? `${p.paquete.mensajes} mensajes de NEXUS IA` : `Promocionar publicación ${p.dias} día${p.dias > 1 ? 's' : ''} (${p.monedas} UpCoins)`;
 
 function registrar(app, deps) {
     const { verificarToken, Usuario, LiveTx, Notificacion, paypal, acceso, logger, apiUrlSelf, Juego } = deps;
@@ -143,13 +145,17 @@ function registrar(app, deps) {
             catch (e) { if (e.code !== 11000) throw e; return { repetida: true }; }
             // Suma los días desde el final de la promoción vigente (o desde ahora) y deja el nivel
             // pagado: si subes de nivel, el tiempo que quedaba también pasa al nivel nuevo.
+            // UpCoins por día de la campaña: promedio ponderado entre lo que quedaba y lo nuevo
+            const restaDias = { $divide: [{ $max: [0, { $subtract: [{ $ifNull: ['$destacadoHasta', '$$NOW'] }, '$$NOW'] }] }, 864e5] };
             const j = await Juego.findOneAndUpdate({ _id: p.juegoId }, [{ $set: {
+                promoUCDia: { $divide: [{ $add: [{ $multiply: [restaDias, { $ifNull: ['$promoUCDia', 0] }] }, p.ucDia * p.dias] }, { $add: [restaDias, p.dias] }] },
                 destacadoHasta: { $add: [{ $max: ['$$NOW', { $ifNull: ['$destacadoHasta', '$$NOW'] }] }, p.dias * 24 * 3600e3] },
-                promoNivel: p.nivel } }], { new: true }).select('title destacadoHasta promoNivel').lean();
+            } }], { new: true }).select('title destacadoHasta promoUCDia').lean();
+            if (j) await Juego.updateOne({ _id: p.juegoId }, { $set: { promoNivel: Ranking.nivelDeUCDia(j.promoUCDia) } });
             limpiarCache?.();
-            const nombreNivel = Ranking.PROMO_NIVELES.find(n => n.id === p.nivel)?.nombre || 'Estándar';
-            avisar(usuario, 'Compra', `🚀 "${String(j?.title || 'Tu publicación').slice(0, 60)}" está promocionada (${nombreNivel}) hasta el ${new Date(j?.destacadoHasta).toLocaleString('es-CO')}.`);
-            return { destacadoHasta: j?.destacadoHasta, promoNivel: j?.promoNivel, dias: p.dias };
+            const peso = Math.round(Ranking.pesoDeUCDia(j?.promoUCDia || p.ucDia) * 100);
+            avisar(usuario, 'Compra', `🚀 "${String(j?.title || 'Tu publicación').slice(0, 60)}" está promocionada hasta el ${new Date(j?.destacadoHasta).toLocaleString('es-CO')}: la promoción pesa el ${peso} % de su posición, con más fuerza para quienes les gusta ese tipo de contenido.`);
+            return { destacadoHasta: j?.destacadoHasta, promoUCDia: j?.promoUCDia, peso, dias: p.dias };
         }
         // Premium: suma días desde el vencimiento actual (o desde ahora si ya venció).
         // UpCoins de regalo solo si se pagó con dinero (pagado con UpCoins no regala UpCoins).
@@ -206,15 +212,11 @@ function registrar(app, deps) {
         if (SOLO_UC.includes(p.tipo) && metodo !== 'upcoins') return 'Esto se paga con UpCoins';
         if (p.tipo === 'monedas' && metodo === 'upcoins') return 'Los paquetes de UpCoins se compran con tarjeta o PayPal';
         if (p.tipo === 'impulso') {
-            const j = await Juego.findById(p.juegoId).select('usuario status destacadoHasta promoNivel').lean();
+            const j = await Juego.findById(p.juegoId).select('usuario status').lean();
             if (!j || j.usuario !== usuario) return 'Solo puedes destacar tus propias publicaciones';
             if (j.status !== 'aprobado') return 'La publicación debe estar aprobada para destacarla';
-            // Con una promoción vigente de nivel más alto no se compra una más baja (bajaría su peso)
-            const activo = j.destacadoHasta && new Date(j.destacadoHasta) > new Date() ? (j.promoNivel || 'estandar') : null;
-            if (activo && ORDEN_NIVEL[activo] > ORDEN_NIVEL[p.nivel]) {
-                const n = Ranking.PROMO_NIVELES.find(x => x.id === activo)?.nombre;
-                return `Tu publicación ya está promocionada en nivel ${n}: extiéndela con ese nivel o uno mayor`;
-            }
+            // Si ya tiene una promoción vigente, la nueva se suma: las UpCoins por día quedan en el
+            // promedio ponderado de las dos (nunca se pierde lo pagado)
         }
         // Ya no se vende acceso directo por publicación: saltar la espera es de Premium
         if (p.tipo === 'acceso') return 'El acceso directo por publicación ya no se vende. Con Premium te saltas la espera en todas las publicaciones.';
@@ -225,7 +227,7 @@ function registrar(app, deps) {
     app.get('/tienda/catalogo', (req, res) => {
         const m = metodos();
         ok(res, {
-            planes: PLANES, beneficios: BENEFICIOS_PASE, bonoPaquete: BONO_PAQUETE, reparto: REPARTO.publico(), paquetes: L.PAQUETES.map(p => ({ ...p, bonoPase: REPARTO.bonoPaquete(p.monedas, p.usd, BONO_PAQUETE) })), acceso: { usd: 1, monedas: Math.round(1 / L.MONEDA_USD) }, ia: PAQUETES_IA, impulso: { ...IMPULSO, dias: Ranking.PROMO_DIAS, niveles: Ranking.PROMO_NIVELES.map(({ id, nombre, peso }) => ({ id, nombre, peso })), precios: Ranking.tablaPrecios() }, monedaUsd: L.MONEDA_USD,
+            planes: PLANES, beneficios: BENEFICIOS_PASE, bonoPaquete: BONO_PAQUETE, reparto: REPARTO.publico(), paquetes: L.PAQUETES.map(p => ({ ...p, bonoPase: REPARTO.bonoPaquete(p.monedas, p.usd, BONO_PAQUETE) })), acceso: { usd: 1, monedas: Math.round(1 / L.MONEDA_USD) }, ia: PAQUETES_IA, impulso: { ...IMPULSO, dias: Ranking.PROMO_DIAS, niveles: Ranking.PROMO_NIVELES.map(({ id, nombre, peso }) => ({ id, nombre, peso })), precios: Ranking.tablaPrecios(), pesoMax: Ranking.PROMO_PESO_MAX }, monedaUsd: L.MONEDA_USD,
             metodos: m,
             pagos: m.tarjeta ? 'ok' : (paypal.estado().motivo === 'credenciales_invalidas' || mp.estado().motivo === 'credenciales_invalidas' ? 'credenciales_invalidas' : 'sin_configurar'),
             // Precios en moneda local para la tarjeta (Mercado Pago)

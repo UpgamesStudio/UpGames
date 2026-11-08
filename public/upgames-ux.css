@@ -143,3 +143,14 @@ html[data-tema="cyber"] .ugx-fila-h h2 { font-size: .82rem !important; line-heig
 .ugx-promo-nota { margin: 10px 0; font-size: .72rem; line-height: 1.45; color: var(--txt3); }
 .ugx-promo-ir { width: 100%; justify-content: center; }
 html[data-tema="cyber"] .ugx-promo, html[data-tema="cyber"] .ugx-promo button { border-radius: 0 !important; }
+.ugx-promo-libre { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--bd, rgba(255,255,255,.1)); border-radius: 10px; background: var(--bg2, rgba(255,255,255,.04)); }
+.ugx-promo-libre.on { border-color: #ffcc4d; box-shadow: 0 0 0 1px #ffcc4d inset; }
+.ugx-promo-libre span { font-size: .76rem; color: var(--txt2); white-space: nowrap; }
+.ugx-promo-libre input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--txt); font: inherit; font-size: .95rem; font-weight: 700; text-align: right; }
+.ugx-promo-libre b { font-size: .76rem; color: #ffcc4d; }
+.ugx-promo-medidor { height: 6px; margin-top: 12px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.ugx-promo-medidor i { display: block; height: 100%; background: linear-gradient(90deg, #ffcc4d, #ff7a3b); border-radius: inherit; transition: width .25s ease; }
+.ugx-promo-res { margin: 8px 0 0; font-size: .8rem; color: var(--txt2); }
+.ugx-promo-res b { color: #ffcc4d; }
+.ugx-promo-ir[disabled] { opacity: .45; cursor: not-allowed; }
+html[data-tema="cyber"] .ugx-promo-libre, html[data-tema="cyber"] .ugx-promo-medidor { border-radius: 0 !important; }

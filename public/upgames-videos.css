@@ -195,3 +195,12 @@ html.ugv-abierto, html.ugv-abierto body { overflow: hidden !important; overscrol
   #ugv .ugv-pantalla, #ugv .ugv-esq, .ugv-s .ugv-dock > .ugv-btn { transition: none !important; }
   .ugv-s.activo .ugv-pantalla::after, .ugv-hud i, .ugv-corazon, .ugv-corazon span { animation: none !important; }
 }
+
+/* Me gusta (corazón rojo) y Guardar (marcador amarillo): se distinguen a simple vista */
+.ugv-like.on { background: rgba(255,59,107,.16) !important; }
+.ugv-like.on ion-icon { color: #ff3b6b; filter: drop-shadow(0 0 8px rgba(255,59,107,.85)); }
+.ugv-like.on b { color: #ff3b6b; }
+.ugv-guardar.on { background: rgba(255,204,77,.16) !important; }
+.ugv-guardar.on ion-icon { color: #ffcc4d; filter: drop-shadow(0 0 8px rgba(255,204,77,.8)); }
+.ugv-guardar.on b { color: #ffcc4d; }
+.ugv-guardar.salta ion-icon { animation: ugvSalta .6s cubic-bezier(.34,1.56,.64,1); }

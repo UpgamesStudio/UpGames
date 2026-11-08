@@ -49,6 +49,7 @@
     if (!it || !it._id) return;
     const e = { id: it._id, cat: String(it.category || '').toLowerCase(), u: String(it.usuario || '').toLowerCase(), k, t: Date.now() };
     const g = window.UGRank?.juegoDe(it); if (g) e.g = g;
+    const gs = window.UGRank?.generos(it); if (gs?.length) e.gs = gs;   // géneros: carreras, terror…
     try { localStorage.setItem(ELEC, JSON.stringify([...leerElec(), e].slice(-300))); } catch (_) {}
   }
   const buscarItem = id => (typeof currentItem !== 'undefined' && currentItem?._id === id) ? currentItem
@@ -73,6 +74,42 @@
     try { return window.UGRank.ordenar(lista, { perfil: perfilActual, yaDescargadas: desc }); } catch (_) { return lista; }
   }
   const personalizado = () => !!perfilActual && !perfilActual.vacio;
+  /** Perfil actual (para el feed de videos). */
+  const perfil = () => (window.UGRank ? window.UGRank.perfil(leerElec(), gustosSrv) : null);
+
+  // ── Me gusta (distinto de guardar): estado local + servidor ──
+  // ug_megusta: ids con me gusta en este teléfono; ug_megusta_inv: los dados sin cuenta (se suben al entrar)
+  const leerIds = k => { try { const v = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
+  const guardarIds = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v.slice(-2000))); } catch (_) {} };
+  const meGusta = id => leerIds('ug_megusta').includes(id);
+  async function darMeGusta(it, quiere) {
+    const id = it._id, t = ls('token');
+    let ids = leerIds('ug_megusta').filter(x => x !== id);
+    if (quiere) { ids.push(id); elegir(it, 'l'); }
+    guardarIds('ug_megusta', ids);
+    it.meGustaCount = Math.max(0, (it.meGustaCount || 0) + (quiere ? 1 : -1));
+    if (!t) {
+      let inv = leerIds('ug_megusta_inv').filter(x => x !== id); if (quiere) inv.push(id); guardarIds('ug_megusta_inv', inv);
+      if (quiere && inv.length >= 3 && !ls('ug_mg_aviso')) { try { localStorage.setItem('ug_mg_aviso', '1'); } catch (_) {} setTimeout(() => window.ugPedirSesion?.(`no perder tus ${inv.length} me gusta`), 700); }
+      return { megusta: quiere, n: it.meGustaCount };
+    }
+    try {
+      const r = await fetch(`${API}/items/${id}/megusta`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` }, body: JSON.stringify({ megusta: quiere }) });
+      const d = await r.json();
+      if (d?.success) { it.meGustaCount = d.n; return { megusta: d.megusta, n: d.n }; }
+    } catch (_) {}
+    return { megusta: quiere, n: it.meGustaCount };
+  }
+  // Al entrar con cuenta: subir los me gusta dados sin cuenta y traer los propios (otros dispositivos)
+  (async () => {
+    const t = ls('token'); if (!t) return;
+    const inv = leerIds('ug_megusta_inv');
+    if (inv.length) {
+      try { const r = await fetch(`${API}/megusta/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` }, body: JSON.stringify({ ids: inv }) }); if (r.ok) localStorage.removeItem('ug_megusta_inv'); } catch (_) {}
+    }
+    if (sessionStorage.getItem('ug_mg_ok')) return;
+    try { const d = await (await fetch(`${API}/megusta/mios`, { headers: { Authorization: `Bearer ${t}` } })).json(); if (d?.success) { guardarIds('ug_megusta', d.ids); sessionStorage.setItem('ug_mg_ok', '1'); } } catch (_) {}
+  })();
 
   // ── Historial: "Continúa donde lo dejaste" (solo en este teléfono, sin cuenta) ──
   const HIST = 'ug_historial';
@@ -244,5 +281,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
-  window.UGUX = { filas, guiaDetalle, leerGuia, ponerGuia, limpiarGuia, ordenar, personalizado };
+  window.UGUX = { filas, guiaDetalle, leerGuia, ponerGuia, limpiarGuia, ordenar, personalizado, perfil, meGusta, darMeGusta };
 })();

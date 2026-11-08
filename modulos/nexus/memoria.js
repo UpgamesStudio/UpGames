@@ -27,7 +27,7 @@ const NexusMemoria = mongoose.models.NexusMemoria || mongoose.model('NexusMemori
 }, { collection: 'nexus_memoria', versionKey: false }));
 
 // Peso de cada señal: descargar o guardar dice más que mirar
-const PESO = { view: 1, search: 0.5, category: 0.7, favorite: 3, unfavorite: -2, download: 4 };
+const PESO = { view: 1, search: 0.5, category: 0.7, like: 2, unlike: -1.5, favorite: 3, unfavorite: -2, download: 4 };
 // Las claves de Map no admiten "." ni "$"
 const clave = s => String(s || '').trim().toLowerCase().replace(/[.$]/g, '').slice(0, 40);
 

@@ -6,6 +6,10 @@
    reproducción automática y lista infinita (al llegar al final se vuelve
    a mezclar el catálogo de videos y sigue).
    • Toque: pausa / reproduce · Doble toque: me gusta con corazones.
+   • Me gusta (corazón) y Guardar (marcador) son distintos: el me gusta es
+     una reacción; guardar lo deja en Favoritos. Los dos (y las vistas)
+     pesan en el orden de Nexus (upgames-ranking.js), igual que las
+     promociones con UpCoins, segmentadas por los gustos de cada usuario.
    • Pantalla tipo consola UpGames: autor (+ seguir) junto al título y
      barra inferior con me gusta, comentarios, compartir, publicación
      destacada, progreso arrastrable y tiempo.
@@ -92,12 +96,17 @@
     } catch (_) {}
     return todos.filter(i => i.link && (esYT(i) || esArchivo(i)));
   }
+  const interacciones = i => vistas(i) + (i.meGustaCount || 0) * 3 + (i.likesCount || 0) * 5;
   function mezclar(arr) {
     const a = [...arr];
-    if (orden === 'populares') return a.sort((x, y) => (vistas(y) + (y.likesCount || 0) * 5) - (vistas(x) + (x.likesCount || 0) * 5));
-    // "Para ti": mezcla ponderada por calidad (más vistas/likes y más recientes, más arriba), con azar
-    return a.map(i => ({ i, k: Math.random() * (1 + Math.log10(1 + vistas(i) + (i.likesCount || 0) * 5)) * (Date.now() - new Date(i.createdAt || 0) < 14 * 864e5 ? 1.6 : 1) }))
-      .sort((x, y) => y.k - x.k).map(x => x.i);
+    // Top: lo que más interacciones tiene (vistas, me gusta y guardados)
+    if (orden === 'populares') return a.sort((x, y) => interacciones(y) - interacciones(x));
+    // "Para ti": Nexus ordena con sus gustos, me gusta, guardados, vistas de la semana y las
+    // promociones (más fuertes con quien le gusta ese tipo de video), con algo de sorpresa
+    if (window.UGRank) {
+      try { return window.UGRank.ordenar(a, { perfil: window.UGUX?.perfil?.(), azar: 0.3 }); } catch (_) {}
+    }
+    return a.map(i => ({ i, k: Math.random() * (1 + Math.log10(1 + interacciones(i))) })).sort((x, y) => y.k - x.k).map(x => x.i);
   }
   function agregarRonda() {
     if (!base.length) return;
@@ -134,8 +143,9 @@
       </div>
       <nav class="ugv-dock" aria-label="Acciones del video">
         <div class="ugv-prog"><i></i></div>
-        <button type="button" class="ugv-btn ugv-like" data-a="like" aria-label="Me gusta"><ion-icon name="heart"></ion-icon><b>${nf(it.likesCount)}</b></button>
+        <button type="button" class="ugv-btn ugv-like" data-a="like" aria-label="Me gusta"><ion-icon name="heart"></ion-icon><b>${nf(it.meGustaCount)}</b></button>
         <button type="button" class="ugv-btn" data-a="com" aria-label="Comentarios"><ion-icon name="chatbubble-ellipses"></ion-icon><b class="ugv-ncom">·</b></button>
+        <button type="button" class="ugv-btn ugv-guardar" data-a="guardar" aria-label="Guardar en favoritos"><ion-icon name="bookmark"></ion-icon><b>${nf(it.likesCount)}</b></button>
         <button type="button" class="ugv-btn" data-a="compartir" aria-label="Compartir"><ion-icon name="arrow-redo"></ion-icon></button>
         ${it.featuredItemId ? `<button type="button" class="ugv-btn ugv-bajar" data-a="destacada" aria-label="Ver publicación"><ion-icon name="cloud-download"></ion-icon><b>Obtener</b></button>` : ''}
         <span class="ugv-t">${esYT(it) ? 'YT' : '0:00'}</span>
@@ -143,14 +153,14 @@
     lista.appendChild(el);
     const s = { el, item: it, media: null, video: null, yt: null, cargado: false, pausadoUsuario: false };
     slides.push(s);
-    pintarLike(s);
+    pintarLike(s); pintarGuardar(s);
     el.addEventListener('click', e => accion(e, s));
     // toque / doble toque sobre el video
     let ultimo = 0, tmr = null;
     el.addEventListener('pointerup', e => {
       if (e.target.closest('.ugv-dock, .ugv-info button, .ugv-desc')) return;
       const ahora = Date.now();
-      if (ahora - ultimo < 280) { clearTimeout(tmr); ultimo = 0; corazones(s, e.clientX, e.clientY); if (!esFav(it._id)) darLike(s); return; }
+      if (ahora - ultimo < 280) { clearTimeout(tmr); ultimo = 0; corazones(s, e.clientX, e.clientY); if (!leGusta(it._id)) darLike(s); return; }
       ultimo = ahora; tmr = setTimeout(() => alternar(), 280);
     });
     $('.ugv-desc', el)?.addEventListener('click', ev => { ev.stopPropagation(); ev.currentTarget.classList.toggle('abierta'); });
@@ -238,19 +248,33 @@
 
   /* ── Acciones ── */
   const esFav = id => (typeof LS !== 'undefined' ? LS.getJSON('favoritos', []) : []).includes(id);
-  function pintarLike(s) { const b = $('.ugv-like', s.el); b.classList.toggle('on', esFav(s.item._id)); $('b', b).textContent = nf(s.item.likesCount); }
+  const leGusta = id => !!window.UGUX?.meGusta?.(id);
+  // ── Me gusta: reacción (corazón). Sin cuenta se guarda en el teléfono y se sube al entrar. ──
+  function pintarLike(s) { const b = $('.ugv-like', s.el); b.classList.toggle('on', leGusta(s.item._id)); $('b', b).textContent = nf(s.item.meGustaCount); }
   async function darLike(s) {
-    if (!yo()) { if (typeof ugPedirSesion === 'function') ugPedirSesion('dar me gusta'); return; }
+    const id = s.item._id, antes = leGusta(id), mismos = slides.filter(x => x.item._id === id);
+    const delCatalogo = (typeof todosLosItems !== 'undefined' ? todosLosItems : []).find(x => x._id === id);
+    const b = $('.ugv-like', s.el); b.classList.remove('salta'); void b.offsetWidth; b.classList.add('salta');
+    if (!window.UGUX?.darMeGusta) return;
+    const r = window.UGUX.darMeGusta(s.item, !antes);
+    mismos.forEach(pintarLike);   // al instante; el servidor confirma el número
+    const d = await r;
+    [s.item, delCatalogo, ...mismos.map(x => x.item)].forEach(x => { if (x) x.meGustaCount = d.n; });
+    mismos.forEach(pintarLike);
+  }
+  // ── Guardar: favoritos (vuelve a él desde Favoritos) ──
+  function pintarGuardar(s) { const b = $('.ugv-guardar', s.el); if (!b) return; b.classList.toggle('on', esFav(s.item._id)); $('b', b).textContent = nf(s.item.likesCount); }
+  async function guardar(s) {
     const id = s.item._id, antes = esFav(id), mismos = slides.filter(x => x.item._id === id);
     // al instante en pantalla; fav() (script.js) confirma con el servidor y actualiza el resto de la app
-    mismos.forEach(x => { const b = $('.ugv-like', x.el); b.classList.toggle('on', !antes); $('b', b).textContent = nf((s.item.likesCount || 0) + (antes ? -1 : 1)); });
-    const b = $('.ugv-like', s.el); b.classList.remove('salta'); void b.offsetWidth; b.classList.add('salta');
+    mismos.forEach(x => { const b = $('.ugv-guardar', x.el); if (!b) return; b.classList.toggle('on', !antes); $('b', b).textContent = nf((s.item.likesCount || 0) + (antes ? -1 : 1)); });
+    const b = $('.ugv-guardar', s.el); if (b) { b.classList.remove('salta'); void b.offsetWidth; b.classList.add('salta'); }
     const delCatalogo = (typeof todosLosItems !== 'undefined' ? todosLosItems : []).find(x => x._id === id);
     if (typeof fav === 'function') { try { await fav(id); } catch (_) {} }
     const ahora = esFav(id);
     // fav() ya ajustó el contador si el video es el mismo objeto del catálogo; si no, se ajusta aquí
     if (ahora !== antes && delCatalogo !== s.item) s.item.likesCount = Math.max(0, (s.item.likesCount || 0) + (ahora ? 1 : -1));
-    mismos.forEach(pintarLike);
+    mismos.forEach(pintarGuardar);
   }
   function corazones(s, x, y) {
     for (let k = 0; k < 7; k++) {
@@ -291,6 +315,7 @@
     const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
     e.stopPropagation();
     if (a === 'like') darLike(s);
+    else if (a === 'guardar') guardar(s);
     else if (a === 'com') comentarios(true);
     else if (a === 'compartir') compartir(s);
     else if (a === 'seguir') seguir(s);

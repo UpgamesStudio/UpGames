@@ -19,9 +19,10 @@ const base = (o = {}) => ({ _id: Math.random().toString(16).slice(2), title: 'x'
 
 console.log('pesos');
 test('los pesos orgánicos suman 100 %', () => assert.strictEqual(Math.round(Object.values(R.PESOS).reduce((a, b) => a + b, 0) * 100), 100));
-test('reseñas 30 %, recurrencia 10 %, promoción máx 50 %', () => {
+test('reseñas 30 %, recurrencia 10 %; los pesos de videos suman 100 %', () => {
     assert.strictEqual(R.PESOS.resenas, 0.30); assert.strictEqual(R.PESOS.recurrencia, 0.10);
-    assert.strictEqual(Math.max(...R.PROMO_NIVELES.map(n => n.peso)), 0.50);
+    assert.strictEqual(Math.round(Object.values(R.PESOS_VIDEO).reduce((a, b) => a + b, 0) * 100), 100);
+    assert.ok(R.PESOS_VIDEO.megusta > 0 && R.PESOS_VIDEO.guardados > 0);
 });
 
 console.log('promoción');
@@ -30,10 +31,18 @@ test('más UpCoins → más peso de promoción', () => {
     assert.ok(p('estandar') < p('plus') && p('plus') < p('max'));
 });
 test('promoción vencida no pesa', () => assert.strictEqual(R.pesoPromo({ destacadoHasta: hace(1), promoNivel: 'max' }), 0));
-test('una promoción Máx nunca pasa del 50 % del puntaje', () => {
-    const it = base({ destacadoHasta: futuro(2), promoNivel: 'max', promocionado: true });
-    const r = R.puntaje(it, R.contexto([it]), null);
-    assert.ok(Math.abs(r.total - (0.5 + 0.5 * r.organico)) < 1e-9);
+test('más UpCoins por día → más peso, hasta un tope de 85 %', () => {
+    assert.strictEqual(R.pesoDeUCDia(50), 0.30);
+    assert.ok(R.pesoDeUCDia(1000) > R.pesoDeUCDia(400) && R.pesoDeUCDia(400) > R.pesoDeUCDia(100));
+    assert.strictEqual(R.pesoDeUCDia(1e6), 0.85);
+    const mega = base({ destacadoHasta: futuro(30), promoUCDia: 1e6 / 30 / 0.65, promocionado: true });
+    const r = R.puntaje(mega, R.contexto([mega]), null);
+    assert.ok(Math.abs(r.total - (r.promo + (1 - r.promo) * r.organico)) < 1e-9 && r.promo <= 0.85);
+});
+test('inversión libre: mínimo el precio Estándar de esos días', () => {
+    assert.strictEqual(R.montoPromoValido(30, 1000000), 1000000);
+    assert.strictEqual(R.montoPromoValido(7, 100), null);
+    assert.strictEqual(R.montoPromoValido(5, 5000), null);
 });
 test('precios: más días cuestan más pero menos por día; más nivel cuesta más', () => {
     assert.strictEqual(R.precioPromo(1, 'estandar'), 50);
@@ -48,6 +57,36 @@ test('un contenido excelente puede superar a una promoción Estándar con conten
     const flojo = base({ resenas: { n: 6, promedio: 1.5, si: 0, no: 5 }, destacadoHasta: futuro(1), promoNivel: 'estandar', promocionado: true });
     const orden = R.ordenar([flojo, bueno]);
     assert.strictEqual(orden[0], bueno);
+});
+
+console.log('segmentación por gustos');
+test('una promo de carros pesa más con quien le gustan los carros que con quien le gusta el terror', () => {
+    const promo = base({ title: 'Real Racing 3 mod', usuario: 'zed', destacadoHasta: futuro(5), promoUCDia: 400, promocionado: true });
+    const fanCarros = R.perfil([{ cat: 'mod', gs: ['carreras'], g: 'need for speed', u: 'x', k: 'd', t: Date.now() }]);
+    const fanTerror = R.perfil([{ cat: 'mod', gs: ['terror'], g: 'resident evil', u: 'y', k: 'd', t: Date.now() }]);
+    const ctx = R.contexto([promo]);
+    const a = R.puntaje(promo, ctx, fanCarros).promo, b = R.puntaje(promo, ctx, fanTerror).promo;
+    assert.ok(a > b * 2, `${a} vs ${b}`);
+    assert.ok(b > 0, 'igual le sale a todos, con menos fuerza');
+});
+test('géneros: detecta carreras, terror y mundo abierto', () => {
+    assert.deepStrictEqual(R.generos({ title: 'Need for speed underground 2 mod' }), ['carreras']);
+    assert.ok(R.generos({ title: 'Resident evil revelations' }).includes('terror'));
+    assert.ok(R.generos({ title: 'GTA V mod' }).includes('mundoAbierto'));
+});
+
+console.log('videos');
+test('en videos, los me gusta y los guardados suben la posición', () => {
+    const a = base({ category: 'Video', meGustaCount: 500, likesCount: 80, vistasSemana: 900 });
+    const b = base({ category: 'Video', meGustaCount: 3, likesCount: 1, vistasSemana: 20 });
+    assert.strictEqual(R.ordenar([b, a])[0], a);
+    const conGuardados = base({ category: 'Video', meGustaCount: 10, likesCount: 60 }), sin = base({ category: 'Video', meGustaCount: 10, likesCount: 0 });
+    assert.strictEqual(R.ordenar([sin, conGuardados])[0], conGuardados);
+});
+test('un video promocionado con mucha inversión llega arriba aunque tenga pocas interacciones', () => {
+    const vids = Array.from({ length: 10 }, (_, i) => base({ category: 'Video', meGustaCount: 50 + i * 10, likesCount: 10, vistasSemana: 300 }));
+    const promo = base({ category: 'Video', meGustaCount: 2, destacadoHasta: futuro(30), promoUCDia: 50000, promocionado: true });
+    assert.ok(R.ordenar([...vids, promo]).indexOf(promo) <= 1);
 });
 
 console.log('reseñas');

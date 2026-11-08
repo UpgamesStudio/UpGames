@@ -54,17 +54,23 @@ async function delAutor(autor, dias = 30) {
     return { desde, dias: dias_, items, serie: dias_.map(d => ({ dia: d, ...(serie[d] || { v: 0, d: 0, g: 0 }) })) };
 }
 
-/** Descargas de los últimos `dias` por publicación → { itemId: n }. Para "Más descargados esta semana". */
-async function descargasRecientes(dias = 7) {
+/** Descargas y vistas de los últimos `dias` por publicación → { itemId: { d, v } }. */
+async function actividadReciente(dias = 7) {
     try {
         asegurarIndices();
         const desde = dia(Date.now() - (dias - 1) * 864e5);
         const filas = await col().aggregate([
-            { $match: { dia: { $gte: desde }, d: { $gt: 0 } } },
-            { $group: { _id: '$itemId', n: { $sum: '$d' } } },
+            { $match: { dia: { $gte: desde }, $or: [{ d: { $gt: 0 } }, { v: { $gt: 0 } }] } },
+            { $group: { _id: '$itemId', d: { $sum: '$d' }, v: { $sum: '$v' } } },
         ]).toArray();
-        const m = {}; for (const f of filas) m[f._id] = f.n; return m;
+        const m = {}; for (const f of filas) m[f._id] = { d: f.d || 0, v: f.v || 0 }; return m;
     } catch (_) { return {}; }
 }
+/** Descargas de los últimos `dias` por publicación → { itemId: n }. Para "Más descargados esta semana". */
+async function descargasRecientes(dias = 7) {
+    const a = await actividadReciente(dias), m = {};
+    for (const [k, x] of Object.entries(a)) if (x.d) m[k] = x.d;
+    return m;
+}
 
-module.exports = { sumar, vista, delAutor, dia, descargasRecientes };
+module.exports = { sumar, vista, delAutor, dia, descargasRecientes, actividadReciente };

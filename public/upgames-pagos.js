@@ -120,6 +120,7 @@
     if (t === 'ia') return c.ia?.find(x => x.id === id)?.monedas ?? null;
     if (t === 'impulso') {   // impulso:<id> (1 día Estándar) o impulso:<id>:<días>:<nivel>
       const [, , dias, nivel] = producto.split(':');
+      if (/^uc\d+$/.test(nivel || '')) return Number(nivel.slice(2));   // inversión libre
       return dias ? (c.impulso?.precios?.[nivel]?.[dias] ?? null) : (c.impulso?.monedas ?? null);
     }
     return null;
@@ -173,8 +174,9 @@
       : pIA ? `<b>${pIA.mensajes} mensajes de NEXUS IA</b> para usar cuando se acaben tus mensajes gratis del día. No vencen.`
       : producto.startsWith('impulso:') ? (() => {
           const [, , dias = '1', nivel = 'estandar'] = producto.split(':');
-          const n = c.impulso?.niveles?.find(x => x.id === nivel);
-          return `<b>Promocionar tu publicación ${dias} día${dias === '1' ? '' : 's'} · nivel ${esc(n?.nombre || 'Estándar')}</b>: la promoción pesa el ${Math.round((n?.peso || 0.3) * 100)} % de su posición en el feed de Nexus y sale marcada como "Promocionado".`;
+          const R = window.UGRank, uc = ucDe(c, producto) || 0;
+          const peso = R ? R.pesoDeUCDia(R.ucDiaEquivalente(uc, Number(dias))) : (c.impulso?.niveles?.find(x => x.id === nivel)?.peso || 0.3);
+          return `<b>Promocionar tu publicación ${dias} día${dias === '1' ? '' : 's'} · 🪙 ${fmt(uc)} UC</b>: la promoción pesa hasta el ${Math.round(peso * 100)} % de su posición en el feed de Nexus, con toda su fuerza para quienes les gusta ese tipo de contenido, y sale marcada como "Promocionado".`;
         })()
       : `<b>Acceso directo</b> a esta publicación: se abre al instante, sin espera ni anuncios, y queda desbloqueada en tu cuenta.`;
     const resumen = `<div class="ugp-resumen"><div>${recibes}</div><small>Pago único · <b>sin renovación automática</b> · retracto en 5 días hábiles si no lo has usado · <a href="./terminos_condiciones.html#pagos" target="_blank" rel="noopener">Términos</a></small></div>`;

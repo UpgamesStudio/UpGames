@@ -246,7 +246,7 @@ async function buscar(opts = {}) {
         $project: {
             title: 1, description: 1, image: 1, images: 1, link: 1,
             category: 1, tags: 1, usuario: 1, reportes: 1, linkStatus: 1,
-            descargasEfectivas: 1, likesCount: 1, videoType: 1,
+            descargasEfectivas: 1, likesCount: 1, meGustaCount: 1, videoType: 1,
             featuredItemId: 1, extraData: 1, createdAt: 1, updatedAt: 1, vistas: 1,
             serie: 1, tutorialId: 1, tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] },
             _relevance: 1
