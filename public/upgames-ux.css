@@ -154,3 +154,76 @@ html[data-tema="cyber"] .ugx-promo, html[data-tema="cyber"] .ugx-promo button { 
 .ugx-promo-res b { color: #ffcc4d; }
 .ugx-promo-ir[disabled] { opacity: .45; cursor: not-allowed; }
 html[data-tema="cyber"] .ugx-promo-libre, html[data-tema="cyber"] .ugx-promo-medidor { border-radius: 0 !important; }
+
+/* ══════════ Publicar por pasos (upgames-publicar.js) ══════════ */
+.pfw { position: relative; }
+.pfw-paso[hidden] { display: none !important; }
+.pfw .pfw-paso, #pf-tab-publicar.pfw .pf-cat-selector { margin: 0 0 12px; padding: 18px 16px; border-radius: 18px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); animation: pfwEntra .28s ease; }
+@keyframes pfwEntra { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .pfw .pfw-paso { animation: none; } }
+.pfw-cab { margin: 2px 0 14px; }
+.pfw-prog { height: 4px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.pfw-prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--g, #32D583), var(--cy, #5AC8FA)); border-radius: inherit; transition: width .35s cubic-bezier(.22,1,.36,1); }
+.pfw-pasos { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 8px; font-size: .68rem; color: var(--txt3); letter-spacing: .03em; }
+.pfw-pasos span { text-align: center; transition: color .2s; }
+.pfw-pasos span:first-child { text-align: left; } .pfw-pasos span:last-child { text-align: right; }
+.pfw-pasos span.on { color: var(--txt); font-weight: 800; }
+.pfw-pasos span.hecho { color: var(--g, #32D583); }
+.pfw-q { margin: 0 0 4px; font-size: 1.25rem; line-height: 1.25; font-weight: 800; color: var(--txt); letter-spacing: -.01em; }
+.pfw-sub { margin: 0 0 16px; font-size: .82rem; color: var(--txt3); line-height: 1.45; }
+.pfw .pfw-q + .pf-form-group, .pfw .pfw-q + .pfp-prev { margin-top: 14px; }
+.pfw .pf-form-group { margin-bottom: 16px; }
+.pfw .pf-label { display: block; margin-bottom: 6px; font-size: .78rem; font-weight: 700; color: var(--txt2); letter-spacing: .01em; text-transform: none; }
+.pfw .pfw-grande { font-size: 1rem !important; padding: 13px 14px !important; }
+
+/* Paso 1: tarjetas de categoría con descripción */
+#pf-tab-publicar.pfw .pfw-cats { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+@media (min-width: 640px) { #pf-tab-publicar.pfw .pfw-cats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px; padding: 14px 12px !important; border-radius: 14px !important;
+  text-align: left; font-size: .9rem; min-height: 74px !important; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09); color: var(--txt); transition: border-color .15s, background .15s, transform .12s; }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn:hover { border-color: rgba(var(--g-rgb, 50,213,131), .45); }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn ion-icon { font-size: 1.35rem !important; color: var(--g, #32D583); flex: 0 0 auto; margin-top: 1px !important; }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn-video ion-icon { color: var(--cy, #5AC8FA); }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn b { font-size: .92rem; font-weight: 800; }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn small { font-size: .7rem; line-height: 1.35; color: var(--txt3); font-weight: 500; text-transform: none; letter-spacing: 0; }
+#pf-tab-publicar.pfw .pfw-cats .pf-cat-btn.active { border-color: var(--g, #32D583); background: rgba(var(--g-rgb, 50,213,131), .09); }
+
+/* Aviso de juego comercial */
+.pfw-aviso-com { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 11px 12px; border-radius: 12px;
+  background: rgba(255,170,51,.08); border: 1px solid rgba(255,170,51,.35); color: #ffd9a0; font-size: .78rem; line-height: 1.45; }
+.pfw-aviso-com[hidden] { display: none; }
+.pfw-aviso-com ion-icon { font-size: 1.15rem; color: #ffaa33; flex: 0 0 auto; margin-top: 1px; }
+.pfw-aviso-com b { color: #ffcf80; }
+
+/* Declaración (solo Juegos) */
+.pfw-declara { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0 6px; padding: 13px 14px; border-radius: 12px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); transition: border-color .2s; }
+.pfw-declara[hidden] { display: none; }
+.pfw-declara input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--g, #32D583); flex: 0 0 auto; }
+.pfw-declara span { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; color: var(--txt); line-height: 1.4; }
+.pfw-declara small { color: var(--txt3); font-size: .74rem; }
+.pfw-declara:has(input:checked) { border-color: var(--g, #32D583); background: rgba(var(--g-rgb, 50,213,131), .06); }
+.pfw-declara.pfw-falta { border-color: #ff5a5a; animation: pfwSacude .35s; }
+@keyframes pfwSacude { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* Revisión de Nexus primero, luego el botón para revisar a fondo */
+.pfw .pf-nexus-check { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.pfw .pf-btn-submit { margin-top: 14px; width: 100%; min-height: 52px; font-size: 1rem; }
+
+/* Navegación */
+.pfw-nav { display: flex; gap: 10px; margin-top: 4px; }
+.pfw-nav button { min-height: 48px; border-radius: 12px; font: inherit; font-weight: 800; font-size: .9rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.pfw-nav button[hidden] { display: none; }
+.pfw-atras { flex: 0 0 auto; padding: 0 16px; background: transparent; color: var(--txt2); border: 1px solid rgba(255,255,255,.14); }
+.pfw-sig { flex: 1; background: var(--g, #32D583); color: #04140b; border: 0; box-shadow: 0 10px 24px -12px rgba(var(--g-rgb, 50,213,131), .9); }
+.pfw-sig:active { transform: scale(.98); }
+.pfw[data-paso="1"] .pfw-nav { display: none; }
+
+/* Tema cyber: esquinas rectas, mismo lenguaje */
+html[data-tema="cyber"] .pfw .pfw-paso, html[data-tema="cyber"] #pf-tab-publicar.pfw .pf-cat-selector, html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn,
+html[data-tema="cyber"] .pfw-aviso-com, html[data-tema="cyber"] .pfw-declara, html[data-tema="cyber"] .pfw-nav button { border-radius: 0 !important; }
+html[data-tema="cyber"] .pfw-q { font-family: var(--ff-disp); text-transform: uppercase; letter-spacing: .04em; font-size: 1.05rem; }
+html[data-tema="cyber"] .pfw-sig { clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn { clip-path: none !important; }
+html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn.active { color: var(--txt) !important; }

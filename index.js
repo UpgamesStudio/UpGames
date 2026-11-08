@@ -76,6 +76,7 @@ const memCache        = require('./modulos/cache');
 const Limites         = require('./modulos/limites');
 const StatsItems      = require('./modulos/statsItems');
 const Ranking         = require('./public/upgames-ranking');   // misma fórmula en la web
+const Sospecha        = require('./modulos/sospecha');
 const Referidos       = require('./modulos/referidos');
 const Seo             = require('./modulos/seo');
 const ContenidoLegal  = require('./modulos/contenidoLegal');
@@ -575,6 +576,10 @@ JuegoSchema.add({ promoUCDia: { type: Number, default: 0 } });
 // Me gusta (distinto de guardar en favoritos): contador para las tarjetas y el feed de videos
 JuegoSchema.add({ meGustaCount: { type: Number, default: 0, min: 0 } });
 // Revisión prioritaria pagada con UpCoins (rutas/extrasUC.js): va primero en la cola; si no se revisa en 24 h se devuelve
+// Posible juego comercial completo (modulos/sospecha.js): se publica, sigue con anuncios,
+// pero no genera pagos al creador mientras el equipo lo verifica
+JuegoSchema.add({ pagoPausado: { type: Boolean, default: false }, sospecha: { type: mongoose.Schema.Types.Mixed, default: null },
+    declaracion: { type: mongoose.Schema.Types.Mixed, default: null } });
 // Revisión diaria de enlaces: cuándo se comprobó y desde cuándo parece caído
 JuegoSchema.add({ enlaceRevisado: { type: Date, default: null }, enlaceMuertoDesde: { type: Date, default: null } });
 // Guía de instalación opcional escrita por el autor (texto) y/o un video tutorial suyo en UpGames
@@ -1175,6 +1180,13 @@ app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req
         let gananciaGenerada = 0;
         let shouldAnalyzeFraud = false;
 
+        // Posible juego comercial completo: los anuncios se muestran igual, pero el creador no cobra
+        // mientras el equipo lo revisa (UpGames no saca beneficio directo de ese enlace)
+        if (juego.pagoPausado) {
+            await autor.save();
+            StatsItems.sumar(juegoId, juego.usuario, { d: 1, g: 0 });
+            return res.json({ success: true, descargaContada: true, link: juego.link, descargasEfectivas: juego.descargasEfectivas, mensaje: 'Descarga válida', pagoPausado: true });
+        }
         gananciaGenerada = (CPM_VALUE * AUTHOR_PERCENTAGE) / 1000;
         autor.saldo = (autor.saldo || 0) + gananciaGenerada;
         shouldAnalyzeFraud = !ADMIN_USERS.includes(autor.usuario);
@@ -2237,8 +2249,11 @@ app.post('/items/precheck', verificarToken, async (req, res) => {
             else if (s.parte > 1) hechos.push({ tipo: 'warn', area: 'serie', texto: `Detecté la Parte ${s.parte} de "${s.base}", pero aún no has publicado la Parte 1. Publícalas con el mismo título base para que se agrupen.`, peso: 0 });
             else hechos.push({ tipo: 'info', area: 'serie', texto: `Detecté la Parte ${s.parte} de "${s.base}". Publica las siguientes como "${s.base} parte 2", "parte 3"… y se agruparán en una carpeta.`, peso: 0 });
         }
+        // ¿Nombre de un juego comercial que no parece un mod? Se avisa ANTES de publicar
+        const com = Sospecha.evaluar({ title: item.title, category: String(b.category || ''), serie: series.serieDe(item.title, req.usuario) });
+        if (com) hechos.unshift({ tipo: 'warn', area: 'comercial', texto: `${Sospecha.MENSAJE_PUBLICAR(com.juego)} Mientras se verifica no ganarás UpCoins.`, peso: 0 });
         const problemas = hechos.filter(h => h.tipo === 'bad').length;
-        res.json({
+        res.json({ comercial: com,
             success: true, listo: problemas === 0, problemas, avisos: hechos.filter(h => h.tipo === 'warn').length,
             puntos: a.puntos, resumen: problemas ? 'Nexus encontró problemas que harían que rechacen tu publicación.' : (a.ia?.resumen || 'Tu publicación se ve bien.'),
             hechos, sugerencias: a.ia?.sugerencias || [], razones: a.ia?.razones || [], fuente: a.ia?.fuente || null,
@@ -2276,7 +2291,14 @@ app.post("/items/add", [verificarToken, body('title').notEmpty().trim().isLength
         const errGuia = await sanearGuia(datos, req.usuario);
         if (errGuia) return res.status(400).json({ success: false, error: errGuia });
         datos.serie = series.serieDe(datos.title, req.usuario);
+        // Categoría Juego: el creador declara que tiene derecho a compartirlo (casilla del formulario)
+        if (datos.category === 'Juego' && req.body.declaraDerechos !== true)
+            return res.status(400).json({ success: false, error: 'Para publicar en Juegos confirma que tienes derecho a compartir este contenido.', code: 'DECLARACION' });
         const nuevoJuego = new Juego({ ...datos, usuario: req.usuario, status: "aprobado", linkStatus: "revision" });
+        if (datos.category === 'Juego') nuevoJuego.declaracion = { fecha: new Date(), texto: 'Declaro que soy el autor o tengo permiso para compartir este contenido, y que no es un juego comercial completo.' };
+        // ¿Parece un juego comercial completo? Se publica, pero sin pagos hasta revisarlo
+        const sospechaN = Sospecha.evaluar({ ...datos, serie: datos.serie });
+        if (sospechaN) { nuevoJuego.pagoPausado = true; nuevoJuego.sospecha = { ...sospechaN, desde: new Date(), titulo: datos.title }; }
         // Premium: sus publicaciones nuevas también tienen más visibilidad mientras dure
         const premiumHasta = (await Usuario.findOne({ usuario: req.usuario }).select('planHasta').lean())?.planHasta;
         if (premiumHasta && new Date(premiumHasta) > new Date()) nuevoJuego.impulsoHasta = premiumHasta;
@@ -2315,7 +2337,8 @@ app.post("/items/add", [verificarToken, body('title').notEmpty().trim().isLength
         }
 
         logger.info(`Nuevo item agregado: ${nuevoJuego.title} por @${nuevoJuego.usuario}`);
-        res.status(201).json({ success: true, ok: true, item: nuevoJuego, id: nuevoJuego._id });
+        res.status(201).json({ success: true, ok: true, item: nuevoJuego, id: nuevoJuego._id, sospecha: sospechaN || null });
+        if (sospechaN) crearNotif({ destinatario: req.usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(nuevoJuego._id), itemTitle: 'Revisión', itemImage: nuevoJuego.image || '', mensaje: Sospecha.mensajeCreador(nuevoJuego.title, sospechaN.juego) });
         paginasSeoPronto();   // su página para Google y WhatsApp en minutos, no al día siguiente
         moderarPublicacion(nuevoJuego._id);   // NEXUS revisa texto y portada; si es sexual la quita sola
 
@@ -2372,6 +2395,18 @@ app.put("/items/:id", verificarToken, [
         // Cambiar el enlace de una publicación ya verificada la devuelve a revisión:
         // evita publicar un enlace bueno y luego cambiarlo por otro distinto sin control.
         if (updates.link !== undefined && String(updates.link).trim() !== String(item.link || '').trim()) { updates.linkStatus = 'revision'; updates.enlaceMuertoDesde = null; }
+        // Si cambia el título o la categoría se vuelve a evaluar (lo aprobado por el equipo se respeta
+        // mientras el título siga igual; lo pausado a mano por el equipo no lo despausa el creador)
+        if (updates.title !== undefined || updates.category !== undefined) {
+            const tituloN = updates.title ?? item.title, catN = updates.category ?? item.category;
+            const aprobadoEquipo = item.sospecha?.revision === 'ok' && item.sospecha?.titulo === tituloN;
+            const manual = item.sospecha?.revision === 'mantener';
+            const sN = aprobadoEquipo ? null : Sospecha.evaluar({ title: tituloN, category: catN, serie: updates.serie ?? item.serie });
+            if (sN && !item.pagoPausado) {
+                updates.pagoPausado = true; updates.sospecha = { ...sN, desde: new Date(), titulo: tituloN };
+                crearNotif({ destinatario: item.usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(item._id), itemTitle: 'Revisión', itemImage: item.image || '', mensaje: Sospecha.mensajeCreador(tituloN, sN.juego) });
+            } else if (!sN && item.pagoPausado && !manual && !aprobadoEquipo) { updates.pagoPausado = false; updates.sospecha = null; }
+        }
         const legalE = ContenidoLegal.revisar({ title: updates.title ?? item.title, description: updates.description ?? item.description });
         if (legalE.bloquear) return res.status(400).json({ success: false, error: `No se puede guardar: ${legalE.bloquear}.` });
         const modE = Moderacion.reglas(`${updates.title ?? item.title} ${updates.description ?? item.description ?? ''}`, 'publicacion');
@@ -3070,6 +3105,37 @@ app.delete('/comentarios/:id', verificarAdmin, async (req, res) => {
 });
 
 // ========== FAVORITOS ==========
+
+// GET /items/sospecha?titulo=&categoria= → aviso en vivo al escribir el nombre en Publicar
+app.get('/items/sospecha', async (req, res) => {
+    if (!(await Limites.permitir(`sospecha:${req.ip}`, [[Limites.MIN, 40]]))) return res.status(429).json({ success: false });
+    const titulo = String(req.query.titulo || '').slice(0, 120), categoria = String(req.query.categoria || '').slice(0, 40);
+    const s = titulo.trim().length >= 3 ? Sospecha.evaluar({ title: titulo, category: categoria }) : null;
+    res.set('Cache-Control', 'public, max-age=300').json({ success: true, sospecha: s, mensaje: s ? Sospecha.MENSAJE_PUBLICAR(s.juego) : null });
+});
+
+// ── Revisión de posibles juegos comerciales completos (panel admin) ──
+app.get('/admin/items/sospechosas', verificarAdmin, async (req, res) => {
+    try {
+        const l = await Juego.find({ pagoPausado: true }).select('_id title usuario category image link sospecha descargasEfectivas createdAt').sort({ 'sospecha.desde': -1 }).limit(300).lean();
+        res.json({ success: true, items: l });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+// POST /admin/items/:id/sospecha { decision: 'ok' | 'mantener' }  ok = es un mod legítimo: vuelve a pagar
+app.post('/admin/items/:id/sospecha', [verificarAdmin, param('id').isMongoId()], async (req, res) => {
+    try {
+        const d = req.body?.decision;
+        if (!['ok', 'mantener'].includes(d)) return res.status(400).json({ success: false, error: 'decision: ok | mantener' });
+        const it = await Juego.findById(req.params.id).select('title usuario image sospecha').lean();
+        if (!it) return res.status(404).json({ success: false, error: 'No encontrada' });
+        const sosp = { ...(it.sospecha || {}), revision: d, revisadoPor: req.admin?.usuario || req.admin?.email || 'admin', revisadoEn: new Date(), titulo: it.title };
+        await Juego.updateOne({ _id: it._id }, { $set: { pagoPausado: d !== 'ok', sospecha: sosp } });
+        crearNotif({ destinatario: it.usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(it._id), itemTitle: 'Revisión', itemImage: it.image || '',
+            mensaje: d === 'ok' ? `✅ Revisamos "${String(it.title).slice(0, 70)}": todo en orden. Vuelve a generar UpCoins con cada descarga.`
+                : `❌ Revisamos "${String(it.title).slice(0, 70)}" y parece un juego comercial completo: seguirá sin generar UpCoins. Si es un mod o configuración, edita el título y la descripción para dejarlo claro.` });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
 
 // ── ME GUSTA ─────────────────────────────────────────────────────────
 // Distinto de guardar: "me gusta" es una reacción rápida (doble toque en los videos);

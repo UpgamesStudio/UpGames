@@ -41,7 +41,7 @@ function registrar(app, { verificarToken, Juego, Usuario, LiveTx, logger }) {
 
     async function cargarJuego(id) {
         if (!mongoose.isValidObjectId(id)) return null;
-        const j = await Juego.findById(id).select('link usuario status title category').lean();
+        const j = await Juego.findById(id).select('link usuario status title category pagoPausado').lean();
         return j && j.status === 'aprobado' && j.link ? j : null;
     }
 
@@ -116,7 +116,8 @@ function registrar(app, { verificarToken, Juego, Usuario, LiveTx, logger }) {
             // El creador cobra una vez por usuario y publicación, con tope diario por usuario:
             // así un pase no sirve para "ordeñar" las publicaciones de un cómplice.
             const hoy = new Date(); hoy.setUTCHours(0, 0, 0, 0);
-            const pagadasHoy = juego.usuario !== req.usuario && PASE_CREADOR_USD > 0
+            // Posible juego comercial completo en revisión: el enlace se abre, pero el creador no cobra
+            const pagadasHoy = juego.usuario !== req.usuario && PASE_CREADOR_USD > 0 && !juego.pagoPausado
                 ? await LiveTx.countDocuments({ usuario: req.usuario, metodo: 'pase', fecha: { $gte: hoy } }) : Infinity;
             // Solo si al pase le queda fondo para creadores (se descuenta de forma atómica)
             const conFondo = pagadasHoy < PASE_TOPE_DIA && !(await LiveTx.exists({ ref: `pase:${req.usuario}:${juego._id}` }))

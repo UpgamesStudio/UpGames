@@ -43,7 +43,7 @@
 
 <!-- css:inicio -->
 <!-- Paquete de: biblioteca.css, upgames-glass.css, upgames-estilo.css, upgames-cyber.css, upgames-videos.css, upgames-ux.css (scripts/unir-css.js) -->
-<link rel="stylesheet" href="upgames-app.css?v=dfcd14bc9b">
+<link rel="stylesheet" href="upgames-app.css?v=afafd26ff4">
 <!-- css:fin -->
 <script src="upgames-tema.js?v=20261106d"></script>
 <script src="upgames-musica.js?v=20261108a" defer></script>
@@ -260,84 +260,83 @@
     </div>
 
     <div class="pf2-publish" id="pf-publish-wrap" hidden>
-    <div id="pf-tab-publicar" class="pf2-publish-body">
+    <div id="pf-tab-publicar" class="pf2-publish-body pfw" data-paso="1">
 
-      <!-- ── SELECTOR DE CATEGORÍA — SIEMPRE VISIBLE PRIMERO ── -->
-      <div class="pf-cat-selector">
-        <div class="pfp-paso-h"><span>1</span><b>¿Qué vas a publicar?</b></div>
-        <div class="pf-cat-grid" id="pf-cat-grid">
-          <button class="pf-cat-btn active" data-cat="Juego" onclick="pfOnCategoryChange('Juego',this)">
-            <ion-icon name="game-controller"></ion-icon>
-            <span>Juego</span>
+      <!-- ══ Asistente de publicación por pasos (upgames-publicar.js) ══ -->
+      <div class="pfw-cab">
+        <div class="pfw-prog" aria-hidden="true"><i></i></div>
+        <div class="pfw-pasos" aria-hidden="true"><span data-n="1">Tipo</span><span data-n="2">Contenido</span><span data-n="3">Enlace</span><span data-n="4">Publicar</span></div>
+      </div>
+
+      <!-- ① ¿Qué deseas publicar hoy? -->
+      <section class="pf-cat-selector pfw-paso" data-paso="1">
+        <h3 class="pfw-q">¿Qué deseas publicar hoy?</h3>
+        <p class="pfw-sub">Elige el tipo de contenido. Puedes cambiarlo después.</p>
+        <div class="pf-cat-grid pfw-cats" id="pf-cat-grid">
+          <button type="button" class="pf-cat-btn active" data-cat="Juego" onclick="pfOnCategoryChange('Juego',this)">
+            <ion-icon name="game-controller"></ion-icon><span><b>Juego</b><small>Tu juego o uno indie que puedes compartir</small></span>
           </button>
-          <button class="pf-cat-btn" data-cat="Mod" onclick="pfOnCategoryChange('Mod',this)">
-            <ion-icon name="construct"></ion-icon>
-            <span>Mod</span>
+          <button type="button" class="pf-cat-btn" data-cat="Mod" onclick="pfOnCategoryChange('Mod',this)">
+            <ion-icon name="construct"></ion-icon><span><b>Mod</b><small>Cambios, parches y mejoras para un juego</small></span>
           </button>
-          <button class="pf-cat-btn" data-cat="Apps" onclick="pfOnCategoryChange('Apps',this)">
-            <ion-icon name="phone-portrait"></ion-icon>
-            <span>Apps</span>
+          <button type="button" class="pf-cat-btn" data-cat="Optimizacion" onclick="pfOnCategoryChange('Optimizacion',this)">
+            <ion-icon name="speedometer"></ion-icon><span><b>Optimización</b><small>Más FPS y menos lag</small></span>
           </button>
-          <button class="pf-cat-btn" data-cat="Software" onclick="pfOnCategoryChange('Software',this)">
-            <ion-icon name="code-slash"></ion-icon>
-            <span>Software</span>
+          <button type="button" class="pf-cat-btn" data-cat="Apps" onclick="pfOnCategoryChange('Apps',this)">
+            <ion-icon name="phone-portrait"></ion-icon><span><b>App</b><small>Aplicaciones para Android o PC</small></span>
           </button>
-          <button class="pf-cat-btn" data-cat="Ajustes" onclick="pfOnCategoryChange('Ajustes',this)">
-            <ion-icon name="settings"></ion-icon>
-            <span>Herramientas</span>
+          <button type="button" class="pf-cat-btn" data-cat="Ajustes" onclick="pfOnCategoryChange('Ajustes',this)">
+            <ion-icon name="settings"></ion-icon><span><b>Herramienta</b><small>Emuladores, launchers y utilidades</small></span>
           </button>
-          <button class="pf-cat-btn" data-cat="Optimizacion" onclick="pfOnCategoryChange('Optimizacion',this)">
-            <ion-icon name="speedometer"></ion-icon>
-            <span>Optimización</span>
+          <button type="button" class="pf-cat-btn" data-cat="Software" onclick="pfOnCategoryChange('Software',this)">
+            <ion-icon name="code-slash"></ion-icon><span><b>Software</b><small>Programas para PC</small></span>
           </button>
-          <button class="pf-cat-btn pf-cat-btn-video" data-cat="Video" onclick="pfOnCategoryChange('Video',this)">
-            <ion-icon name="videocam"></ion-icon>
-            <span>Video</span>
+          <button type="button" class="pf-cat-btn pf-cat-btn-video" data-cat="Video" onclick="pfOnCategoryChange('Video',this)">
+            <ion-icon name="videocam"></ion-icon><span><b>Video</b><small>Tutoriales, gameplays y reseñas</small></span>
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- Input oculto que guarda la categoría seleccionada -->
       <input type="hidden" id="pf-addCategory" value="Juego">
 
-      <!-- ══════════════════════════════════════
-        FORMULARIO ESTÁNDAR (Juego/Mod/Apps/Software/Ajustes/Optimización)
-      ══════════════════════════════════════ -->
+      <!-- ══ Juego / Mod / App / Software / Herramienta / Optimización ══ -->
       <div id="pf-form-standard" class="pfp">
         <div class="pf-form-section-hdr" id="pf-form-standard-hdr" hidden>
           <ion-icon name="game-controller" id="pf-form-icon"></ion-icon>
           <span id="pf-form-cat-label">SUBIR JUEGO</span>
         </div>
 
-        <!-- ② Lo esencial: título y enlace -->
-        <section class="pfp-paso">
-          <div class="pfp-paso-h"><span>2</span><b>Lo esencial</b></div>
+        <!-- ② ¿Cómo se llamará tu publicación? -->
+        <section class="pfw-paso" data-paso="2">
+          <h3 class="pfw-q">¿Cómo se llamará tu publicación?</h3>
           <div class="pf-form-group">
-            <label class="pf-label" for="pf-addTitle">Título</label>
-            <input type="text" id="pf-addTitle" class="pf-input" placeholder="Ej: GTA V Optimizado para PC de bajos recursos" maxlength="80" oninput="pfDetectGameRealtime(this.value)">
-            <small class="pfp-ayuda">Claro y concreto: nombre del juego, versión o qué hace. Sin "gratis", "full" ni mayúsculas exageradas.</small>
+            <label class="pf-label" for="pf-addTitle">Nombre</label>
+            <input type="text" id="pf-addTitle" class="pf-input pfw-grande" placeholder="Ej: GTA V – mod de rendimiento para PC de bajos recursos" maxlength="80" oninput="pfDetectGameRealtime(this.value)">
+            <small class="pfp-ayuda">Di qué es y qué hace. Si es para un juego comercial, indica que es un mod, parche o configuración.</small>
+            <div class="pfw-aviso-com" id="pfw-aviso-com" hidden></div>
             <div id="pf-game-detection-hint" style="display:none" class="pfp-detectado">
               <ion-icon name="game-controller"></ion-icon><span><b id="pf-detected-game-name"></b><small>Tu publicación mostrará un botón "Comprar" que lleva a la tienda oficial.</small></span>
             </div>
           </div>
           <div class="pf-form-group">
-            <label class="pf-label" for="pf-addLink">Enlace de descarga</label>
-            <input type="url" id="pf-addLink" class="pf-input" placeholder="https://www.mediafire.com/file/…">
-            <small class="pfp-ayuda">MediaFire, MEGA, Google Drive, Dropbox, GitHub… (sin acortadores). Así cada descarga te paga.</small>
+            <label class="pf-label" for="pf-addDescription">Agrega una descripción</label>
+            <div class="pfp-desc-acc">
+              <button type="button" class="pfp-chip" onclick="pfpPlantilla()"><ion-icon name="document-text-outline"></ion-icon> Usar plantilla</button>
+              <button type="button" class="pfp-chip pfp-chip-nx" id="pfp-nexus-desc" onclick="pfpNexusDescribe()">✦ Que NEXUS la escriba</button>
+            </div>
+            <textarea id="pf-addDescription" class="pf-textarea" placeholder="Qué incluye, qué cambia, requisitos…" maxlength="1000"></textarea>
           </div>
-        </section>
-
-        <!-- ③ Portada (la más importante) y más imágenes opcionales -->
-        <section class="pfp-paso">
-          <div class="pfp-paso-h"><span>3</span><b>Portada</b><small>la imagen que verán primero</small></div>
-          <div class="pfp-portada" id="pfp-portada" onclick="if(!event.target.closest('input,button'))pfOpenCoverWidget(0)">
-            <div class="pf-img-preview-mini" id="pf-slot-prev-0"><img src="" alt=""></div>
-            <div class="pfp-portada-vacia"><ion-icon name="image-outline"></ion-icon><b>Toca para subir la portada</b><small>Horizontal (16:9) se ve mejor · JPG, PNG o WebP</small></div>
-          </div>
-          <div class="pf-img-slot-row pfp-portada-url">
-            <input type="url" id="pf-addImage" class="pf-input" placeholder="…o pega una URL de imagen o de YouTube" oninput="pfUpdatePreview();pfPreviewSlot(0)">
-            <button type="button" class="pf-img-upload-btn" onclick="pfOpenCoverWidget(0)" title="Subir desde tu dispositivo"><ion-icon name="cloud-upload-outline"></ion-icon></button>
-          </div>
+          <div class="pf-form-group">
+            <label class="pf-label">Agrega imágenes y videos</label>
+            <div class="pfp-portada" id="pfp-portada" onclick="if(!event.target.closest('input,button'))pfOpenCoverWidget(0)">
+              <div class="pf-img-preview-mini" id="pf-slot-prev-0"><img src="" alt=""></div>
+              <div class="pfp-portada-vacia"><ion-icon name="image-outline"></ion-icon><b>Toca para subir la portada</b><small>Horizontal (16:9) se ve mejor · JPG, PNG o WebP</small></div>
+            </div>
+            <div class="pf-img-slot-row pfp-portada-url">
+              <input type="url" id="pf-addImage" class="pf-input" placeholder="…o pega una URL de imagen o de YouTube" oninput="pfUpdatePreview();pfPreviewSlot(0)">
+              <button type="button" class="pf-img-upload-btn" onclick="pfOpenCoverWidget(0)" title="Subir desde tu dispositivo"><ion-icon name="cloud-upload-outline"></ion-icon></button>
+            </div>
           <details class="pfp-mas">
             <summary><ion-icon name="images-outline"></ion-icon> Agregar más imágenes o un video <small>(opcional, hasta 3)</small></summary>
             <div class="pf-images-grid pfp-extra">
@@ -364,29 +363,29 @@
               </div>
             </div>
           </details>
+          </div>
         </section>
 
-        <!-- ④ Detalles opcionales -->
-        <section class="pfp-paso">
+        <!-- ③ Agrega el enlace -->
+        <section class="pfw-paso" data-paso="3">
+          <h3 class="pfw-q">Agrega el enlace</h3>
+          <p class="pfw-sub">Donde está el archivo. UpGames no lo guarda: solo muestra tu enlace.</p>
+          <div class="pf-form-group">
+            <label class="pf-label" for="pf-addLink">Enlace de descarga</label>
+            <input type="url" id="pf-addLink" class="pf-input pfw-grande" placeholder="https://www.mediafire.com/file/…" oninput="pfUpdatePreview()">
+            <small class="pfp-ayuda">MediaFire, MEGA, Google Drive, Dropbox, GitHub… (sin acortadores).</small>
+          </div>
           <details class="pfp-mas pfp-detalles">
-            <summary><span class="pfp-num">4</span><b>Descripción y detalles</b> <small>(opcional, pero ayuda a que te encuentren)</small></summary>
-            <div class="pf-form-group" style="margin-top:12px">
-              <label class="pf-label" for="pf-addDescription">Descripción</label>
-              <div class="pfp-desc-acc">
-                <button type="button" class="pfp-chip" onclick="pfpPlantilla()"><ion-icon name="document-text-outline"></ion-icon> Usar plantilla</button>
-                <button type="button" class="pfp-chip pfp-chip-nx" id="pfp-nexus-desc" onclick="pfpNexusDescribe()">✦ Que NEXUS la escriba</button>
-              </div>
-              <textarea id="pf-addDescription" class="pf-textarea" placeholder="Qué incluye, cómo se instala, requisitos…" maxlength="1000"></textarea>
-              <small class="pfp-ayuda">La plantilla trae los apartados que más buscan quienes descargan. NEXUS no inventa datos: donde no sabe, deja "(complétalo)".</small>
-            </div>
+            <summary><ion-icon name="options-outline"></ion-icon><b>Detalles y guía de instalación</b> <small>(opcional, ayuda a que te encuentren)</small></summary>
             <div id="pf-extra-fields"></div>
             <div class="ugx-guia-form" data-guia="pf"></div>
           </details>
         </section>
 
-        <!-- ⑤ Vista previa fiel + revisión y publicar -->
-        <section class="pfp-paso pfp-final">
-          <div class="pfp-paso-h"><span>5</span><b>Así se verá</b><small>se actualiza mientras escribes</small></div>
+        <!-- ④ Analizar y publicar -->
+        <section class="pfw-paso pfp-final" data-paso="4">
+          <h3 class="pfw-q">Revisa y publica</h3>
+          <p class="pfw-sub">Nexus revisa tu enlace, la portada y el texto antes de publicar.</p>
           <div class="pfp-prev" id="pfp-prev">
             <div class="pfp-prev-tile">
               <div class="pfp-prev-img" id="pfp-prev-img"><span>Sin portada</span></div>
@@ -400,38 +399,39 @@
           </div>
           <img id="pf-prev-img" alt="" hidden>
           <div class="pf-nexus-check">
-            <button type="button" class="pf-nexus-btn" id="pf-nexus-btn" onclick="pfRevisarConNexus(true)">
-              <span class="pf-nexus-ic">✦</span><span><b>Revisar con Nexus</b><small>Comprueba el enlace, la portada y el texto antes de publicar</small></span>
-            </button>
             <div id="pf-nexus-res"></div>
+            <button type="button" class="pf-nexus-btn" id="pf-nexus-btn" onclick="pfRevisarConNexus(true)">
+              <span class="pf-nexus-ic">✦</span><span><b>Revisar a fondo con Nexus IA</b><small>Opinión detallada y sugerencias para que te descarguen más</small></span>
+            </button>
           </div>
-          <button class="pf-btn-submit" id="pf-subirBtn">
+          <label class="pfw-declara" id="pfw-declara" hidden>
+            <input type="checkbox" id="pf-declara">
+            <span><b>Declaro que soy el autor o tengo permiso para compartir este contenido</b><small>y que no es un juego comercial completo. Soy responsable de lo que publico (<a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos</a>).</small></span>
+          </label>
+          <button type="button" class="pf-btn-submit" id="pf-subirBtn">
             <ion-icon name="cloud-upload"></ion-icon> Publicar
           </button>
         </section>
       </div>
 
-      <!-- ══════════════════════════════════════
-        FORMULARIO VIDEO (Cloudinary)
-      ══════════════════════════════════════ -->
+      <!-- ══ Video ══ -->
       <div id="pf-form-video" class="pfp" style="display:none">
-        <div class="pf-form-section-hdr pf-form-section-hdr--video">
+        <div class="pf-form-section-hdr pf-form-section-hdr--video" hidden>
           <ion-icon name="videocam"></ion-icon>
           <span>SUBIR VIDEO</span>
         </div>
 
-        <!-- Título del video -->
-        <div class="pf-form-group">
-          <label class="pf-label">Título del Video</label>
-          <input type="text" id="pf-vid-title" class="pf-input" placeholder="Ej: Tutorial de instalación GTA V">
-        </div>
-
-        <!-- Descripción -->
-        <div class="pf-form-group">
-          <label class="pf-label">Descripción</label>
-          <textarea id="pf-vid-description" class="pf-textarea" style="height:100px" placeholder="¿De qué trata el video?..."></textarea>
-        </div>
-
+        <!-- ② ¿De qué trata tu video? -->
+        <section class="pfw-paso" data-paso="2">
+          <h3 class="pfw-q">¿De qué trata tu video?</h3>
+          <div class="pf-form-group">
+            <label class="pf-label" for="pf-vid-title">Título</label>
+            <input type="text" id="pf-vid-title" class="pf-input pfw-grande" placeholder="Ej: Cómo instalar GTA V en Winlator paso a paso">
+          </div>
+          <div class="pf-form-group">
+            <label class="pf-label" for="pf-vid-description">Agrega una descripción</label>
+            <textarea id="pf-vid-description" class="pf-textarea" style="height:100px" placeholder="¿De qué trata el video?…"></textarea>
+          </div>
         <!-- Subgénero del video -->
         <div class="pf-form-group">
           <label class="pf-label"><ion-icon name="pricetag"></ion-icon> Tipo de Video</label>
@@ -443,6 +443,50 @@
             <button class="pf-vid-type-btn" data-type="Otro" onclick="pfSelectVidType('Otro',this)"><ion-icon name="ellipsis-horizontal"></ion-icon> Otro</button>
           </div>
           <input type="hidden" id="pf-vid-type" value="Tutorial">
+        </div>
+
+        </section>
+
+        <!-- ③ Sube tu video -->
+        <section class="pfw-paso" data-paso="3">
+          <h3 class="pfw-q">Sube tu video</h3>
+        <!-- Upload Cloudinary -->
+        <div class="pf-form-group">
+          <label class="pf-label"><ion-icon name="cloud-upload" style="color:var(--cy)"></ion-icon> Subir Video</label>
+          <div class="pf-cloudinary-zone" id="pf-cloudinary-zone">
+            <div class="pf-cld-idle" id="pf-cld-idle">
+              <ion-icon name="cloud-upload-outline"></ion-icon>
+              <p>Sube tu video directamente a la nube</p>
+              <span>MP4, WebM, MOV — máx. 500MB</span>
+              <button class="pf-cld-btn" id="pf-cld-open-btn" onclick="pfOpenCloudinaryWidget()">
+                <ion-icon name="videocam"></ion-icon> SELECCIONAR VIDEO
+              </button>
+            </div>
+            <div class="pf-cld-uploading" id="pf-cld-uploading" style="display:none">
+              <div class="pf-cld-spinner"></div>
+              <p>Subiendo video...</p>
+              <div class="pf-cld-progress-bar"><div class="pf-cld-progress-fill" id="pf-cld-progress-fill"></div></div>
+            </div>
+            <div class="pf-cld-done" id="pf-cld-done" style="display:none">
+              <ion-icon name="checkmark-circle" style="color:var(--g);font-size:2rem"></ion-icon>
+              <p class="pf-cld-done-label">¡Video subido!</p>
+              <video id="pf-vid-preview" controls playsinline muted style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover"></video>
+              <button class="pf-cld-change-btn" onclick="pfOpenCloudinaryWidget()">
+                <ion-icon name="refresh"></ion-icon> Cambiar video
+              </button>
+            </div>
+          </div>
+          <input type="hidden" id="pf-vid-url" value="">
+        </div>
+
+        <!-- Miniatura personalizada -->
+        <div class="pf-form-group">
+          <label class="pf-label"><ion-icon name="image"></ion-icon> Miniatura (opcional)</label>
+          <div class="pf-img-slot-row">
+            <input type="url" id="pf-vid-thumbnail" class="pf-input" placeholder="URL de imagen o déjalo vacío para auto-generar" oninput="pfUpdateVideoPreview()">
+            <button class="pf-img-upload-btn" onclick="pfOpenThumbnailWidget()" title="Subir a la nube"><ion-icon name="cloud-upload-outline"></ion-icon></button>
+          </div>
+          <div class="pf-img-preview-mini" id="pf-vid-thumb-prev"><img src="" alt=""></div>
         </div>
 
         <!-- Entrada Destacada -->
@@ -483,45 +527,11 @@
           <input type="hidden" id="pf-vid-featured-id" value="">
         </div>
 
-        <!-- Upload Cloudinary -->
-        <div class="pf-form-group">
-          <label class="pf-label"><ion-icon name="cloud-upload" style="color:var(--cy)"></ion-icon> Subir Video</label>
-          <div class="pf-cloudinary-zone" id="pf-cloudinary-zone">
-            <div class="pf-cld-idle" id="pf-cld-idle">
-              <ion-icon name="cloud-upload-outline"></ion-icon>
-              <p>Sube tu video directamente a la nube</p>
-              <span>MP4, WebM, MOV — máx. 500MB</span>
-              <button class="pf-cld-btn" id="pf-cld-open-btn" onclick="pfOpenCloudinaryWidget()">
-                <ion-icon name="videocam"></ion-icon> SELECCIONAR VIDEO
-              </button>
-            </div>
-            <div class="pf-cld-uploading" id="pf-cld-uploading" style="display:none">
-              <div class="pf-cld-spinner"></div>
-              <p>Subiendo video...</p>
-              <div class="pf-cld-progress-bar"><div class="pf-cld-progress-fill" id="pf-cld-progress-fill"></div></div>
-            </div>
-            <div class="pf-cld-done" id="pf-cld-done" style="display:none">
-              <ion-icon name="checkmark-circle" style="color:var(--g);font-size:2rem"></ion-icon>
-              <p class="pf-cld-done-label">¡Video subido!</p>
-              <video id="pf-vid-preview" controls playsinline muted style="width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover"></video>
-              <button class="pf-cld-change-btn" onclick="pfOpenCloudinaryWidget()">
-                <ion-icon name="refresh"></ion-icon> Cambiar video
-              </button>
-            </div>
-          </div>
-          <input type="hidden" id="pf-vid-url" value="">
-        </div>
+        </section>
 
-        <!-- Miniatura personalizada -->
-        <div class="pf-form-group">
-          <label class="pf-label"><ion-icon name="image"></ion-icon> Miniatura (opcional)</label>
-          <div class="pf-img-slot-row">
-            <input type="url" id="pf-vid-thumbnail" class="pf-input" placeholder="URL de imagen o déjalo vacío para auto-generar" oninput="pfUpdateVideoPreview()">
-            <button class="pf-img-upload-btn" onclick="pfOpenThumbnailWidget()" title="Subir a la nube"><ion-icon name="cloud-upload-outline"></ion-icon></button>
-          </div>
-          <div class="pf-img-preview-mini" id="pf-vid-thumb-prev"><img src="" alt=""></div>
-        </div>
-
+        <!-- ④ Revisa y publica -->
+        <section class="pfw-paso" data-paso="4">
+          <h3 class="pfw-q">Revisa y publica</h3>
         <!-- Vista previa del video card -->
         <div class="pf-section-title" style="font-size:.62rem"><ion-icon name="eye"></ion-icon> VISTA PREVIA</div>
         <div class="pf-video-preview-card" id="pf-video-preview-card">
@@ -536,11 +546,17 @@
           </div>
         </div>
 
-        <button class="pf-btn-submit pf-btn-submit--video" id="pf-subirVideoBtn">
-          <ion-icon name="cloud-upload"></ion-icon> PUBLICAR VIDEO
-        </button>
+          <button type="button" class="pf-btn-submit pf-btn-submit--video" id="pf-subirVideoBtn">
+            <ion-icon name="cloud-upload"></ion-icon> Publicar video
+          </button>
+        </section>
       </div>
 
+      <!-- Navegación del asistente -->
+      <div class="pfw-nav">
+        <button type="button" class="pfw-atras" id="pfw-atras"><ion-icon name="arrow-back"></ion-icon> Atrás</button>
+        <button type="button" class="pfw-sig" id="pfw-sig">Siguiente <ion-icon name="arrow-forward"></ion-icon></button>
+      </div>
     </div>
 
     </div><!-- /pf-publish-wrap -->
@@ -1861,8 +1877,9 @@
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <!-- Antes de script.js: render() usa UGUX.filas al pintar el catálogo de la caché -->
 <script src="upgames-ranking.js?v=20261108c"></script>
-<script src="upgames-ux.js?v=20261108d"></script>
-<script src="script.js?v=20261108e"></script>
+<script src="upgames-ux.js?v=20261108e"></script>
+<script src="script.js?v=20261108f"></script>
+<script src="upgames-publicar.js?v=20261108a"></script>
 <script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>
 <script src="upgames-guia.js?v=20261029i"></script>

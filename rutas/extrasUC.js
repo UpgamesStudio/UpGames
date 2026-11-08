@@ -175,8 +175,9 @@ function registrar(app, deps) {
             const monto = parseInt(req.body?.monto, 10);
             if (!c.precios.apoyo.includes(monto)) return err(res, 400, 'Monto no válido');
             if (!esId(req.params.id) || !claveOk(req.body?.clave)) return err(res, 400, 'Datos no válidos');
-            const j = await Juego.findById(req.params.id).select('usuario title status').lean();
+            const j = await Juego.findById(req.params.id).select('usuario title status pagoPausado').lean();
             if (!j || j.status !== 'aprobado') return err(res, 404, 'Publicación no disponible');
+            if (j.pagoPausado) return err(res, 409, 'Esta publicación está en revisión y por ahora no recibe apoyos');
             if (j.usuario === req.usuario) return err(res, 400, 'No puedes apoyar tu propia publicación');
             const rep = L.reparto(monto), retener = L.RETENCION_DIAS > 0;
             const [code, body] = await cobrarConRegistro(req.usuario, monto, `apoyo:${req.usuario}:${req.body.clave}`, {

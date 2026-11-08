@@ -533,6 +533,12 @@ body:not(.is-owner) .owner-only{display:none!important}
     </section>
 
     <!-- REPORTES -->
+    <section class="view" id="v-sosp">
+      <div class="vh"><div><h2>Verificación de juegos comerciales</h2><p>Publicaciones con el nombre de un juego comercial que no parecen un mod. Siguen visibles y con anuncios, pero no generan pagos al creador hasta que decidas. <b>Es un mod/legítimo</b> vuelve a pagar; <b>Mantener sin pago</b> lo deja así y avisa al creador.</p></div>
+        <button class="btn sm" onclick="rSosp(true)"><ion-icon name="refresh"></ion-icon> Actualizar</button></div>
+      <div class="list" id="sospList"><div class="empty">Cargando…</div></div>
+    </section>
+
     <section class="view" id="v-reportes">
       <div class="vh"><div><h2>Reportes</h2><p>Contenido denunciado por la comunidad, de más a menos reportes</p></div></div>
       <div class="list" id="repList"></div>
@@ -980,6 +986,7 @@ const NAV = [
   { id: 'revn', ic: 'alert-circle-outline', t: 'Revisión', perm: ['revision', 'contenido'], b: () => D.items.filter(enRev).length, hot: true },
   { id: 'apro', ic: 'albums-outline', t: 'Entradas', perm: 'contenido', b: () => D.items.length },
   { id: 'vids', ic: 'videocam-outline', t: 'Videos', perm: 'contenido', b: () => D.items.filter(isVid).length },
+  { id: 'sosp', ic: 'eye-outline', t: 'Verificación', perm: ['revision', 'contenido'], b: () => (D.sosp || []).length, hot: true },
   { id: 'reportes', ic: 'flag-outline', t: 'Reportes', perm: ['revision', 'contenido'], b: () => D.items.filter(i => i.reportes > 0).length, hot: true },
   { id: 'comt', ic: 'chatbubbles-outline', t: 'Comentarios', perm: 'comentarios', b: () => D.comments.length },
   { id: 'moder', ic: 'shield-half-outline', t: 'Moderación IA', perm: ['comentarios', 'contenido', 'sanciones'] },
@@ -1080,7 +1087,8 @@ async function sync(manual) {
       can('finanzas') ? tryF('tarjetas', api('/admin/finanzas/tarjetas').then(r => r.d.tarjetas || []), D.tarjetas) : [],
       can('estadisticas') ? tryF('inicio', api('/admin/stats/dashboard').then(r => r.d.success ? r.d.dashboard : dash), dash) : null,
     ]);
-    D = { items, users, comments, pagos, tarjetas: tarj }; dash = dsh;
+    D = { items, users, comments, pagos, tarjetas: tarj, sosp: D.sosp }; dash = dsh;
+    if (can(['revision', 'contenido'])) rSosp(true).then(() => { try { buildNav?.(); } catch (_) {} });
     updBadges(); render();
     $('liveT').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
     if (fallos.length) toast('⚠ No cargó: ' + fallos.join(', '), 'err');
@@ -1093,7 +1101,7 @@ const st = document.createElement('style'); st.textContent = '@keyframes spin{to
 
 function render() {
   if (!S.admin) return;
-  ({ dash: rDash, econ: rEcon, revn: rRev, apro: rItems, vids: rVids, reportes: rRep, comt: rComm, usrs: rUsers, pays: rPays, tarj: rTarj }[view] || (() => {}))();
+  ({ dash: rDash, econ: rEcon, revn: rRev, apro: rItems, vids: rVids, sosp: rSosp, reportes: rRep, comt: rComm, usrs: rUsers, pays: rPays, tarj: rTarj }[view] || (() => {}))();
   if (bulk) updBulk();
 }
 
@@ -1209,6 +1217,35 @@ function rVids() {
   const l = v.filter(x => (vF === 'all' || (vF === 'revision' ? x.linkStatus === 'revision' : (x.videoType || '').toLowerCase() === vF.toLowerCase())) && matchItem(x, qv()));
   $('vList').innerHTML = l.length ? l.slice(0, 200).map(j => itemCard(j, 'vid')).join('') : '<div class="empty"><ion-icon name="videocam-outline"></ion-icon>Sin videos</div>';
 }
+// ─────────── Verificación: posibles juegos comerciales completos (sin pagos hasta decidir) ───────────
+let _sospCarga = 0;
+async function rSosp(forzar) {
+  const box = $('sospList'); if (!box) return;
+  if (forzar || !D.sosp || Date.now() - _sospCarga > 60000) {
+    try { const { d } = await api('/admin/items/sospechosas'); D.sosp = d.items || []; _sospCarga = Date.now(); } catch (_) { D.sosp = D.sosp || []; }
+  }
+  const l = (D.sosp || []).filter(i => matchItem(i, qv()));
+  box.innerHTML = l.length ? l.map(i => { const s = i.sospecha || {}; return `<div class="card">
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><div class="grow"><div style="font-weight:700">${esc(i.title)}</div>
+      <div class="small muted">por <b>@${esc(i.usuario)}</b> · ${esc(i.category || '')} · ⬇️ ${i.descargasEfectivas || 0} · coincide con <b>${esc(s.juego || '¿?')}</b></div>
+      <ul class="small" style="margin:8px 0 0 16px;padding:0">${(s.motivos || []).map(m => `<li>${esc(m)}</li>`).join('')}</ul>
+      ${s.revision === 'mantener' ? '<div class="small" style="margin-top:6px;color:var(--bad)">Revisada: se mantiene sin pago</div>' : ''}</div>
+      <span class="tag t-warn">Sin pagos</span></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn sm ok" onclick="decidirSosp('${i._id}','ok')"><ion-icon name="checkmark-circle-outline"></ion-icon> Es un mod/legítimo</button>
+      <button class="btn sm warn" onclick="decidirSosp('${i._id}','mantener')"><ion-icon name="pause-circle-outline"></ion-icon> Mantener sin pago</button>
+      <a class="btn sm ghost" href="${esc(safeUrl(i.link) || '#')}" target="_blank" rel="noopener noreferrer"><ion-icon name="open-outline"></ion-icon> Ver enlace</a>
+      ${can('contenido') ? `<button class="btn sm bad" onclick="delItem('${i._id}')"><ion-icon name="trash-outline"></ion-icon></button>` : ''}</div></div>`; }).join('')
+    : '<div class="empty"><ion-icon name="checkmark-done-outline"></ion-icon><p>No hay publicaciones por verificar</p></div>';
+}
+async function decidirSosp(id, decision) {
+  const { ok, d } = await api(`/admin/items/${id}/sospecha`, { method: 'POST', body: { decision } });
+  if (!ok) return toast(d?.error || 'No se pudo guardar', 'bad');
+  D.sosp = (D.sosp || []).filter(i => i._id !== id || decision === 'mantener');
+  const it = (D.sosp || []).find(i => i._id === id); if (it) it.sospecha = { ...(it.sospecha || {}), revision: 'mantener' };
+  toast(decision === 'ok' ? '✅ Vuelve a generar pagos' : '⏸️ Se mantiene sin pagos'); rSosp();
+}
+
 function rRep() {
   const l = D.items.filter(i => i.reportes > 0 && matchItem(i, qv())).sort((a, b) => b.reportes - a.reportes);
   $('repList').innerHTML = l.length ? l.map(i => { const d = i.reportesDesglose || {}; return `<div class="card">

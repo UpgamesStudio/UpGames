@@ -2737,6 +2737,7 @@ async function pfSubirVideo() {
       LS.set('ultima_publicacion', Date.now().toString());
       window.dispatchEvent(new CustomEvent('ug:guia', { detail: 'publicar' }));
       toast('✅ Video publicado. Esperando aprobación.');
+      window.UGPublicar?.reiniciar();
       // Reset form
       document.getElementById('pf-vid-title').value = '';
       document.getElementById('pf-vid-description').value = '';
@@ -2848,6 +2849,9 @@ async function pfSubirJuego() {
     return true;
   }
   if(imagen && !esMediaValida(imagen)) return toast('⚠️ El enlace de imagen no parece válido. Usa una URL directa de imagen o video.');
+  // Categoría Juego: declaración obligatoria (soy el autor o tengo permiso; no es un juego comercial completo)
+  const declara = !!document.getElementById('pf-declara')?.checked;
+  if(cat === 'Juego' && !declara) { document.getElementById('pfw-declara')?.classList.add('pfw-falta'); return toast('☑️ Marca la declaración para publicar en Juegos'); }
 
   const token = LS.get('token');
   if(!token) { toast('⚠️ Tu sesión expiró. Vuelve a entrar.'); setTimeout(() => { location.href='../login.html'; }, 1200); return; }
@@ -2870,12 +2874,19 @@ async function pfSubirJuego() {
     const res = await fetch(`${PF_API}/items/add`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body: JSON.stringify({ title:titulo, description:desc, link, image:imagen, images:imagesExtra, category:cat, extraData, usuario:pfUser, status:'pendiente', ...(window.UGUX?.leerGuia('pf') || {}) })
+      body: JSON.stringify({ title:titulo, description:desc, link, image:imagen, images:imagesExtra, category:cat, extraData, usuario:pfUser, status:'pendiente', declaraDerechos: cat === 'Juego' ? declara : undefined, ...(window.UGUX?.leerGuia('pf') || {}) })
     });
     if(res.ok) {
+      const dataPub = await res.json().catch(() => ({}));
       LS.set('ultima_publicacion', Date.now().toString());
       window.dispatchEvent(new CustomEvent('ug:guia', { detail: 'publicar' }));
-      toast('✅ Publicado. Aparecerá como "En revisión" hasta verificar el enlace.');
+      if (dataPub.sospecha) {
+        // Nombre de un juego comercial que no parece un mod: publicada, con anuncios, sin UpCoins hasta revisar
+        customConfirm({ icon: '🔎', title: 'Publicada · en verificación', okText: 'Entendido', cancelText: '',
+          msg: `"${titulo}" coincide con el juego comercial ${dataPub.sospecha.juego}.\n\nYa está publicada y visible, pero no generará UpCoins mientras el equipo verifica que no sea el juego completo.\n\nSi es un mod, parche o configuración, edita el título para indicarlo.` });
+      } else toast('✅ Publicado. Aparecerá como "En revisión" hasta verificar el enlace.');
+      const decl = document.getElementById('pf-declara'); if (decl) decl.checked = false;
+      window.UGPublicar?.reiniciar();
       document.getElementById('pf-addTitle').value='';
       document.getElementById('pf-addDescription').value='';
       window.UGUX?.limpiarGuia('pf');
