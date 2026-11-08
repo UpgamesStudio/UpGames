@@ -4065,6 +4065,36 @@ function iniciarJobsAutomaticos() {
             logger.info(`JOB 5b Enlaces: ${items.length} revisados · ${vivos} vivos · ${muertos} avisados · ${caidos} caídos · ${dudas} sin verificar`);
         } catch (err) { logger.error(`JOB 5b Error: ${err.message}`); }
     }
+    // JOB 5c: Verificación de títulos comerciales en lo ya publicado (modulos/sospecha.js).
+    // Al arrancar y cada día: las publicaciones que parecen un juego comercial completo pasan a
+    // "en verificación" (sin pagos, visibles y con anuncios). Lo que el equipo ya revisó no se toca.
+    // Un aviso por creador con la lista de sus publicaciones afectadas.
+    async function verificarComercialesExistentes() {
+        try {
+            const items = await Juego.find({ status: 'aprobado', category: { $ne: 'Video' }, pagoPausado: { $ne: true }, 'sospecha.revision': { $exists: false } })
+                .select('_id title category serie usuario image').lean();
+            const porAutor = new Map();
+            for (const it of items) {
+                const sN = Sospecha.evaluar(it);
+                if (!sN) continue;
+                await Juego.updateOne({ _id: it._id }, { $set: { pagoPausado: true, sospecha: { ...sN, desde: new Date(), titulo: it.title, retroactiva: true } } }, { timestamps: false });
+                if (!porAutor.has(it.usuario)) porAutor.set(it.usuario, []);
+                porAutor.get(it.usuario).push({ it, juego: sN.juego });
+            }
+            for (const [usuario, l] of porAutor) {
+                const lista = l.slice(0, 5).map(x => `"${String(x.it.title).slice(0, 40)}"`).join(', ') + (l.length > 5 ? ` y ${l.length - 5} más` : '');
+                crearNotif({ destinatario: usuario, tipo: 'sistema', emisor: 'UpGames', itemId: String(l[0].it._id), itemTitle: 'Revisión', itemImage: l[0].it.image || '',
+                    mensaje: l.length === 1 ? Sospecha.mensajeCreador(l[0].it.title, l[0].juego)
+                        : `⚠️ ${l.length} publicaciones tuyas (${lista}) coinciden con juegos comerciales. Siguen visibles, pero no generarán UpCoins mientras el equipo verifica que no sean juegos completos. Si son mods o configuraciones, edita sus títulos para indicarlo.` });
+            }
+            const total = [...porAutor.values()].reduce((a, l) => a + l.length, 0);
+            if (total) { memCache.invalidate('items:*'); logger.info(`JOB 5c: ${total} publicaciones pasaron a verificación (${porAutor.size} creadores)`); }
+        } catch (err) { logger.error(`JOB 5c Error: ${err.message}`); }
+    }
+    setTimeout(verificarComercialesExistentes, 60000).unref();
+    setInterval(verificarComercialesExistentes, 24 * 60 * 60 * 1000).unref();
+    logger.info('JOB 5c: Verificación de títulos comerciales activa');
+
     if (process.env.REVISAR_ENLACES !== '0') {
         setTimeout(revisarEnlacesDiario, 15 * 60000).unref();
         setInterval(revisarEnlacesDiario, 24 * 60 * 60 * 1000).unref();

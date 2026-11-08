@@ -4564,7 +4564,7 @@ function ugAB(evento, modo) {
 
 // ── BIENVENIDA — 3 pantallas + términos ───────────────────
 (function initOnboarding() {
-  const TERMINOS_VERSION = '7.2';   // súbela al cambiar los Términos o la Privacidad
+  const TERMINOS_VERSION = '7.3';   // súbela al cambiar los Términos o la Privacidad
   function avisoTerminosNuevos() {
     const a = document.createElement('div'); a.className = 'ug-terminos-aviso'; a.setAttribute('role', 'status');
     a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: ahora bajo la ley colombiana, a los creadores se les paga solo por descargas efectivas (no por vistas) y saltar la espera es solo con Premium.</span><button type="button">Entendido</button>`;
