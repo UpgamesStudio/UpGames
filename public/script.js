@@ -909,6 +909,7 @@ document.getElementById('buscador').addEventListener('input', function(e) {
       if (!res.length) { ugBuscarServidor(q, q.split(/\s+/).length < 3); return; }
       filteredItems = res;
       render(filteredItems);
+      window.UGM?.busqueda(q, res.length);   // métricas: se queda con el último conteo (el del servidor)
       ugBuscarServidor(q);   // todo el catálogo, tolerante a errores ("gta san andres" → GTA SA)
       return;
     } else {
@@ -934,7 +935,7 @@ async function ugBuscarServidor(q, vacioSiNada = false) {
     const actual = document.getElementById('buscador').value.toLowerCase().trim();
     if (n !== _busqSeq || actual !== q || !d?.success || window.UG_NEXUS_Q === q) return;
     const srv = Array.isArray(d.items) ? d.items : [];
-    if (!srv.length) { if (vacioSiNada) { filteredItems = []; render([]); } return; }   // sin resultados: lo local (o Nexus)
+    if (!srv.length) { if (vacioSiNada) { filteredItems = []; render([]); window.UGM?.busqueda(q, 0); } return; }   // sin resultados: lo local (o Nexus)
     // Orden del servidor (relevancia), completando con los datos ya cargados de cada publicación
     const porId = new Map(todosLosItems.map(i => [i._id, i]));
     const vistos = new Set();
@@ -942,6 +943,7 @@ async function ugBuscarServidor(q, vacioSiNada = false) {
     filteredItems.forEach(i => { if (!vistos.has(i._id)) lista.push(i); });
     filteredItems = lista;
     render(filteredItems);
+    window.UGM?.busqueda(q, lista.length);
   } catch (_) { if (vacioSiNada && n === _busqSeq) { filteredItems = []; render([]); } }
 }
 
@@ -4527,8 +4529,9 @@ async function pfLogout() {
   if(!ok) return;
   ['user_admin','token','RefreshToken','user_avatar','user_verified','user_rol',
    'upgames_items_cache','upgames_users_cache'].forEach(k => LS.remove(k));
-  // Limpiar caché del navegador para esta página
-  try { localStorage.clear(); } catch(_) {}
+  // Limpiar los datos de la cuenta en este navegador (se conservan las preferencias del dispositivo)
+  try { const keep = ['ug_vid', 'ug_tema', 'ug_mus_off', 'ug_mus_vol', 'ug_mus_ult', 'ug_ab_bienv', 'upgames_terms_v'], g = {};
+    keep.forEach(k => { const v = localStorage.getItem(k); if (v !== null) g[k] = v; }); localStorage.clear(); Object.entries(g).forEach(([k, v]) => localStorage.setItem(k, v)); } catch(_) {}
   toast('👋 Sesión cerrada');
   // replace() elimina biblioteca.html del historial — el botón "atrás" no puede regresar
   setTimeout(()=>{ location.replace('../login.html'); }, 800);

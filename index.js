@@ -558,7 +558,7 @@ JuegoSchema.pre('save', function(next) {
 // Cambios en publicaciones invalidan el catálogo cacheado (ver cacheado()). Los que
 // solo suben contadores (cada descarga, like o vista) no: vaciarían la caché a cada
 // descarga y el TTL de 30 s ya los refresca.
-const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'meGustaCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas', 'enlaceRevisado', 'enlaceMuertoDesde']);
+const CONTADORES_JUEGO = new Set(['descargasEfectivas', 'likesCount', 'meGustaCount', 'vistas', 'scoreRecomendacion', 'reportes', 'resenas', 'enlaceRevisado', 'enlaceMuertoDesde', 'compat']);
 const soloContadores = u => !!u && !Array.isArray(u) && Object.keys(u).length > 0 &&
     Object.entries(u).every(([op, campos]) => (op === '$inc' || op === '$set') && campos && Object.keys(campos).every(f => CONTADORES_JUEGO.has(f)));
 JuegoSchema.post(['save', 'insertMany', 'updateOne', 'updateMany', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'findOneAndReplace', 'replaceOne'], function () {
@@ -2130,7 +2130,7 @@ app.get("/items", async (req, res) => {
                 { $addFields: { seguidoresAutor: { $ifNull: [{ $arrayElemAt: ['$_autor.n', 0] }, 0] } } },
                 { $project: { _id: 1, title: 1, description: 1, image: 1, images: 1, link: 1, category: 1, usuario: 1, resenas: 1, reportes: 1, linkStatus: 1, descargasEfectivas: 1, vistas: 1, likesCount: 1, extraData: 1, videoType: 1, featuredItemId: 1, scoreRecomendacion: 1, serie: 1, createdAt: 1, updatedAt: 1, promocionado: 1, tutorialId: 1,
                     tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] },
-                    impulsado: 1, seguidoresAutor: 1, meGustaCount: 1, promoUCDia: 1, promoNivel: { $cond: ['$promocionado', { $ifNull: ['$promoNivel', 'estandar'] }, '$$REMOVE'] } } },
+                    impulsado: 1, seguidoresAutor: 1, meGustaCount: 1, compat: 1, promoUCDia: 1, promoNivel: { $cond: ['$promocionado', { $ifNull: ['$promoNivel', 'estandar'] }, '$$REMOVE'] } } },
             ]);
             // Descargas de los últimos 7 días (stats_items): alimenta "Más descargados esta semana"
             const semana = await StatsItems.actividadReciente(7);
@@ -3106,8 +3106,8 @@ app.delete('/comentarios/:id', verificarAdmin, async (req, res) => {
 
 // ========== FAVORITOS ==========
 
-// GET /items/sospecha?titulo=&categoria= → aviso en vivo al escribir el nombre en Publicar
-app.get('/items/sospecha', async (req, res) => {
+// GET /publicar/sospecha?titulo=&categoria= → aviso en vivo al escribir el nombre en Publicar
+app.get('/publicar/sospecha', async (req, res) => {
     if (!(await Limites.permitir(`sospecha:${req.ip}`, [[Limites.MIN, 40]]))) return res.status(429).json({ success: false });
     const titulo = String(req.query.titulo || '').slice(0, 120), categoria = String(req.query.categoria || '').slice(0, 40);
     const s = titulo.trim().length >= 3 ? Sospecha.evaluar({ title: titulo, category: categoria }) : null;
@@ -4350,6 +4350,10 @@ live.alRevertir((captureId, sancionar) => tienda.revertir(captureId, 'PayPal', s
 // Usos extra de los UpCoins: estilo, apoyar, revisión prioritaria, misiones (Super Chat está en live)
 require('./rutas/extrasUC').registrar(app, { verificarToken, verificarAdmin, Usuario, Juego, LiveTx: live.LiveTx, Notificacion, logger, olvidarPerfil: live.olvidarPerfil });
 // Reseñas con estrellas y colecciones de publicaciones
+// Métricas de producto (eventos anónimos + panel admin)
+require('./rutas/metricas').registrar(app, { verificarAdmin, Usuario, Juego, Limites, logger });
+// Compatibilidad real por dispositivo ("funcionó en mi Snapdragon a 45 FPS")
+require('./rutas/compat').registrar(app, { verificarToken, Juego, Moderacion, Limites, logger });
 require('./rutas/social').registrar(app, { verificarToken, verificarAdmin, usuarioOpcional, Usuario, Juego, Moderacion, Limites, crearNotif, logger });
 // Grupos y comunidades del chat (rutas/grupos.js): cero tolerancia y +18 incluidos
 require('./rutas/grupos').registrar(app, { verificarToken, Usuario, Notificacion, push, imagenes, urlImagenSegura, Moderacion, CeroTolerancia, Limites, logger });

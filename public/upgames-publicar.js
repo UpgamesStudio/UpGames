@@ -88,7 +88,7 @@
       const box = $('pfw-aviso-com'), t = val('pf-addTitle'), n = ++seq; if (!box) return;
       if (t.length < 3) { box.hidden = true; return; }
       try {
-        const d = await (await fetch(`${API}/items/sospecha?titulo=${encodeURIComponent(t)}&categoria=${encodeURIComponent(val('pf-addCategory'))}`)).json();
+        const d = await (await fetch(`${API}/publicar/sospecha?titulo=${encodeURIComponent(t)}&categoria=${encodeURIComponent(val('pf-addCategory'))}`)).json();
         if (n !== seq) return;
         box.hidden = !d?.sospecha;
         if (d?.sospecha) box.innerHTML = `<ion-icon name="alert-circle"></ion-icon><span><b>Nombre de un juego comercial.</b> ${String(d.mensaje).replace(/[<>&]/g, '')} Mientras se verifica no ganarás UpCoins.</span>`;

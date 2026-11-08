@@ -227,3 +227,35 @@ html[data-tema="cyber"] .pfw-q { font-family: var(--ff-disp); text-transform: up
 html[data-tema="cyber"] .pfw-sig { clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
 html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn { clip-path: none !important; }
 html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn.active { color: var(--txt) !important; }
+
+/* ══ Compatibilidad real por dispositivo (upgames-compat.js) ══ */
+#ds-compat { margin: 4px 0 14px; }
+.ucx { border: 1px solid rgba(90,200,250,.28); border-radius: 16px; background: rgba(90,200,250,.04); padding: 12px 14px; }
+.ucx-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.ucx-h small { margin-left: auto; color: var(--txt3); font-size: .72rem; }
+.ucx-p { margin: 0 0 10px; font-size: .8rem; color: var(--txt2); line-height: 1.45; }
+.ucx-total { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; font-size: .82rem; color: var(--txt); }
+.ucx-barra { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.07); }
+.ucx-barra i { display: block; height: 100%; }
+.ucx-barra .si { background: #32D583; } .ucx-barra .aj { background: #ffcc4d; } .ucx-barra .no { background: #ff5a6e; }
+.ucx-tuyo { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin-bottom: 10px; border-radius: 12px; background: rgba(50,213,131,.08); border: 1px solid rgba(50,213,131,.3); }
+.ucx-tuyo-ic { font-size: 1.2rem; }
+.ucx-tuyo b { display: block; font-size: .84rem; } .ucx-tuyo small { color: var(--txt2); font-size: .76rem; }
+.ucx-gamas { display: grid; gap: 6px; margin-bottom: 10px; }
+.ucx-gamas > div { display: grid; grid-template-columns: 82px 1fr auto; gap: 8px; align-items: center; font-size: .74rem; color: var(--txt2); }
+.ucx-lista { margin-bottom: 10px; font-size: .8rem; }
+.ucx-lista summary { cursor: pointer; color: var(--cy, #5AC8FA); font-weight: 700; padding: 4px 0; }
+.ucx-rep { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.06); }
+.ucx-rep small { display: block; color: var(--txt3); margin-top: 2px; }
+.ucx-btn { width: 100%; padding: 11px; border-radius: 12px; border: 1px dashed rgba(90,200,250,.5); background: transparent; color: var(--cy, #5AC8FA); font: inherit; font-weight: 800; font-size: .84rem; cursor: pointer; }
+.ucx-form { margin-top: 12px; }
+.ucx-form[hidden] { display: none; }
+.ucx-lbl { display: block; margin: 12px 0 6px; font-size: .76rem; font-weight: 700; color: var(--txt2); }
+.ucx-lbl small { font-weight: 500; color: var(--txt3); }
+.ucx-det { display: block; margin-top: 4px; font-size: .7rem; color: var(--txt3); }
+.ucx-ops { display: flex; flex-wrap: wrap; gap: 6px; }
+.ucx-ops button { padding: 8px 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: var(--txt); font: inherit; font-size: .8rem; cursor: pointer; }
+.ucx-ops button.on { border-color: var(--g, #32D583); background: rgba(50,213,131,.12); box-shadow: 0 0 0 1px var(--g, #32D583) inset; }
+.ucx-enviar { width: 100%; margin-top: 14px; min-height: 46px; border: 0; border-radius: 12px; background: var(--g, #32D583); color: #04140b; font: inherit; font-weight: 800; cursor: pointer; }
+.ucx-enviar[disabled] { opacity: .45; cursor: not-allowed; }
+html[data-tema="cyber"] .ucx, html[data-tema="cyber"] .ucx-tuyo, html[data-tema="cyber"] .ucx-btn, html[data-tema="cyber"] .ucx-ops button, html[data-tema="cyber"] .ucx-enviar { border-radius: 0 !important; }

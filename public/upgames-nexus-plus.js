@@ -103,6 +103,7 @@
     return { so, gpu: gpu.replace(/\s+/g, ' ').trim(), modelo, version: String(version).replace(/_/g, '.'), ramGB: navigator.deviceMemory || null, nucleos: navigator.hardwareConcurrency || null };
   }
 
+  window.UGDispositivo = infoDispositivo;   // también lo usa la compatibilidad real (upgames-compat.js)
   const COLOR = { si: 'ok', probable: 'ok2', dudoso: 'warn', no: 'bad', no_aplica: 'na' };
   const ICONO = { si: '🟢', probable: '🟢', dudoso: '🟡', no: '🔴', no_aplica: '⚪' };
   let itemActual = null;

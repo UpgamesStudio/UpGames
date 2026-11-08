@@ -497,6 +497,22 @@ body:not(.is-owner) .owner-only{display:none!important}
         <div id="dAB" style="margin-top:10px"><div class="skel"></div></div></div>
     </section>
 
+    <!-- MÉTRICAS DE PRODUCTO -->
+    <section class="view" id="v-metr">
+      <div class="vh"><div><h2>Métricas</h2><p>Cuánta gente llega, busca, abre fichas, va a descargar, vuelve y crea cuenta. Eventos anónimos de la web (sin IP ni datos personales) + descargas y cuentas reales.</p></div>
+        <div class="chips" id="mtF"><button class="chip" data-d="7">7 días</button><button class="chip on" data-d="30">30 días</button><button class="chip" data-d="90">90 días</button></div></div>
+      <div class="kpis" id="mtKpis"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      <div class="card" style="margin-bottom:14px"><p class="ct">📈 Día a día</p><p class="cs" id="mtLeyenda">Visitantes, descargas efectivas y cuentas nuevas</p><div id="mtSerie"></div></div>
+      <div class="grid2" style="margin-bottom:14px">
+        <div class="card"><p class="ct">🔻 Embudo (últimos 7 días)</p><p class="cs">Visitantes únicos que llegaron a cada paso</p><div id="mtEmb"></div></div>
+        <div class="card"><p class="ct">🔁 Vuelven</p><p class="cs" id="mtRetSub">Quienes llegaron por primera vez hace 8–21 días</p><div id="mtRet"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><p class="ct">🔎 Búsquedas sin resultado</p><p class="cs">Contenido que la gente busca y no encuentra: oportunidades para publicar</p><div id="mtVacias"></div></div>
+        <div class="card"><p class="ct">🔥 Lo más buscado</p><p class="cs">Frases completas, últimos días del rango</p><div id="mtTop"></div></div>
+      </div>
+    </section>
+
     <!-- REVISIÓN -->
     <section class="view" id="v-revn">
       <div class="vh"><div><h2>Revisión</h2><p>Publicaciones nuevas. Si no se aprueban en 2 días, su enlace se marca como caído. Pide a Nexus una recomendación antes de decidir.</p></div>
@@ -982,6 +998,7 @@ function tickExp() { const r = S.exp - Date.now(); if (r <= 0) return logout('Tu
 // ─────────── Navegación ───────────
 const NAV = [
   { g: 'General' }, { id: 'dash', ic: 'grid-outline', t: 'Inicio', perm: 'estadisticas' },
+  { id: 'metr', ic: 'analytics-outline', t: 'Métricas', perm: 'estadisticas' },
   { g: 'Contenido' },
   { id: 'revn', ic: 'alert-circle-outline', t: 'Revisión', perm: ['revision', 'contenido'], b: () => D.items.filter(enRev).length, hot: true },
   { id: 'apro', ic: 'albums-outline', t: 'Entradas', perm: 'contenido', b: () => D.items.length },
@@ -1101,7 +1118,7 @@ const st = document.createElement('style'); st.textContent = '@keyframes spin{to
 
 function render() {
   if (!S.admin) return;
-  ({ dash: rDash, econ: rEcon, revn: rRev, apro: rItems, vids: rVids, sosp: rSosp, reportes: rRep, comt: rComm, usrs: rUsers, pays: rPays, tarj: rTarj }[view] || (() => {}))();
+  ({ dash: rDash, metr: rMetr, econ: rEcon, revn: rRev, apro: rItems, vids: rVids, sosp: rSosp, reportes: rRep, comt: rComm, usrs: rUsers, pays: rPays, tarj: rTarj }[view] || (() => {}))();
   if (bulk) updBulk();
 }
 
@@ -1217,6 +1234,49 @@ function rVids() {
   const l = v.filter(x => (vF === 'all' || (vF === 'revision' ? x.linkStatus === 'revision' : (x.videoType || '').toLowerCase() === vF.toLowerCase())) && matchItem(x, qv()));
   $('vList').innerHTML = l.length ? l.slice(0, 200).map(j => itemCard(j, 'vid')).join('') : '<div class="empty"><ion-icon name="videocam-outline"></ion-icon>Sin videos</div>';
 }
+// ─────────── Métricas de producto ───────────
+let _mtDias = 30, _mt = null, _mtT = 0;
+document.getElementById('mtF')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-d]'); if (!b) return;
+  document.querySelectorAll('#mtF .chip').forEach(x => x.classList.toggle('on', x === b)); _mtDias = +b.dataset.d; rMetr(true);
+});
+async function rMetr(forzar) {
+  if (forzar || !_mt || _mt.dias !== _mtDias || Date.now() - _mtT > 120000) {
+    try { const { ok, d } = await api(`/admin/metricas?dias=${_mtDias}`); if (!ok || !d.success) throw new Error(d?.error || 'Error'); _mt = d; _mtT = Date.now(); }
+    catch (e) { $('mtKpis').innerHTML = `<div class="card"><p class="cs">No se pudieron cargar las métricas: ${esc(e.message)}</p></div>`; return; }
+  }
+  const d = _mt, f = n => Number(n || 0).toLocaleString('es-CO');
+  const delta = ({ ahora, antes }) => { if (!antes) return ahora ? '<b style="color:var(--ok)">nuevo</b>' : '—'; const p = Math.round((ahora - antes) / antes * 100); return `<b style="color:${p >= 0 ? 'var(--ok)' : 'var(--bad)'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)} %</b> vs. 7 días antes`; };
+  const K = [['visitantes', 'Visitantes (7 días)', 'people', '#5AC8FA'], ['busquedas', 'Búsquedas', 'search', '#a78bfa'], ['fichas', 'Fichas abiertas', 'document-text', '#ffcc4d'],
+    ['clicsDescarga', 'Clics en "Obtener link"', 'cloud-download', '#32D583'], ['descargas', 'Descargas efectivas', 'checkmark-done', '#32D583'], ['cuentas', 'Cuentas nuevas', 'person-add', '#ff7a9c']];
+  $('mtKpis').innerHTML = K.map(([k, t, ic, c]) => `<div class="card kpi"><div class="k-ic" style="background:${c}22;color:${c}"><ion-icon name="${ic}"></ion-icon></div><div class="k-l">${t}</div><div class="k-v">${f(d.kpis[k].ahora)}</div><div class="k-d">${delta(d.kpis[k])}</div></div>`).join('');
+  // Serie: barras de visitantes con líneas de descargas y cuentas
+  const S = d.serie, W = 640, H = 170, P = 22, n = S.length, bw = (W - P * 2) / n;
+  const maxV = Math.max(1, ...S.map(x => x.visitantes)), maxD = Math.max(1, ...S.map(x => x.descargas)), maxC = Math.max(1, ...S.map(x => x.cuentas));
+  const y = (v, m) => H - P - (v / m) * (H - P * 2);
+  const linea = (k, m, c) => `<polyline fill="none" stroke="${c}" stroke-width="2" points="${S.map((x, i) => `${(P + i * bw + bw / 2).toFixed(1)},${y(x[k], m).toFixed(1)}`).join(' ')}"/>`;
+  $('mtSerie').innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Serie diaria">
+    ${S.map((x, i) => `<rect x="${(P + i * bw + 1).toFixed(1)}" y="${y(x.visitantes, maxV).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${(H - P - y(x.visitantes, maxV)).toFixed(1)}" rx="2" fill="#5AC8FA" opacity=".35"><title>${x.dia}: ${x.visitantes} visitantes (${x.nuevos} nuevos), ${x.busquedas} búsquedas, ${x.descargas} descargas, ${x.cuentas} cuentas</title></rect>`).join('')}
+    ${linea('descargas', maxD, '#32D583')}${linea('cuentas', maxC, '#ff7a9c')}
+    <text x="${P}" y="${H - 4}" fill="#8a90a0" font-size="10">${S[0].dia}</text><text x="${W - P}" y="${H - 4}" fill="#8a90a0" font-size="10" text-anchor="end">${S[n - 1].dia}</text></svg>
+    <div class="small muted" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"><span><span style="color:#5AC8FA">■</span> Visitantes (máx. ${f(maxV)})</span><span><span style="color:#32D583">━</span> Descargas efectivas (máx. ${f(maxD)})</span><span><span style="color:#ff7a9c">━</span> Cuentas nuevas (máx. ${f(maxC)})</span></div>`;
+  // Embudo
+  const E = d.embudo, base = Math.max(1, E.visitaron);
+  const pasos = [['Visitaron', E.visitaron], ['Buscaron', E.buscaron], ['Abrieron una ficha', E.fichas], ['Fueron a descargar', E.descargar], ['Crearon cuenta', E.cuentas]];
+  $('mtEmb').innerHTML = pasos.map(([t, v], i) => `<div style="margin:8px 0"><div class="row" style="justify-content:space-between"><span class="small">${t}</span><span class="small"><b>${f(v)}</b> · ${Math.round(v / base * 100)} %${i ? ` <span class="muted">(${pasos[i - 1][1] ? Math.round(v / pasos[i - 1][1] * 100) : 0} % del paso anterior)</span>` : ''}</span></div>
+    <div style="height:10px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:4px"><i style="display:block;height:100%;width:${Math.round(v / base * 100)}%;background:linear-gradient(90deg,#32D583,#5AC8FA)"></i></div></div>`).join('');
+  // Retención
+  const R = d.retencion, pct = v => R.cohorte ? Math.round(v / R.cohorte * 100) : 0;
+  $('mtRet').innerHTML = R.cohorte ? `<div class="kpis" style="grid-template-columns:1fr 1fr;margin:8px 0 0">
+      <div class="card kpi"><div class="k-l">Volvieron al día siguiente (D1)</div><div class="k-v">${pct(R.d1)} %</div><div class="k-d">${f(R.d1)} de ${f(R.cohorte)}</div></div>
+      <div class="card kpi"><div class="k-l">Volvieron en la semana (D7)</div><div class="k-v">${pct(R.d7)} %</div><div class="k-d">${f(R.d7)} de ${f(R.cohorte)}</div></div></div>
+      <p class="small muted" style="margin-top:8px">Referencia en apps de contenido: D1 sano ≥ 25 %, D7 ≥ 10 %.</p>`
+    : '<p class="small muted">Aún no hay suficientes datos: la retención aparece cuando pasan 8 días desde las primeras visitas medidas.</p>';
+  const tabla = (l, col) => l.length ? `<table class="small" style="width:100%;border-collapse:collapse">${l.map(x => `<tr style="border-bottom:1px solid var(--line)"><td style="padding:6px 0">${esc(x.q)}</td><td style="text-align:right;padding:6px 0"><b>${f(x.n)}</b>${col && x.vacias ? ` <span class="muted">(${f(x.vacias)} sin resultado)</span>` : ''}</td></tr>`).join('')}</table>` : '<p class="small muted">Aún no hay búsquedas registradas.</p>';
+  $('mtVacias').innerHTML = tabla(d.busquedas.sinResultado);
+  $('mtTop').innerHTML = tabla(d.busquedas.top, true);
+}
+
 // ─────────── Verificación: posibles juegos comerciales completos (sin pagos hasta decidir) ───────────
 let _sospCarga = 0;
 async function rSosp(forzar) {
