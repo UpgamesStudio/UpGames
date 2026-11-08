@@ -18,6 +18,7 @@ exclude:
   - nixpacks.toml
   - railway.toml
   - README.md
+  - public/js/
   - games/monoplaza/tools/
   - games/monoplaza/package.json
   - games/monoplaza/README.md
