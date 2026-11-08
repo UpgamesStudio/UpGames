@@ -21,12 +21,25 @@
 <meta property="og:title" content="UpGames — Juegos, mods y apps gratis">
 <meta property="og:description" content="Catálogo gratuito de juegos, mods, apps y videos compartidos por la comunidad.">
 <meta property="og:image" content="https://upgames.games/public/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="UpGames — juegos, mods y apps de la comunidad">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"UpGames","url":"https://upgames.games/public/biblioteca.html","inLanguage":"es","potentialAction":{"@type":"SearchAction","target":"https://upgames.games/public/biblioteca.html?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<meta name="twitter:title" content="UpGames — Juegos, mods y apps gratis">
+<meta name="twitter:description" content="Catálogo gratuito de juegos, mods, apps y videos compartidos por la comunidad.">
+<meta name="twitter:image" content="https://upgames.games/public/og-cover.png">
+<meta name="application-name" content="UpGames">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"UpGames","url":"https://upgames.games/public/biblioteca.html","inLanguage":"es","potentialAction":{"@type":"SearchAction","target":"https://upgames.games/public/biblioteca.html?q={search_term_string}","query-input":"required name=search_term_string"},"publisher":{"@id":"https://upgames.games/#org"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://upgames.games/#org","name":"UpGames","url":"https://upgames.games/","logo":"https://upgames.games/public/icons/icon-512.png","image":"https://upgames.games/public/og-cover.png"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link rel="preconnect" href="https://upgames-production.up.railway.app" crossorigin>
 <link rel="dns-prefetch" href="https://upgames-production.up.railway.app">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Fuentes sin bloquear el primer render (se aplican al llegar; display=swap) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
 
 <link rel="stylesheet" href="biblioteca.css?v=20261106b">
 <link rel="stylesheet" href="upgames-glass.css?v=20261107f">
@@ -35,8 +48,19 @@
 <link rel="stylesheet" href="upgames-videos.css?v=20261107c">
 <script src="upgames-tema.js?v=20261106d"></script>
 <script src="upgames-musica.js?v=20261106e" defer></script>
-<!-- Widget de subida: solo se usa al publicar → diferido (antes bloqueaba el primer render) -->
-<script src="https://upload-widget.cloudinary.com/global/all.js" defer></script>
+<!-- Widget de subida (pesado): solo se usa al publicar → se descarga cuando la página ya cargó
+     y el navegador está libre (window.ugCargarCloudinary lo fuerza antes si hace falta) -->
+<script>
+  window.ugCargarCloudinary = function () {
+    if (window.cloudinary || window._ugCld) return window._ugCld;
+    var s = document.createElement('script'); s.src = 'https://upload-widget.cloudinary.com/global/all.js'; s.async = true;
+    window._ugCld = new Promise(function (ok, ko) { s.onload = ok; s.onerror = function () { window._ugCld = null; ko(); }; });
+    document.head.appendChild(s); return window._ugCld;
+  };
+  addEventListener('load', function () {
+    (window.requestIdleCallback || function (f) { setTimeout(f, 2500); })(window.ugCargarCloudinary, { timeout: 6000 });
+  });
+</script>
 
 <link rel="manifest" href="./manifest.json?v=3">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=2">
@@ -46,6 +70,7 @@
 <meta name="apple-mobile-web-app-title" content="UpGames">
 <script src="./upgames-pwa.js" defer></script>
 <script src="./upgames-errores.js?v=20261029i"></script>
+<style>.ug-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}</style>
 </head>
 <body>
 
@@ -128,6 +153,11 @@
   MAIN OUTPUT GRID
 ══════════════════════════════════ -->
 <main id="main-view">
+  <div class="ug-sr">
+    <h1>UpGames: descarga juegos, mods, apps y software gratis</h1>
+    <p>Biblioteca gratuita de juegos para PC y Android, mods de rendimiento, apps, herramientas, software y videos compartidos por la comunidad. Mira y descarga sin registrarte; crea una cuenta para publicar, comentar, seguir creadores, ver lives y ganar dinero con tus aportes.</p>
+    <nav aria-label="Enlaces de UpGames"><a href="live.html">UpGames Live: transmisiones en vivo</a> · <a href="politica-privacidad.html">Política de privacidad</a> · <a href="terminos_condiciones.html">Términos y condiciones</a></nav>
+  </div>
   <div id="hero-carousel" style="display:none">
     <div class="hero-track" id="hero-track"></div>
     <div class="hero-dots" id="hero-dots"></div>
@@ -172,10 +202,10 @@
     <ion-icon name="person-circle-outline"></ion-icon>
     <h3>No has iniciado sesión</h3>
     <p>Accede para gestionar tu perfil,<br>subir contenido y monetizar</p>
-    <a href="../index.html?volver=.%2Fpublic%2Fbiblioteca.html&amp;registro=1" class="btn-login-action">
+    <a href="../login.html?volver=.%2Fpublic%2Fbiblioteca.html&amp;registro=1" class="btn-login-action">
       <ion-icon name="person-add-outline"></ion-icon> Crear cuenta gratis
     </a>
-    <p style="margin-top:10px;font-size:.85rem"><a href="../index.html" style="color:#32D583">Ya tengo cuenta · Iniciar sesión</a></p>
+    <p style="margin-top:10px;font-size:.85rem"><a href="../login.html" style="color:#32D583">Ya tengo cuenta · Iniciar sesión</a></p>
   </div>
 
   <!-- Logged in content -->
@@ -1826,8 +1856,8 @@
 <!-- ION ICONS -->
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-<script src="script.js?v=20261107e"></script>
-<script src="upgames-extras.js?v=20261029i"></script>
+<script src="script.js?v=20261108a"></script>
+<script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>
 <script src="upgames-guia.js?v=20261029i"></script>
 <script src="upgames-autoinfo.js?v=20261107e"></script>

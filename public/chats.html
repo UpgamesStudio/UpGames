@@ -685,7 +685,7 @@ body::after { width: auto; height: auto; inset: 0; border-radius: 0; filter: non
 const API   = (window.UG_CONFIG && window.UG_CONFIG.API_URL) || 'https://upgames-production.up.railway.app';
 const ME    = (localStorage.getItem('user_admin') || '').toLowerCase();
 const TOKEN = localStorage.getItem('token') || '';
-if (!ME || !TOKEN) location.replace('../index.html');
+if (!ME || !TOKEN) location.replace('../login.html');
 
 const REACTS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
 const S = {
@@ -728,7 +728,7 @@ async function api(path, opts = {}) {
   if (r.status === 401) {
     // Sesión caducada: borrarla, o el login vería el token viejo y rebotaría a la biblioteca
     try { localStorage.removeItem('token'); localStorage.removeItem('user_admin'); } catch (_) {}
-    toast('Tu sesión expiró. Inicia sesión de nuevo'); setTimeout(() => location.replace('../index.html'), 1600); throw new Error('401');
+    toast('Tu sesión expiró. Inicia sesión de nuevo'); setTimeout(() => location.replace('../login.html'), 1600); throw new Error('401');
   }
   if (!r.ok || d.success === false) { const e = new Error(d.error || 'Error de conexión'); e.code = d.code; e.status = r.status; throw e; }
   return d;

@@ -217,7 +217,7 @@ a { text-decoration: none; color: inherit; }
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="UpGames">
 <script src="./upgames-pwa.js" defer></script>
-<script src="./upgames-extras.js?v=20261029i"></script>
+<script src="./upgames-extras.js?v=20261108a"></script>
 <script src="./upgames-social.js?v=20261029i"></script>
 <script src="./upgames-errores.js?v=20261029i"></script>
 </head>
@@ -676,7 +676,7 @@ a { text-decoration: none; color: inherit; }
             if (!usuarioActual) {
                 // Invitado: el perfil se ve completo; seguir pide cuenta y luego vuelve aquí
                 btnSeguir.innerHTML = `<ion-icon name="person-add-outline"></ion-icon> Seguir`;
-                btnSeguir.onclick = () => window.location.href = `../index.html?volver=${encodeURIComponent('./public/perfil-publico.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}` + '&registro=1';
+                btnSeguir.onclick = () => window.location.href = `../login.html?volver=${encodeURIComponent('./public/perfil-publico.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}` + '&registro=1';
                 btnSeguir.disabled = false;
                 btnSeguir.className = 'btn-seguir';
                 if (btnMensaje) btnMensaje.style.display = 'none';
@@ -709,7 +709,7 @@ a { text-decoration: none; color: inherit; }
         // ✅ SEGUIR USUARIO
         async function seguirUsuario() {
             if (!usuarioActual) {
-                window.location.href = `../index.html?volver=${encodeURIComponent('./public/perfil-publico.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}`;
+                window.location.href = `../login.html?volver=${encodeURIComponent('./public/perfil-publico.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}`;
                 return;
             }
 
@@ -738,7 +738,7 @@ a { text-decoration: none; color: inherit; }
                     // Sesión expirada — limpiar y redirigir con aviso claro
                     localStorage.clear();
                     alert('Tu sesión expiró. Por favor vuelve a iniciar sesión.');
-                    window.location.replace('../index.html');
+                    window.location.replace('../login.html');
                 } else {
                     throw new Error(data.error || "Error al seguir");
                 }
@@ -777,7 +777,7 @@ a { text-decoration: none; color: inherit; }
                 } else if (response.status === 401) {
                     localStorage.clear();
                     alert('Tu sesión expiró. Por favor vuelve a iniciar sesión.');
-                    window.location.replace('../index.html');
+                    window.location.replace('../login.html');
                 } else {
                     throw new Error(data.error || "Error al dejar de seguir");
                 }

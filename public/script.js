@@ -23,7 +23,7 @@ const API_URL = "https://upgames-production.up.railway.app";
         if (['SESSION_REVOKED', 'TOKEN_EXPIRED', 'TOKEN_INVALID'].includes(d.code)) {
           saliendo = true;
           try { localStorage.removeItem('token'); localStorage.removeItem('user_admin'); sessionStorage.setItem('ug_sesion_msg', d.error || 'Vuelve a iniciar sesión'); } catch (_) {}
-          location.replace('../index.html');
+          location.replace('../login.html');
         }
       }
     } catch (_) {}
@@ -59,7 +59,7 @@ const LS = {
 const ugSesion = () => !!(LS.get('token') && LS.get('user_admin'));
 function ugUrlLogin(registro) {
   const aqui = './public/' + location.pathname.split('/').pop() + location.search.replace(/[^\w=&%.~+?-]/g, '');
-  return `../index.html?volver=${encodeURIComponent(aqui)}${registro ? '&registro=1' : ''}`;
+  return `../login.html?volver=${encodeURIComponent(aqui)}${registro ? '&registro=1' : ''}`;
 }
 function ugPedirSesion(accion = 'interactuar') {
   if (ugSesion()) return true;
@@ -2402,7 +2402,19 @@ function pfGetUniversalWidget() {
 // Devuelve una URL de Cloudinary ya recortada y optimizada (formato y tamaño
 // automáticos), así una foto de 4000px o HEIC del móvil se ve bien y carga rápido.
 const _pfImgWidgets = {};
-function pfImageUpload({ aspect = 1, transform = CLD_AVATAR, folder = 'avatars' } = {}) {
+// El widget de Cloudinary se descarga en segundo plano (biblioteca.html → ugCargarCloudinary);
+// si el usuario publica antes de que termine, se espera aquí.
+function ugCloudinaryListo() {
+  if (window.cloudinary) return Promise.resolve();
+  const p = window.ugCargarCloudinary && window.ugCargarCloudinary();
+  return p ? p.catch(() => { throw new Error('No se pudo cargar el subidor. Revisa tu conexión.'); })
+           : Promise.reject(new Error('No se pudo cargar el subidor. Revisa tu conexión.'));
+}
+
+function pfImageUpload(opts = {}) {
+  return ugCloudinaryListo().then(() => pfImageUploadListo(opts));
+}
+function pfImageUploadListo({ aspect = 1, transform = CLD_AVATAR, folder = 'avatars' } = {}) {
   return new Promise((resolve, reject) => {
     const key = String(aspect);
     let done = false;
@@ -2453,7 +2465,7 @@ function pfWidgetUpload(onProgress) {
       else if(res.progress !== undefined && onProgress) onProgress(res.progress);
       else if(res.url) { resolve({ success: true, url: res.url }); pfWidgetCallback = null; }
     };
-    pfGetUniversalWidget().open();
+    ugCloudinaryListo().then(() => pfGetUniversalWidget().open(), e => { pfWidgetCallback = null; reject(e); });
   });
 }
 
@@ -2544,7 +2556,7 @@ async function pfSubirVideo() {
   const thumbFinal = thumb || ugVideoThumb(vidUrl) || (ugEsVideoArchivo(vidUrl) ? '' : vidUrl);
 
   const token = LS.get('token');
-  if(!token) { toast('⚠️ Tu sesión expiró. Vuelve a entrar.'); setTimeout(() => { location.href='../index.html'; }, 1200); return; }
+  if(!token) { toast('⚠️ Tu sesión expiró. Vuelve a entrar.'); setTimeout(() => { location.href='../login.html'; }, 1200); return; }
 
   const btn = document.getElementById('pf-subirVideoBtn');
   btn.textContent = 'Publicando...'; btn.disabled = true;
@@ -2683,7 +2695,7 @@ async function pfSubirJuego() {
   if(imagen && !esMediaValida(imagen)) return toast('⚠️ El enlace de imagen no parece válido. Usa una URL directa de imagen o video.');
 
   const token = LS.get('token');
-  if(!token) { toast('⚠️ Tu sesión expiró. Vuelve a entrar.'); setTimeout(() => { location.href='../index.html'; }, 1200); return; }
+  if(!token) { toast('⚠️ Tu sesión expiró. Vuelve a entrar.'); setTimeout(() => { location.href='../login.html'; }, 1200); return; }
 
   const btn = document.getElementById('pf-subirBtn');
   // Nexus revisa rápido (sin IA) antes de enviar, salvo que ya lo hayas revisado con estos datos
@@ -2888,7 +2900,7 @@ async function pfEliminarVideo(id) {
   });
   if(!ok) return;
   const token = LS.get('token');
-  if(!token) { toast('⚠️ Sesión expirada'); location.href='../index.html'; return; }
+  if(!token) { toast('⚠️ Sesión expirada'); location.href='../login.html'; return; }
   try {
     const res = await fetch(`${PF_API}/items/${id}/video`, {
       method: 'DELETE',
@@ -2968,7 +2980,7 @@ async function pfSaveEditVideo() {
 async function pfEliminar(id) {
   if(!confirm('¿Eliminar este archivo de la nube?')) return;
   const token = LS.get('token');
-  if(!token) { toast('⚠️ Sesión expirada'); location.href='../index.html'; return; }
+  if(!token) { toast('⚠️ Sesión expirada'); location.href='../login.html'; return; }
   try {
     const res = await fetch(`${PF_API}/items/${id}`,{
       method:'DELETE', headers:{'Authorization':`Bearer ${token}`}
@@ -4296,7 +4308,7 @@ async function pfLogout() {
   try { localStorage.clear(); } catch(_) {}
   toast('👋 Sesión cerrada');
   // replace() elimina biblioteca.html del historial — el botón "atrás" no puede regresar
-  setTimeout(()=>{ location.replace('../index.html'); }, 800);
+  setTimeout(()=>{ location.replace('../login.html'); }, 800);
 }
 
 // Close modals on overlay click

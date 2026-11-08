@@ -77,7 +77,7 @@
   }
   /** Cobro común: clave única, avisos de saldo y refresco del contador de la cabecera. */
   async function pagar(path, body, btn, metodo = 'POST') {
-    if (!tok()) { window.ugPedirSesion ? window.ugPedirSesion('usar tus UpCoins') : (location.href = '../index.html'); return null; }
+    if (!tok()) { window.ugPedirSesion ? window.ugPedirSesion('usar tus UpCoins') : (location.href = '../login.html'); return null; }
     if (btn) btn.disabled = true;
     try {
       const r = await api(path, { method: metodo, body: { ...body, clave: clave() } });

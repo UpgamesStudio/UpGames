@@ -39,13 +39,13 @@ async function api(path, opts = {}) {
   const d = await r.json().catch(() => ({}));
   if (r.status === 401 && TOKEN) {
     try { localStorage.removeItem('token'); localStorage.removeItem('user_admin'); } catch (_) {}
-    toast('Tu sesión expiró. Inicia sesión de nuevo'); setTimeout(() => location.replace('../index.html'), 1600);
+    toast('Tu sesión expiró. Inicia sesión de nuevo'); setTimeout(() => location.replace('../login.html'), 1600);
   }
   if (!r.ok || d.success === false) { const e = new Error(d.error || 'Error de conexión'); e.status = r.status; e.data = d; throw e; }
   return d;
 }
 // Login que devuelve al mismo live (o al directorio) al terminar
-const urlLogin = () => `../index.html?volver=${encodeURIComponent('./public/live.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}`;
+const urlLogin = () => `../login.html?volver=${encodeURIComponent('./public/live.html' + location.search.replace(/[^\w=&%.~+?-]/g, ''))}`;
 const irLogin = () => { location.href = urlLogin(); };
 // Deja en el log del servidor fallos que solo ocurren en el dispositivo del usuario
 const diag = (tipo, nombre, mensaje, contexto = '') => {
