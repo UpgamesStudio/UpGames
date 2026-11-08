@@ -269,11 +269,11 @@ app.use(cors({
 
 app.use(express.json({ limit: '25mb' }));
 // Los listados públicos no llevan el enlace de descarga (solo la página puente lo entrega): modulos/sinEnlace.js
-// La categoría ROMs ya no existe en UpGames: no se puede publicar ni pasar una publicación a ROM
+// La antigua categoría de copias de consola («ROM») ya no existe: no se puede publicar ni pasar una publicación a ella
 const esCategoriaRom = c => /^\s*roms?\s*$/i.test(String(c ?? ''));
 app.use((req, res, next) => {
     if ((req.method === 'POST' || req.method === 'PUT') && /^\/(admin\/)?items(\/|$)/.test(req.path) && req.body && esCategoriaRom(req.body.category))
-        return res.status(400).json({ success: false, error: 'La categoría ROMs ya no existe en UpGames. Elige otra categoría.', code: 'SIN_ROMS' });
+        return res.status(400).json({ success: false, error: 'Esa categoría ya no existe en UpGames. Elige otra categoría.', code: 'SIN_ROMS' });
     next();
 });
 app.use(require('./modulos/sinEnlace').middleware({ usuarioOpcional: req => usuarioOpcional(req) }));
@@ -477,9 +477,15 @@ function emailResetTemplate(usuario, link, codigo) {
 }
 
 mongoose.connect(MONGODB_URI, config.MONGODB_OPTIONS)
-// Las publicaciones que quedaban en la categoría ROM se retiran del catálogo (no se borran: su dueño puede pasarlas a otra categoría)
-.then(() => { mongoose.model('Juego').updateMany({ category: { $regex: /^roms?$/i }, status: { $ne: 'rechazado' } }, { $set: { status: 'rechazado', motivoRechazo: 'La categoría ROMs se eliminó de UpGames. Si tu publicación no es una ROM, edítala y elige otra categoría.' } })
-    .then(r => { if (r.modifiedCount) logger.info(`[roms] ${r.modifiedCount} publicaciones ROM retiradas del catálogo`); }).catch(e => logger.warn(`[roms] ${e.message}`)); })
+// Las publicaciones que quedaban en la antigua categoría de copias de consola se retiran del catálogo (no se borran:
+// su dueño puede pasarlas a otra categoría). El motivo que ve el autor no nombra esa palabra (también se corrige en las ya retiradas).
+.then(() => {
+    const J = mongoose.model('Juego'), MOTIVO = 'Esta categoría se eliminó de UpGames. Si tu publicación no es una copia de un juego de consola, edítala y elige otra categoría.';
+    J.updateMany({ category: { $regex: /^roms?$/i }, status: { $ne: 'rechazado' } }, { $set: { status: 'rechazado', motivoRechazo: MOTIVO } })
+        .then(r => { if (r.modifiedCount) logger.info(`[copias] ${r.modifiedCount} publicaciones retiradas del catálogo`); })
+        .then(() => J.updateMany({ motivoRechazo: { $regex: /\broms?\b/i } }, { $set: { motivoRechazo: MOTIVO } }))
+        .catch(e => logger.warn(`[copias] ${e.message}`));
+})
 .then(() => { logger.info('MONGODB CONECTADO EXITOSAMENTE'); require('./modulos/upcoins').migrar(mongoose.model('Usuario'), logger).catch(e => logger.error(`[upcoins] migración: ${e.message}`)); })
 .catch(err => {
     logger.error(`ERROR CONEXIÓN MONGODB: ${err.message}`);

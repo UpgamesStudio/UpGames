@@ -10,6 +10,7 @@
  * Lo usan el backend (URL en el sitemap) y scripts/generar-paginas.js (plantilla).
  */
 'use strict';
+const { filtrarPublicacion } = require('./textoPublico');   // títulos y descripciones sin palabras vetadas
 
 const SITIO = 'https://upgames.games/public';
 const esc = v => String(v ?? '').replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&#39;', '"': '&quot;' }[c]));
@@ -30,6 +31,7 @@ const encTxt = t => encodeURIComponent(String(t).replace(/[\u{10000}-\u{10FFFF}]
     .replace(/%2C/g, '%252C').replace(/%2F/g, '%252F').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
 const recorta = (t, n) => { t = String(t || '').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
 function tarjeta(it) {
+    it = filtrarPublicacion(it);
     const m = String(it.image || '').match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)((?:[^/]+\/)*?)(v\d+\/.+)$/);
     if (!m || !esImg(it.image)) return null;
     const esVideo = it.category === 'Video';
@@ -47,6 +49,7 @@ function tarjeta(it) {
 
 /** HTML completo de la página de una publicación. */
 function pagina(it, grupo) {
+    it = filtrarPublicacion(it);   // (el nombre del archivo/URL sigue saliendo del título guardado: no se rompen enlaces)
     const url = urlPagina(it), app = `${SITIO}/biblioteca.html?id=${it.id}`;
     const cat = CAT[it.category] || it.category || 'Contenido';
     const desc = String(it.description || `${cat} compartido por @${it.usuario} en UpGames.`).replace(/\s+/g, ' ').trim();

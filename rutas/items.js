@@ -330,7 +330,7 @@ app.put("/items/:id", verificarToken, [
         if (!item) return res.status(404).json({ success: false, error: "Publicación no encontrada" });
         if (item.usuario !== req.usuario) return res.status(403).json({ success: false, error: "No tienes permiso para editar esta publicación" });
         if (esCategoriaRom(item.category) && (req.body.category === undefined || esCategoriaRom(req.body.category)))
-            return res.status(400).json({ success: false, error: 'La categoría ROMs ya no existe en UpGames. Para volver a publicarla, elige otra categoría (Juego, Mod, App…).', code: 'SIN_ROMS' });
+            return res.status(400).json({ success: false, error: 'Esa categoría ya no existe en UpGames. Para volver a publicarla, elige otra categoría (Juego, Mod, App…).', code: 'SIN_ROMS' });
         const updates = {};
         CAMPOS_PUBLICACION.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
         if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, error: "No se enviaron campos para actualizar" });

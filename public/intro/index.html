@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>UpGames · Entrar a la red</title>
+<!--
+  Intro de UpGames. Se abre a pantalla completa en la primera visita
+  (public/upgames-intro.js) y avisa al terminar o al saltar con
+  postMessage('ug-intro-fin'). Abierta sola, al terminar lleva a la biblioteca.
+  ?render&w=1920&h=1080  → modo de grabación (marketing/intro/render.js)
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800;900&family=Share+Tech+Mono&display=block" rel="stylesheet">
+<style>
+:root { --u: 1px; --g: #39FF88; --bl: #EBFFF4; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #020409; color: #fff; font-family: 'Orbitron', sans-serif; -webkit-user-select: none; user-select: none; }
+#cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#capa { position: fixed; inset: 0; pointer-events: none; }
+#logo { position: absolute; left: 50%; top: 50%; width: 50vw; opacity: 0; will-change: transform, opacity, filter; }
+#boot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: 'Share Tech Mono', monospace; font-size: calc(var(--u) * 30); color: var(--g); line-height: 1.7; letter-spacing: .06em; white-space: pre; text-shadow: 0 0 calc(var(--u) * 12) rgba(57,255,136,.7); display: none; }
+#boot .ok { color: #fff; text-shadow: 0 0 calc(var(--u) * 14) rgba(255,255,255,.8); }
+.tit { position: absolute; left: 50%; top: 76%; transform: translate(-50%, -50%); text-align: center; white-space: nowrap; display: none; text-transform: uppercase; }
+.port .tit { top: 74%; }
+.tit .l { display: inline-block; will-change: transform, opacity, filter; }
+.t-fino { font-weight: 500; font-size: calc(var(--u) * 44); letter-spacing: .6em; padding-left: .6em; color: var(--bl); text-shadow: 0 0 calc(var(--u) * 18) rgba(57,255,136,.8); top: 42%; }
+.port .t-fino { top: 44%; font-size: calc(var(--u) * 50); }
+.t-gran { font-weight: 800; font-size: calc(var(--u) * 78); line-height: 1.12; letter-spacing: .14em; padding-left: .14em; color: #fff; text-shadow: 0 0 calc(var(--u) * 10) rgba(57,255,136,.9), 0 0 calc(var(--u) * 40) rgba(57,255,136,.5), 0 0 calc(var(--u) * 90) rgba(57,255,136,.25); }
+.port .t-gran { font-size: calc(var(--u) * 76); }
+.ecp { position: absolute; left: 50%; top: 50%; margin-top: calc(var(--u) * -110); display: none; flex-direction: column; align-items: center; gap: calc(var(--u) * 18); width: calc(var(--u) * 420); padding: calc(var(--u) * 34) 0; background: linear-gradient(170deg, rgba(57,255,136,.2), rgba(3,8,16,.88)); border: calc(var(--u) * 2) solid rgba(57,255,136,.7); box-shadow: 0 0 calc(var(--u) * 50) rgba(57,255,136,.35), inset 0 0 calc(var(--u) * 40) rgba(57,255,136,.12); clip-path: polygon(0 0, calc(100% - var(--u) * 28) 0, 100% calc(var(--u) * 28), 100% 100%, calc(var(--u) * 28) 100%, 0 calc(100% - var(--u) * 28)); }
+.port .ecp { flex-direction: row; justify-content: center; width: calc(var(--u) * 760); padding: calc(var(--u) * 26) 0; margin-top: calc(var(--u) * -260); }
+.ecp svg { width: calc(var(--u) * 110); height: calc(var(--u) * 110); fill: none; stroke: var(--bl); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 calc(var(--u) * 10) var(--g)); }
+.port .ecp svg { width: calc(var(--u) * 90); height: calc(var(--u) * 90); }
+.ecp b { font-weight: 800; font-size: calc(var(--u) * 54); letter-spacing: .16em; padding-left: .16em; text-shadow: 0 0 calc(var(--u) * 20) rgba(57,255,136,.9); }
+.ecp.on { background: linear-gradient(170deg, rgba(57,255,136,.5), rgba(4,10,20,.6)); }
+.etq3 { position: absolute; transform: translate(-50%, -50%); font-weight: 700; letter-spacing: .3em; padding-left: .3em; color: var(--g); text-shadow: 0 0 .5em rgba(57,255,136,.9); display: none; white-space: nowrap; }
+.etq3.yo { color: #fff; text-shadow: 0 0 .4em #fff, 0 0 1em var(--g); }
+#contador { position: absolute; left: 50%; top: 11%; transform: translateX(-50%); font-family: 'Share Tech Mono', monospace; font-size: calc(var(--u) * 40); letter-spacing: .3em; color: #A9B1BC; opacity: 0; white-space: nowrap; }
+#contador span { font-family: 'Orbitron'; font-weight: 900; font-size: calc(var(--u) * 84); letter-spacing: .04em; color: var(--g); text-shadow: 0 0 calc(var(--u) * 24) rgba(57,255,136,.8); margin-right: .3em; vertical-align: middle; }
+.port #contador { top: 15%; }
+#pct { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); width: calc(var(--u) * 150); height: calc(var(--u) * 150); display: none; }
+#pct svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#pctN { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: calc(var(--u) * 30); color: #fff; text-shadow: 0 0 calc(var(--u) * 12) var(--g); }
+#pct small { position: absolute; left: 50%; top: 108%; transform: translateX(-50%); font-family: 'Share Tech Mono'; font-size: calc(var(--u) * 22); letter-spacing: .4em; color: var(--g); white-space: nowrap; }
+#url { position: absolute; left: 50%; top: 63%; font-family: 'Share Tech Mono', monospace; font-size: calc(var(--u) * 60); letter-spacing: .22em; opacity: 0; white-space: nowrap; }
+#url b { color: var(--g); font-weight: 400; }
+#lema { position: absolute; left: 0; right: 0; top: 71%; text-align: center; font-weight: 500; font-size: calc(var(--u) * 28); color: #C9D2DC; opacity: 0; white-space: nowrap; }
+.port #url { top: 61%; } .port #lema { top: 66%; font-size: calc(var(--u) * 21); }
+#entrar { position: absolute; left: 50%; top: 79%; opacity: 0; pointer-events: none; font-family: 'Orbitron'; font-weight: 900; font-size: calc(var(--u) * 34); letter-spacing: .3em; padding: calc(var(--u) * 24) calc(var(--u) * 70) calc(var(--u) * 24) calc(var(--u) * 80); color: #02140A; background: var(--g); border: 0; cursor: pointer; box-shadow: 0 0 calc(var(--u) * 50) rgba(57,255,136,.7); clip-path: polygon(calc(var(--u) * 18) 0, 100% 0, 100% calc(100% - var(--u) * 18), calc(100% - var(--u) * 18) 100%, 0 100%, 0 calc(var(--u) * 18)); }
+.port #entrar { top: 76%; }
+#hud { position: absolute; inset: 0; opacity: 0; font-family: 'Share Tech Mono', monospace; font-size: calc(var(--u) * 20); letter-spacing: .25em; color: rgba(235,255,244,.55); }
+#hud i { position: absolute; width: calc(var(--u) * 60); height: calc(var(--u) * 60); border: 0 solid rgba(57,255,136,.75); }
+#hud .a { left: 3vmin; top: 3vmin; border-left-width: 2px; border-top-width: 2px; } #hud .b { right: 3vmin; top: 3vmin; border-right-width: 2px; border-top-width: 2px; }
+#hud .c { left: 3vmin; bottom: 3vmin; border-left-width: 2px; border-bottom-width: 2px; } #hud .d { right: 3vmin; bottom: 3vmin; border-right-width: 2px; border-bottom-width: 2px; }
+#hud span { position: absolute; left: calc(3vmin + var(--u) * 80); top: calc(3vmin + var(--u) * 6); }
+#hud em { position: absolute; right: calc(3vmin + var(--u) * 80); top: calc(3vmin + var(--u) * 6); font-style: normal; color: var(--g); }
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+#scan { position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); }
+#vig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.75) 100%); }
+#negro { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+/* Controles (solo en la web) */
+#saltar { position: fixed; right: max(3vmin, env(safe-area-inset-right)); bottom: max(3vmin, env(safe-area-inset-bottom)); z-index: 10; font-family: 'Orbitron'; font-weight: 700; font-size: 13px; letter-spacing: .25em; padding: 12px 18px 12px 22px; color: #EBFFF4; background: rgba(2,8,14,.55); border: 1px solid rgba(57,255,136,.6); cursor: pointer; backdrop-filter: blur(6px); transition: background .2s, color .2s; }
+#saltar:hover, #saltar:focus-visible { background: #39FF88; color: #02140A; outline: none; }
+#puerta { position: fixed; inset: 0; z-index: 9; display: none; place-items: center; background: #020409; cursor: pointer; }
+#puerta.on { display: grid; }
+#puerta .anillo { position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px; border-radius: 50%; border: 2px solid rgba(57,255,136,.6); box-shadow: 0 0 40px rgba(57,255,136,.35), inset 0 0 40px rgba(57,255,136,.2); animation: latir 1.6s ease-in-out infinite; }
+#puerta .anillo + .anillo { width: 300px; height: 300px; margin: -150px; border-style: dashed; border-color: rgba(235,255,244,.25); animation: girar 12s linear infinite; box-shadow: none; }
+#puerta button { position: relative; font-family: 'Orbitron'; font-weight: 900; font-size: 18px; letter-spacing: .35em; padding: 18px 26px 18px 32px; color: #02140A; background: #39FF88; border: 0; cursor: pointer; box-shadow: 0 0 40px rgba(57,255,136,.7); }
+#puerta p { position: absolute; left: 0; right: 0; top: calc(50% + 180px); text-align: center; font-family: 'Share Tech Mono'; font-size: 13px; letter-spacing: .3em; color: rgba(235,255,244,.6); }
+@keyframes latir { 50% { transform: scale(1.08); opacity: .6; } }
+@keyframes girar { to { transform: rotate(360deg); } }
+.render #saltar, .render #puerta { display: none !important; }
+@media (prefers-reduced-motion: reduce) { #puerta .anillo { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="capa">
+  <img id="logo" src="logo.png" alt="UpGames">
+  <div id="boot"></div>
+  <div id="hud"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i><span>UPGAMES.NET // ENLACE</span><em id="tc">00:00:00</em></div>
+  <div id="pct"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(57,255,136,.2)" stroke-width="3"/><circle id="pctArc" cx="50" cy="50" r="44" fill="none" stroke="#39FF88" stroke-width="5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter:drop-shadow(0 0 4px #39FF88)"/></svg><div id="pctN">0%</div><small>CONECTANDO</small></div>
+  <div id="contador"></div>
+  <div id="url">upgames<b>.games</b></div>
+  <div id="lema">JUEGOS · APPS · MODS · EN VIVO · COMUNIDAD</div>
+  <button id="entrar" type="button">ENTRAR</button>
+</div>
+<div id="flash"></div><div id="scan"></div><div id="vig"></div><div id="negro"></div>
+<div id="puerta" role="dialog" aria-label="Iniciar la intro de UpGames"><div class="anillo"></div><div class="anillo"></div><button type="button" id="conectar">CONECTAR</button><p>ENTRA A LA RED UPGAMES</p></div>
+<button id="saltar" type="button" aria-label="Saltar la intro">SALTAR ▸▸</button>
+<script src="intro.js?v=20261108a"></script>
+<script>
+'use strict';
+(function () {
+  const I = window.INTRO;
+  const Q = new URLSearchParams(location.search);
+  const RENDER = Q.has('render');
+  if (RENDER) document.documentElement.classList.add('render');
+  I.medir(); I.montarDom();
+  const fuentes = document.fonts ? document.fonts.ready : Promise.resolve();
+  const img = document.getElementById('logo');
+  const listo = fuentes.then(() => img.complete ? 0 : new Promise(r => { img.onload = img.onerror = r; }));
+
+  if (RENDER) {
+    window.DURACION = I.DUR; window.SFX = I.SFX; window.VOCES = I.VOCES;
+    window.render = I.render;
+    window.listo = listo.then(() => I.render(+(Q.get('t') || 0)));
+    return;
+  }
+
+  /* ── Reproducción en la web ── */
+  const enMarco = window.parent !== window;
+  let terminado = false;
+  const fin = () => {
+    if (terminado) return; terminado = true;
+    try { localStorage.setItem('ug_intro_visto', String(Date.now())); } catch (_) {}
+    const salir = () => { if (enMarco) window.parent.postMessage('ug-intro-fin', '*'); else location.replace('../biblioteca.html'); };
+    // fundido rápido del audio
+    const v0 = audio.volume, t0 = performance.now();
+    const baja = () => { const k = Math.min(1, (performance.now() - t0) / 400); audio.volume = v0 * (1 - k); if (k < 1) requestAnimationFrame(baja); else { audio.pause(); salir(); } };
+    if (!audio.paused) baja(); else salir();
+  };
+  const audio = new Audio('intro-audio.mp3?v=20261108a');
+  audio.preload = 'auto';
+  let corriendo = false, ultimo = 0, lentos = 0, cuadros = 0;
+  const bucle = now => {
+    if (terminado) return;
+    const t = audio.currentTime;
+    I.render(t);
+    // calidad adaptable: si el equipo no da, se baja la resolución
+    if (ultimo) { const dt = now - ultimo; cuadros++; if (dt > 34) lentos++; if (cuadros === 90) { if (lentos > 35) I.ajustarCalidad(.66); cuadros = lentos = 0; } }
+    ultimo = now;
+    if (audio.ended || t >= I.DUR - .05) { fin(); return; }
+    requestAnimationFrame(bucle);
+  };
+  const arrancar = () => {
+    if (corriendo) return;
+    audio.play().then(() => { corriendo = true; puerta.classList.remove('on'); requestAnimationFrame(bucle); }).catch(() => puerta.classList.add('on'));
+  };
+  const puerta = document.getElementById('puerta');
+  puerta.addEventListener('click', arrancar);
+  document.getElementById('saltar').addEventListener('click', e => { e.stopPropagation(); fin(); });
+  document.getElementById('entrar').addEventListener('click', fin);
+  addEventListener('keydown', e => { if (e.key === 'Escape') fin(); if ((e.key === 'Enter' || e.key === ' ') && !corriendo) arrancar(); });
+  addEventListener('resize', () => { I.medir(); if (!corriendo) I.render(0); });
+  document.addEventListener('visibilitychange', () => { if (!corriendo || terminado) return; if (document.hidden) audio.pause(); else audio.play().catch(() => {}); });
+  audio.addEventListener('error', fin);   // sin audio no hay intro: se entra directo
+  listo.then(() => { I.render(0); arrancar(); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>UpGames · Patrocinio · Video 2</title>
+<!--
+  Video 2 — «Atención, creadores y desarrolladores indie» (vertical 1080×1920).
+  Locución: segunda mitad de voz_video.mp3 (43,0 s → fin); t = 0 aquí es 43,0 s allá.
+  Música: «Dead Network» (Infraction) desde 152,25 s: su corte cae en «Escucha esto»
+  y la caída entra en «En UpGames» (10,2 s).  ?t=12.5 · ?play
+-->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=block" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+.peligro { position: absolute; left: -200px; right: -200px; height: 70px; background: repeating-linear-gradient(-45deg, #39FF88 0 34px, #03060C 34px 68px); box-shadow: 0 0 40px rgba(57,255,136,.5); }
+.celda { position: absolute; width: 34px; height: 34px; background: #121A26; }
+.enl { position: absolute; display: flex; align-items: center; gap: 14px; padding: 18px 26px; font-family: 'Share Tech Mono'; font-size: 32px; color: #A9B1BC; background: #141B26; border: 2px solid #3A4250; white-space: nowrap; }
+.frag { position: absolute; background: #2A313C; border: 2px solid #59616E; }
+.nodo { position: absolute; width: 170px; text-align: center; }
+.nodo .hx { width: 140px; height: 156px; margin: 0 auto; display: grid; place-items: center; background: linear-gradient(160deg, rgba(57,255,136,.25), rgba(7,16,31,.95)); }
+.nodo .hb { position: absolute; left: 15px; top: 0; width: 140px; height: 156px; background: #39FF88; z-index: -1; }
+.nodo small { display: block; margin-top: 10px; font-family: 'Orbitron'; font-weight: 800; font-size: 24px; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="motor.js"></script>
+<script src="piezas.js"></script>
+<script src="ritmo2.js"></script>
+<script>
+'use strict';
+const { h, st, clamp, lerp, E, en, win, R, fmt, golpe, glitch, barrido, sfx } = M;
+const { C, ic, arte, hexav, cursor, ruta, anillos, choque, chispas, explotar, grafica, red, titular } = P;
+const TY = 330;
+const DUR = 44.6;
+
+M.fondoKeys([
+  { t: 0, verde: .5, rejilla: .55, vel: 1.4, glow: .55, hor: 1250, part: .5 },
+  { t: 2.9, verde: .1, rojo: .25, glow: .3, vel: .7, rejilla: .35 },
+  { t: 9.0, rejilla: .2, glow: .15, part: .2, vel: .3, rojo: .15 },
+  { t: 9.2, rejilla: 0, glow: 0, part: 0, rojo: 0, d: .2 },
+  { t: 10.2, verde: 1, rejilla: 1, techo: .7, vel: 9, glow: 1, part: 1, hor: 1020, d: .05 },
+  { t: 11.8, vel: 2.2, techo: .35 },
+  { t: 13.55, vel: 2.2 },
+  { t: 13.85, vel: 6, d: .3 },
+  { t: 14.6, vel: 1.6 },
+  { t: 15.8, verde: 1, glow: 1 },
+  { t: 16.2, verde: .3, vel: .8, glow: .5, rojo: .15, techo: 0 },
+  { t: 17.1, verde: .3, rojo: .15, vel: .8 },
+  { t: 17.2, verde: 1, rojo: 0, vel: 7, glow: 1.1, d: .1 },
+  { t: 18.1, vel: 1.8, hor: 1300 },
+  { t: 21.2, vel: 1.8 },
+  { t: 21.5, vel: 6, techo: .5, d: .3 },
+  { t: 22.5, vel: 2, techo: .2 },
+  { t: 25.5, vel: 1.2, glow: 1.2, techo: 0 },
+  { t: 28.7, vel: 1.2 },
+  { t: 28.85, vel: 7, d: .1 },
+  { t: 29.9, vel: 2 },
+  { t: 32.35, vel: 2 },
+  { t: 32.5, vel: 8, d: .1 },
+  { t: 33.3, vel: 1.8 },
+  { t: 40.1, vel: 1.6 },
+  { t: 40.3, vel: 9, techo: .7, glow: 1.3, d: .1 },
+  { t: 41.6, vel: 1.8 },
+  { t: 44.6, glow: .4, rejilla: .5, part: .3 },
+]);
+M.ritmo(window.BEATS);
+
+/* ════════ 1 · ¡Atención! (0 – 2.95) ════════ */
+M.escena(0, 2.98, r => {
+  r.b1 = h('div', 'peligro', null, r); r.b1.style.top = '220px';
+  r.b2 = h('div', 'peligro', null, r); r.b2.style.top = '1320px';
+  r.tri = h('div', 'abs', ic('alerta', 300, '#39FF88'), r); r.tri.style.cssText += 'left:540px;top:600px;filter:drop-shadow(0 0 30px #39FF88)';
+  r.at = h('div', 'abs orb c glow', '', r); r.at.style.cssText += 'top:880px;font-size:150px;color:#fff';
+  r.t1 = titular(r, 'CREADORES', 't-l', 1060, { stag: .03 });
+  r.t2 = titular(r, 'Y DEVS INDIE', 't-m verde glow', 1180, { modo: 'zoom', stag: .03 });
+  r.anl = anillos(r, 2);
+  sfx(0, 'alarma', .55); glitch(.3, .3, 1); golpe(.3, .9, 'impacto'); sfx(1.08, 'swish', .5); sfx(1.6, 'whoosh', .5); glitch(2.75, .2, .7);
+}, (t, r) => {
+  const bk = en(t, 0, .4, E.out5);
+  st(r.b1, { x: -((t * 160) % 96), o: bk * (1 - en(t, 2.75, .2)), sy: bk });
+  st(r.b2, { x: ((t * 160) % 96) - 96, o: bk * (1 - en(t, 2.75, .2)), sy: bk });
+  const tk = en(t, .25, .45, E.spr);
+  const parp = Math.floor(t * 4) % 2 ? 1 : .55;
+  st(r.tri, { c: true, o: clamp((t - .25) * 6) * parp * (1 - en(t, 2.75, .2)), s: lerp(2.4, 1, tk) * (1 + Math.sin(t * 12) * .02) });
+  M.decode(r.at, 'ATENCIÓN', t, .3, .5);
+  st(r.at, { c: true, s: 1 + en(t, .3, .3, E.out) * 0 - en(t, 2.75, .2) * .2, o: 1 - en(t, 2.75, .2) });
+  r.t1.anim(t, 1.08, 2.75); r.t2.anim(t, 1.6, 2.75);
+  choque(r.anl, t, .3, 540, 600, 1300);
+});
+
+/* ════════ 2 · ¿Llevas meses trabajando? (2.95 – 4.9) ════════ */
+M.escena(2.95, 4.95, r => {
+  r.t = titular(r, '¿LLEVAS MESES\nTRABAJANDO?', 't-m', TY, { stag: .02 });
+  const v = r.v = h('div', 'vent gris bisel', `<div class="barra"><i></i><i></i><i></i><span>historial · mi_proyecto</span></div>`, r);
+  M.pos(v, 90, 560, 900, 520);
+  r.cel = [];
+  for (let c = 0; c < 22; c++) for (let f = 0; f < 7; f++) { const e = h('div', 'celda', null, v); e.style.left = 36 + c * 38 + 'px'; e.style.top = 100 + f * 38 + 'px'; e.c = c; e.f = f; e.v = R(c * 7 + f); r.cel.push(e); }
+  r.mes = h('div', 'abs', '', v); M.pos(r.mes, 36, 390, 830); r.mes.style.cssText += 'display:flex;justify-content:space-between;align-items:baseline;font-family:Share Tech Mono;font-size:34px;color:#8A94A6';
+  sfx(2.98, 'whoosh', .5); sfx(3.4, 'contador', .45);
+}, (t, r) => {
+  r.t.anim(t, 2.98, 4.7);
+  const k = en(t, 2.95, .5, E.out5), sal = en(t, 4.7, .25, E.in);
+  st(r.v, { o: k * (1 - sal), y: lerp(200, 0, k) - sal * 200, rx: lerp(25, 0, k), b: sal * 10 });
+  const av = en(t, 3.3, 1.3, E.io);
+  r.cel.forEach(e => {
+    const on = e.c / 22 < av;
+    const v = on ? .25 + e.v * .75 : 0;
+    e.style.background = on ? `rgba(${lerp(60, 57, v)},${lerp(90, 255, v * .6)},${lerp(80, 136, v)},${.3 + v * .5})` : '#121A26';
+  });
+  const m = Math.max(1, Math.round(av * 14));
+  r.mes.innerHTML = `<span>${fmt(av * 1840)} horas · ${fmt(av * 612)} commits</span><b class="orb" style="font-size:66px;color:#fff">MES ${String(m).padStart(2, '0')}</b>`;
+});
+
+/* ════════ 3 · ¿Dónde publicarlo? ¿Visualizaciones reales? (4.85 – 9.15) ════════ */
+M.escena(4.85, 9.2, r => {
+  r.t1 = titular(r, '¿DÓNDE\nPUBLICARLO?', 't-xl', TY, { modo: 'blur', stag: .03 });
+  r.t2 = titular(r, '¿VISTAS\nREALES?', 't-xl', TY, { modo: 'blur', stag: .03 });
+  const up = r.up = h('div', 'vent gris bisel', `<div class="barra"><i></i><i></i><i></i><span>subiendo · mi_proyecto.zip</span></div>
+    <div class="abs" style="left:40px;right:40px;top:120px;display:flex;align-items:center;gap:26px">${ic('zip', 90, '#8A94A6')}<div style="flex:1"><div class="mono nom" style="font-size:34px">mi_proyecto.zip · 412 MB</div>
+    <div style="margin-top:20px;height:30px;background:#111925;border:2px solid #3A4250"><div class="fill" style="height:100%;width:0;background:#8A94A6"></div></div>
+    <div class="mono est" style="margin-top:16px;font-size:30px;color:#8A94A6">0%</div></div></div>`, r);
+  M.pos(up, 90, 640, 900, 360);
+  // reproductor sin vistas
+  const pl = r.pl = h('div', 'vent gris bisel', `<div class="barra"><i></i><i></i><i></i><span>mi_trailer.mp4</span></div>`, r);
+  M.pos(pl, 140, 560, 800, 720);
+  const a = h('div', 'abs', null, pl); M.pos(a, 30, 94, 740, 420); r.arte = arte(a, 'TRÁILER'); a.style.filter = 'grayscale(.9) brightness(.45)';
+  r.spin = h('div', 'abs', `<svg width="140" height="140" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="80 50" stroke-linecap="round"/></svg>`, pl); M.pos(r.spin, 330, 234);
+  r.vis = h('div', 'abs', '', pl); M.pos(r.vis, 30, 540, 740); r.vis.style.cssText += 'display:flex;justify-content:space-between;align-items:center;font-size:44px;font-weight:700;color:#8A94A6';
+  r.bots = ['BOT', 'BOT', 'BOT'].map((s, i) => { const e = h('div', 'chip gris', `${ic('alerta', 34, '#FF6B7A')} vista falsa`, r); e.style.position = 'absolute'; return e; });
+  sfx(4.9, 'whoosh', .5); sfx(5.1, 'carga', .45); glitch(6.0, .3, 1); sfx(6.0, 'error', .6);
+  sfx(6.7, 'whoosh', .5); [7.75, 8.05, 8.35].forEach(t => sfx(t, 'notif_mala', .35));
+}, (t, r) => {
+  r.t1.anim(t, 5.0, 6.6); r.t2.anim(t, 7.7, 8.95);
+  const k = en(t, 4.85, .5, E.out5), s1 = en(t, 6.55, .3, E.in);
+  st(r.up, { o: k * (1 - s1), y: lerp(240, 0, k), s: 1 - s1 * .3, b: s1 * 10, x: t > 6 && t < 6.35 ? Math.sin(t * 100) * 14 : 0 });
+  const pr = t < 6 ? en(t, 5.1, .85, E.out) * .99 : .99;
+  const err = t >= 6;
+  r.up.querySelector('.fill').style.width = pr * 100 + '%';
+  r.up.querySelector('.fill').style.background = err ? '#FF3B4E' : '#8A94A6';
+  r.up.style.borderColor = err ? 'rgba(255,59,78,.8)' : '';
+  r.up.querySelector('.est').innerHTML = err ? '<span style="color:#FF3B4E">ERROR · subida fallida (99%)</span>' : Math.round(pr * 100) + '%';
+  const pk = en(t, 6.7, .55, E.out5), ps = en(t, 8.95, .25, E.in);
+  st(r.pl, { o: pk * (1 - ps), y: lerp(300, 0, pk), ry: lerp(25, 0, pk), b: ps * 12 });
+  r.arte.anim(t);
+  st(r.spin, { r: t * 360 });
+  const v = t > 8.4 && Math.floor(t * 10) % 3 === 0 ? 1 : 0;
+  r.vis.innerHTML = `<span>${ic('ojo', 54)} ${v} visualizaciones</span><span class="mono" style="font-size:30px">alcance 0,0%</span>`;
+  r.bots.forEach((e, i) => {
+    const a = 7.75 + i * .3, kk = en(t, a, .4, E.back);
+    e.style.left = (i % 2 ? 520 : 70) + 'px'; e.style.top = 700 + i * 140 + 'px';
+    st(e, { o: clamp((t - a) * 4) * (1 - ps), s: kk });
+  });
+});
+
+/* ════════ 4 · «Escucha esto.» (9.1 – 10.2) ════════ */
+M.escena(9.1, 10.22, r => {
+  r.onda = h('div', 'abs', `<svg width="1080" height="400" viewBox="0 0 1080 400"><polyline fill="none" stroke="#39FF88" stroke-width="5" style="filter:drop-shadow(0 0 10px #39FF88)"/></svg>`, r);
+  r.onda.style.cssText += 'left:0;top:960px';
+  r.pl = r.onda.querySelector('polyline');
+  r.t = titular(r, 'ESCUCHA\nESTO.', 't-xl', 760, { modo: 'blur', stag: .05 });
+  sfx(9.2, 'latido', .9); sfx(9.25, 'riser_corto', .9);
+}, (t, r) => {
+  r.t.anim(t, 9.2);
+  const am = en(t, 9.2, .3) * (t < 9.6 ? 1 : .3 + en(t, 9.65, .5) * 1.3);
+  let pts = '';
+  for (let x = 0; x <= 1080; x += 12) {
+    const env = Math.exp(-Math.pow((x - 540) / 260, 2));
+    const y = 200 + Math.sin(x * .05 + t * 30) * Math.sin(x * .013 - t * 9) * 140 * env * am * (.6 + R(Math.floor(x / 12) + Math.floor(t * 30)) * .4);
+    pts += `${x},${y.toFixed(1)} `;
+  }
+  r.pl.setAttribute('points', pts);
+  const enc = en(t, 9.85, .35, E.in);
+  st(r.t.el, { c: true, s: 1 - enc * .9, o: 1 - enc });
+  st(r.onda, { o: 1 - en(t, 10.05, .15), sy: 1 + enc * 1.5 });
+});
+
+/* ════════ 5 · UpGames patrocina el talento independiente (10.2 – 13.65) ════════ */
+M.escena(10.2, 13.7, r => {
+  r.logo = h('img', 'abs', null, r); r.logo.src = 'logo.png'; r.logo.style.cssText += 'width:900px;left:540px;top:720px';
+  r.anl = anillos(r, 3); r.cs = chispas(r, 70);
+  r.t = titular(r, 'TALENTO\nINDEPENDIENTE', 't-m', TY + 40, { stag: .025 });
+  r.card = h('div', 'abs bisel', `<div class="mono" style="font-size:28px;letter-spacing:.3em;color:#8A94A6">UPGAMES · 2026</div>
+    <div style="display:flex;align-items:center;gap:28px;margin-top:24px">${ic('estrella', 120, '#39FF88')}<div class="orb" style="font-size:76px;line-height:1">SPONSOR<br><span class="verde">OFICIAL</span></div></div>
+    <div class="mono" style="margin-top:28px;font-size:30px;color:#C9D2DC">PATROCINANDO EL TALENTO INDIE ▸</div>`, r);
+  r.card.style.cssText += 'left:540px;top:900px;padding:48px 56px;background:linear-gradient(130deg,rgba(57,255,136,.22),rgba(7,16,31,.96) 55%,rgba(57,255,136,.14));border:3px solid #39FF88;box-shadow:0 0 90px rgba(57,255,136,.45)';
+  r.br = h('div', 'brillo', null, r.card);
+  golpe(10.2, 1.6, 'boom'); sfx(10.2, 'impacto', .9);
+  barrido(11.3); golpe(11.42, .7, 'sello'); sfx(11.5, 'brillo', .5); sfx(12.38, 'whoosh', .5); sfx(13.45, 'whoosh', .6);
+}, (t, r) => {
+  const lk = en(t, 10.2, .7, E.out5), ls = en(t, 11.25, .5, E.io);
+  st(r.logo, { c: true, o: lk * (1 - en(t, 12.3, .25)), s: lerp(1.9, 1, lk) * lerp(1, .6, ls), y: lerp(0, -380, ls), b: (1 - lk) * 20 + en(t, 12.3, .25) * 10 });
+  choque(r.anl, t, 10.2, 540, 720, 1600); explotar(r.cs, t, 10.2, 540, 720, 1.2);
+  const ck = en(t, 11.42, .6, E.spr), sal = en(t, 13.45, .25, E.in);
+  st(r.card, { c: true, o: clamp((t - 11.42) * 6) * (1 - sal), s: lerp(.4, 1, ck) * (1 + sal * .6), ry: lerp(-140, 0, ck) + Math.sin(t * 1.5) * 10, rx: Math.sin(t * 1.1) * 5, y: (t > 12.3 ? 60 * en(t, 12.3, .5, E.io) : 0), b: sal * 12 });
+  r.br.style.backgroundPosition = `${lerp(160, -60, ((t - 11.5) % 1.3) / 1.3)}% 0`;
+  r.t.anim(t, 12.38, 13.45);
+});
+
+/* ════════ 6 · Eleva tu nivel de profesionalismo (13.65 – 15.85) ════════ */
+M.escena(13.65, 15.9, r => {
+  r.t = titular(r, 'ELEVA TU\nNIVEL', 't-xl', TY, { stag: .03 });
+  r.med = h('div', 'abs', '', r); r.med.style.cssText += 'left:540px;top:860px;width:260px;height:700px;border:4px solid rgba(57,255,136,.5);background:#0A1220';
+  r.fill = h('div', 'abs', null, r.med); r.fill.style.cssText += 'left:10px;right:10px;bottom:10px;background:linear-gradient(0deg,#0B5E31,#39FF88);box-shadow:0 0 50px #39FF88';
+  for (let i = 1; i < 10; i++) { const m = h('div', 'abs', null, r.med); m.style.cssText += `left:0;right:0;top:${i * 10}%;height:2px;background:rgba(3,6,12,.8)`; }
+  r.lv = h('div', 'abs orb', '', r); r.lv.style.cssText += 'left:820px;top:860px;font-size:80px';
+  r.lv0 = h('div', 'abs mono gris', 'NIVEL', r); r.lv0.style.cssText += 'left:820px;top:760px;font-size:34px;letter-spacing:.3em';
+  r.pro = h('div', 'abs bisel orb', 'NIVEL PRO', r); r.pro.style.cssText += 'left:540px;top:1290px;padding:22px 46px;background:#39FF88;color:#02140A;font-size:66px';
+  r.fl = h('div', 'abs', ic('subir', 200, '#39FF88'), r); r.fl.style.cssText += 'left:220px;top:860px;filter:drop-shadow(0 0 20px #39FF88)';
+  r.cs = chispas(r, 50);
+  sfx(13.7, 'whoosh', .5); sfx(14.0, 'nivel', .6); sfx(14.1, 'carga', .4); golpe(15.2, 1, 'boom_suave'); sfx(15.2, 'exito', .6); sfx(15.65, 'swish', .5);
+}, (t, r) => {
+  r.t.anim(t, 13.7, 15.65);
+  const k = en(t, 13.65, .5, E.out5), sal = en(t, 15.65, .25, E.in);
+  st(r.med, { c: true, o: k * (1 - sal), sy: k, b: sal * 10 });
+  const lv = en(t, 14.02, 1.15, E.io);
+  r.fill.style.height = `calc(${lv * 100}% - ${lv * 20}px)`;
+  r.lv.textContent = String(Math.max(1, Math.round(lv * 99))).padStart(2, '0');
+  st(r.lv, { c: true, o: k * (1 - sal), y: -lv * 120, s: 1 + (lv >= 1 ? en(t, 15.2, .3, E.back) * .2 : 0) });
+  r.lv.style.color = lv >= 1 ? '#39FF88' : '#fff'; r.lv.style.textShadow = lv >= 1 ? 'var(--neon)' : 'none';
+  st(r.lv0, { c: true, o: k * (1 - sal) });
+  const pk = en(t, 15.2, .4, E.spr);
+  st(r.pro, { c: true, o: clamp((t - 15.2) * 6) * (1 - sal), s: lerp(2, 1, pk), r: -3 });
+  st(r.fl, { c: true, o: k * (1 - sal), y: -((t * 300) % 160) + 40, s: .9 });
+  explotar(r.cs, t, 15.2, 540, 600, 1);
+});
+
+/* ════════ 7 · Olvídate de los links perdidos (15.8 – 17.95) ════════ */
+M.escena(15.8, 18.0, r => {
+  r.t = titular(r, 'OLVÍDATE DE LOS\nLINKS PERDIDOS', 't-m', TY, { stag: .02 });
+  r.ls = ['acortador.link/x8f2k', '404 · no encontrado', 'descarga-gratis.xyz', 'carpeta_v3_FINAL', 'enlace caducado', 'pop-up · ¡GANASTE!', 'bit.ly/??', 'archivo_eliminado'].map((s, i) => {
+    const e = h('div', 'enl', `${ic(i % 3 === 1 ? 'alerta' : 'link', 38, i % 3 === 1 ? '#FF6B7A' : '#8A94A6')} ${s}`, r); e.i = i; return e;
+  });
+  r.frags = Array.from({ length: 60 }, (_, i) => { const f = h('div', 'frag', null, r); f.style.width = 20 + R(i) * 70 + 'px'; f.style.height = 10 + R(i + 3) * 40 + 'px'; f.i = i; return f; });
+  r.anl = anillos(r, 3);
+  sfx(15.85, 'whoosh', .5); for (let i = 0; i < 8; i++) sfx(16.0 + i * .1, 'error', .15);
+  golpe(17.16, 1.3, 'roto'); sfx(17.16, 'boom_suave', .6); sfx(17.75, 'whoosh', .5);
+}, (t, r) => {
+  r.t.anim(t, 15.84, 17.75);
+  const rompe = t >= 17.16;
+  const POS = [[90, 620], [560, 600], [150, 760], [600, 790], [80, 930], [520, 960], [260, 1110], [600, 1150]];
+  r.ls.forEach((e, i) => {
+    const a = 15.95 + i * .1, k = en(t, a, .4, E.back);
+    e.style.left = POS[i][0] + 'px'; e.style.top = POS[i][1] + 'px';
+    st(e, { o: rompe ? 0 : clamp((t - a) * 4), s: k, r: Math.sin(t * 3 + i) * 4, x: Math.sin(t * 2 + i * 2) * 14, y: Math.cos(t * 2.3 + i) * 10 });
+  });
+  r.frags.forEach(f => {
+    const k = t - 17.16, i = f.i;
+    if (k < 0 || k > 1.2) { f.style.display = 'none'; return; }
+    f.style.display = 'block';
+    const p = POS[i % 8];
+    const ang = Math.atan2(p[1] + 30 - 880, p[0] + 180 - 540) + (R(i) - .5);
+    const v = 700 + R(i + 7) * 1200;
+    f.style.left = p[0] + 120 + R(i + 2) * 200 + 'px'; f.style.top = p[1] + 'px';
+    st(f, { x: Math.cos(ang) * v * k, y: Math.sin(ang) * v * k + 600 * k * k, r: k * 700 * (R(i) - .5), o: 1 - k / 1.2 });
+  });
+  choque(r.anl, t, 17.16, 540, 880, 1700);
+});
+
+/* ════════ 8 · Espacio premium → visibilidad masiva → comunidad de fans (17.9 – 25.5) ════════ */
+M.escena(17.9, 25.55, r => {
+  r.t1 = titular(r, 'ESPACIO\nPREMIUM', 't-xl', TY, { modo: 'zoom', stag: .03 });
+  r.t2 = titular(r, 'VISIBILIDAD\nMASIVA', 't-xl verde glow', TY, { modo: 'zoom', stag: .03 });
+  r.t3 = titular(r, 'COMUNIDAD\nDE FANS', 't-xl', TY, { stag: .03 });
+  // página del proyecto
+  const w = r.web = h('div', 'vent bisel', `<div class="barra"><i></i><i></i><i></i><span>upgames.games/p/neon-runner</span></div>`, r);
+  M.pos(w, 90, 520, 900, 820);
+  r.portada = h('div', 'abs', null, w); M.pos(r.portada, 0, 64, 900, 330); r.arte = arte(r.portada, '');
+  r.nombre = h('div', 'abs orb', 'NEON RUNNER', w); M.pos(r.nombre, 40, 420); r.nombre.style.fontSize = '60px';
+  r.autor = h('div', 'abs mono', `@tu_estudio <span class="verde">${ic('check', 28, '#39FF88')} verificado</span> · ${ic('estrella', 26, '#39FF88')} 4.9`, w); M.pos(r.autor, 40, 500); r.autor.style.cssText += 'font-size:28px;color:#A9B1BC';
+  r.btn = h('div', 'abs boton', `${ic('mando', 50)} JUGAR GRATIS`, w); M.pos(r.btn, 40, 570, 820); r.btn.style.cssText += 'padding:26px 0;font-size:40px';
+  r.caps = [0, 1, 2].map(i => { const c = h('div', 'abs', null, w); M.pos(c, 40 + i * 280, 690, 260, 100); c.style.cssText += `border:2px solid rgba(57,255,136,.35);background:linear-gradient(${120 + i * 50}deg,#0b2a3a,#1a0f3a,#06101f)`; return c; });
+  r.br = h('div', 'brillo', null, w);
+  // pantallas (alcance masivo)
+  r.pants = Array.from({ length: 9 }, (_, i) => { const p = h('div', 'abs bisel-s', null, r); p.style.cssText += 'width:250px;height:300px;border:3px solid rgba(57,255,136,.6);background:#07101F;overflow:hidden;box-shadow:0 0 30px rgba(57,255,136,.3)'; const a = h('div', 'abs', null, p); a.style.cssText += 'left:0;right:0;top:0;height:170px'; p.a = arte(a, ''); h('div', 'abs orb', 'NEON RUNNER', p).style.cssText += 'left:14px;top:186px;font-size:24px'; h('div', 'abs mono verde', '▶ JUGAR', p).style.cssText += 'left:14px;top:236px;font-size:24px'; return p; });
+  r.imp = h('div', 'abs c orb', '', r); r.imp.style.cssText += 'top:1290px;font-size:66px';
+  // fans
+  r.cors = Array.from({ length: 34 }, (_, i) => { const e = h('div', 'abs', ic('cor', 40 + R(i) * 50, R(i + 1) > .3 ? '#39FF88' : '#fff'), r); e.i = i; e.style.filter = 'drop-shadow(0 0 10px rgba(57,255,136,.8))'; return e; });
+  r.coms = ['¡Juegazo! 10/10', '¿Cuándo sale la v2?', 'Ya lo compartí', 'Te sigo desde hoy', 'Brutal el arte'].map(s => h('div', 'burb ug', s, r));
+  r.fans = h('div', 'abs c', '', r); r.fans.style.cssText += 'top:860px;text-align:center';
+  sfx(17.95, 'whoosh', .5); [18.2, 18.4, 18.6, 18.8, 19.0, 19.2].forEach(t => sfx(t, 'pop', .3)); sfx(18.52, 'brillo', .4);
+  barrido(21.2); sfx(21.28, 'zoom', .7); for (let i = 0; i < 12; i++) sfx(21.4 + i * .06, 'click', .2); sfx(21.6, 'contador', .45);
+  sfx(22.5, 'whoosh', .6); [22.9, 23.3, 23.7, 24.1, 24.5].forEach(t => sfx(t, 'recibir', .3)); sfx(24.94, 'exito', .45); sfx(25.35, 'whoosh', .6);
+}, (t, r) => {
+  r.t1.anim(t, 18.52, 21.1); r.t2.anim(t, 21.28, 22.4); r.t3.anim(t, 22.56, 25.35);
+  // la página se arma por piezas
+  const wk = en(t, 17.9, .55, E.out5), aleja = en(t, 21.2, .6, E.io);
+  st(r.web, { o: wk * (1 - aleja), y: lerp(260, 0, wk) + aleja * 40, s: lerp(.9, 1, wk) * lerp(1, .3, aleja), rx: lerp(-18, 0, wk) });
+  const pz = (el, a, extra = {}) => { const k = en(t, a, .45, E.out5); st(el, { o: k, y: lerp(40, 0, k), ...extra }); };
+  r.portada.style.clipPath = `inset(0 0 ${100 - en(t, 18.05, .6, E.io) * 100}% 0)`; r.arte.anim(t);
+  pz(r.nombre, 18.4); pz(r.autor, 18.6); pz(r.btn, 18.8, { s: lerp(.8, 1, en(t, 18.8, .45, E.back)) });
+  r.caps.forEach((c, i) => pz(c, 19.0 + i * .12));
+  r.br.style.backgroundPosition = `${lerp(160, -60, en(t, 19.5, .9, E.io))}% 0`;
+  // muro de pantallas
+  r.pants.forEach((p, i) => {
+    const col = i % 3, fil = Math.floor(i / 3);
+    const x = 75 + col * 330, y = 450 + fil * 265;
+    const k = en(t, 21.35 + R(i) * .45, .45, E.back), sal = en(t, 22.4, .3, E.in);
+    p.style.left = x + 'px'; p.style.top = y + 'px';
+    st(p, { o: clamp((t - 21.35 - R(i) * .45) * 5) * (1 - sal), s: k * .82 * (1 - sal * .3), ry: Math.sin(t + i) * 8, b: sal * 8 });
+    if (t > 21.3 && t < 22.8) p.a.anim(t + i);
+  });
+  r.imp.innerHTML = `${fmt(en(t, 21.5, .9, E.out) * 1200000)} <span class="verde">IMPRESIONES</span>`;
+  st(r.imp, { c: true, o: clamp((t - 21.45) * 5) * (1 - en(t, 22.4, .2)) });
+  // corazones y comentarios
+  r.cors.forEach(e => {
+    const i = e.i, a = 22.6 + R(i + 9) * 2.4, k = t - a;
+    if (k < 0 || k > 2) { e.style.display = 'none'; return; }
+    e.style.display = 'block';
+    e.style.left = 80 + R(i) * 900 + 'px'; e.style.top = 1350 + 'px';
+    st(e, { y: -k * 520, x: Math.sin(k * 3 + i) * 40, o: clamp(k * 5) * clamp((2 - k) * 2), s: .6 + E.back(clamp(k * 3)) * .6 });
+  });
+  const CP = [[60, 560], [520, 640], [80, 1060], [500, 1140], [300, 1240]];
+  r.coms.forEach((e, i) => {
+    const a = 22.9 + i * .4, k = en(t, a, .4, E.back), sal = en(t, 25.3, .25, E.in);
+    e.style.left = CP[i][0] + 'px'; e.style.top = CP[i][1] + 'px'; e.style.right = 'auto';
+    st(e, { o: clamp((t - a) * 5) * (1 - sal), s: k, y: Math.sin(t * 2 + i) * 8 });
+  });
+  const fk = en(t, 22.6, .5, E.back), fs = en(t, 25.3, .25, E.in);
+  r.fans.innerHTML = `<div class="mono gris" style="font-size:34px;letter-spacing:.3em">FANS</div><div class="orb verde glow" style="font-size:190px;line-height:1.05">${fmt(en(t, 22.7, 2.2, E.out) * 8640)}</div>`;
+  st(r.fans, { c: true, o: clamp((t - 22.6) * 5) * (1 - fs), s: fk * (1 + fs * .4) });
+});
+
+/* ════════ 9 · Que el mundo descubra lo que creaste (25.5 – 30.0) ════════ */
+M.escena(25.5, 30.05, r => {
+  r.t1 = titular(r, 'QUE EL MUNDO\nTE DESCUBRA', 't-m', TY, { stag: .025 });
+  r.t2 = titular(r, 'ESTA ES TU\nOPORTUNIDAD', 't-l verde glow', TY, { modo: 'zoom', stag: .03 });
+  r.g = h('div', 'abs', null, r); r.g.style.cssText += 'left:0;top:0;width:1080px;height:1920px';
+  r.g.innerHTML = `<svg width="1080" height="1920" style="overflow:visible"><defs><radialGradient id="gg"><stop offset="0" stop-color="rgba(57,255,136,.25)"/><stop offset="1" stop-color="rgba(57,255,136,0)"/></radialGradient></defs>
+    <circle cx="540" cy="880" r="520" fill="url(#gg)"/><circle cx="540" cy="880" r="380" fill="#06101f" stroke="#39FF88" stroke-width="4" style="filter:drop-shadow(0 0 20px #39FF88)"/><g class="mer"></g><g class="arc"></g></svg>`;
+  r.mer = r.g.querySelector('.mer'); r.arc = r.g.querySelector('.arc');
+  r.lat = [-60, -30, 0, 30, 60].map(la => { const e = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse'); e.setAttribute('cx', 540); e.setAttribute('cy', 880 - 380 * Math.sin(la * Math.PI / 180)); e.setAttribute('rx', 380 * Math.cos(la * Math.PI / 180)); e.setAttribute('ry', 380 * Math.cos(la * Math.PI / 180) * .18); e.setAttribute('fill', 'none'); e.setAttribute('stroke', 'rgba(57,255,136,.35)'); e.setAttribute('stroke-width', 2); r.mer.appendChild(e); return e; });
+  r.lon = Array.from({ length: 8 }, () => { const e = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse'); e.setAttribute('cx', 540); e.setAttribute('cy', 880); e.setAttribute('ry', 380); e.setAttribute('fill', 'none'); e.setAttribute('stroke', 'rgba(57,255,136,.35)'); e.setAttribute('stroke-width', 2); r.mer.appendChild(e); return e; });
+  r.ciud = Array.from({ length: 14 }, (_, i) => ({ lo: R(i) * 360, la: (R(i + 4) - .5) * 120 }));
+  r.paths = r.ciud.map(() => { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#39FF88'); p.setAttribute('stroke-width', 3); p.setAttribute('pathLength', 1); p.setAttribute('stroke-dasharray', '1 1'); r.arc.appendChild(p); const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('fill', '#fff'); r.arc.appendChild(c); p.c = c; return p; });
+  r.cen = h('div', 'abs hex', null, r); r.cen.style.cssText += 'left:540px;top:880px;width:150px;height:168px;'; r.cenA = arte(r.cen, '');
+  r.cs = chispas(r, 60);
+  sfx(25.55, 'whoosh', .5); sfx(25.6, 'ventilador', .5); for (let i = 0; i < 10; i++) sfx(26.3 + i * .18, 'pop', .2);
+  golpe(28.78, 1.2, 'boom'); sfx(28.85, 'brillo', .5); sfx(29.85, 'whoosh', .6);
+}, (t, r) => {
+  r.t1.anim(t, 25.6, 28.6); r.t2.anim(t, 28.78, 29.85);
+  const k = en(t, 25.5, .7, E.out5), sal = en(t, 29.85, .2, E.in);
+  st(r.g, { o: k * (1 - sal), s: lerp(.6, 1, k) * (1 + en(t, 28.78, .4, E.out) * .06) * (1 + sal * .5), b: sal * 10 });
+  r.g.style.transformOrigin = '540px 880px';
+  const rot = t * 40;
+  r.lon.forEach((e, i) => { const a = ((rot + i * 22.5) % 180) * Math.PI / 180; e.setAttribute('rx', Math.abs(380 * Math.cos(a))); });
+  const proy = (lo, la) => { const a = (lo + rot) * Math.PI / 180, b = la * Math.PI / 180; return { x: 540 + 380 * Math.cos(b) * Math.sin(a), y: 880 - 380 * Math.sin(b), z: Math.cos(b) * Math.cos(a) }; };
+  r.paths.forEach((p, i) => {
+    const q = proy(r.ciud[i].lo, r.ciud[i].la);
+    const a = 26.2 + i * .17, kk = en(t, a, .6, E.out);
+    const vis = q.z > -.1 ? 1 : 0;
+    const mx = (q.x + 540) / 2, my = Math.min(q.y, 880) - 180;
+    p.setAttribute('d', `M${q.x} ${q.y} Q${mx} ${my} 540 880`);
+    p.setAttribute('stroke-dashoffset', 1 - kk);
+    p.style.opacity = vis * (t > a ? 1 : 0);
+    p.c.setAttribute('cx', q.x); p.c.setAttribute('cy', q.y); p.c.setAttribute('r', Math.max(0, 8 * vis * clamp((t - a) * 5)));
+  });
+  const ck = en(t, 25.7, .5, E.back);
+  st(r.cen, { c: true, o: clamp((t - 25.7) * 5) * (1 - sal), s: ck * (1 + Math.sin(t * 5) * .04) * (1 + en(t, 28.78, .3) * .3) });
+  r.cen.style.filter = 'drop-shadow(0 0 30px #39FF88)'; r.cenA.anim(t);
+  explotar(r.cs, t, 28.78, 540, 880, 1.2);
+});
+
+/* ════════ 10 · ¿Qué esperas? Publica gratis en upgames.games (30.0 – 34.85) ════════ */
+M.escena(30.0, 34.9, r => {
+  r.t1 = titular(r, '¿QUÉ\nESPERAS?', 't-xxl', 860, { modo: 'zoom', stag: .045 });
+  const v = r.pub = h('div', 'vent bisel', `<div class="barra"><i></i><i></i><i></i><span>upgames.games / publicar</span></div>
+    <div class="abs" style="left:40px;right:40px;top:110px;display:flex;align-items:center;gap:24px;padding:22px;border:2px solid rgba(57,255,136,.3)">${ic('zip', 70, '#39FF88')}<div style="flex:1"><div class="mono" style="font-size:32px">neon_runner.zip</div><div class="mono verde" style="font-size:26px">✓ verificado · 412 MB</div></div></div>
+    <div class="abs mono" style="left:40px;right:40px;top:290px;display:flex;justify-content:space-between;font-size:34px;color:#A9B1BC"><span>Costo de publicación</span><b class="verde orb" style="font-size:44px">GRATIS</b></div>`, r);
+  M.pos(v, 110, 620, 860, 560);
+  r.b = h('div', 'abs boton', `${ic('subir', 50)} PUBLICAR`, v); r.b.style.cssText += 'left:40px;right:40px;top:400px;padding:30px 0';
+  r.ok = h('div', 'abs', `<div style="width:300px;height:300px;border-radius:50%;background:#39FF88;display:grid;place-items:center;box-shadow:0 0 90px #39FF88">${ic('check', 190, '#02140A')}</div>`, r); r.ok.style.cssText += 'left:540px;top:820px';
+  r.okt = h('div', 'abs orb c', '¡PUBLICADO!', r); r.okt.style.cssText += 'top:1060px;font-size:84px';
+  r.gr = h('div', 'abs bisel orb', '100% GRATIS', r); r.gr.style.cssText += 'left:540px;top:1200px;padding:20px 44px;background:#39FF88;color:#02140A;font-size:62px';
+  r.u = h('div', 'url bisel', `${ic('globo', 70, '#39FF88')}<span class="tx"></span><span class="cur"></span>`, r); r.u.style.left = '540px'; r.u.style.top = '860px';
+  r.cur = cursor(r); r.anl = anillos(r, 3); r.cs = chispas(r, 60);
+  sfx(30.04, 'boom_suave', .6); sfx(30.85, 'whoosh', .5); sfx(31.6, 'click', .8); sfx(31.65, 'carga', .4);
+  golpe(32.44, 1.3, 'boom'); sfx(32.5, 'exito', .7); sfx(32.75, 'sello', .5);
+  sfx(33.1, 'whoosh', .5); for (let i = 0; i < 13; i++) sfx(33.5 + i * .075, 'tecla', .45);
+}, (t, r) => {
+  const sube = en(t, 30.75, .45, E.io);
+  r.t1.anim(t, 30.04, 31.5);
+  st(r.t1.el, { c: true, y: -sube * 520, s: lerp(1, .55, sube) });
+  const pk = en(t, 30.85, .5, E.out5), ps = en(t, 32.35, .15, E.in);
+  st(r.pub, { o: pk * (1 - ps), y: lerp(300, 0, pk), s: 1 - ps * .2 });
+  const pres = t > 31.6 && t < 31.75 ? .94 : 1;
+  st(r.b, { s: pres });
+  r.b.innerHTML = t > 31.6 ? `<span style="display:inline-block;width:46px;height:46px;border:6px solid #02140A;border-top-color:transparent;border-radius:50%;transform:rotate(${t * 720}deg)"></span> PUBLICANDO…` : `${ic('subir', 50)} PUBLICAR`;
+  const [cx, cy] = ruta(t, [[31.0, 950, 1500], [31.5, 600, 1080]]);
+  r.cur.style.display = t > 31.0 && t < 32.3 ? 'block' : 'none';
+  r.cur.mover(cx, cy, 31.6, t);
+  const ok = en(t, 32.44, .45, E.spr), os = en(t, 33.05, .25, E.in);
+  st(r.ok, { c: true, o: clamp((t - 32.44) * 8) * (1 - os), s: lerp(.2, 1, ok) * (1 - os * .5) });
+  st(r.okt, { c: true, o: clamp((t - 32.55) * 6) * (1 - os), y: lerp(40, 0, en(t, 32.55, .3)) });
+  st(r.gr, { c: true, o: clamp((t - 32.75) * 6) * (1 - os), s: lerp(1.6, 1, en(t, 32.75, .35, E.back)), r: -3 });
+  choque(r.anl, t, 32.44, 540, 820, 1500); explotar(r.cs, t, 32.44, 540, 820, 1.1);
+  const uk = en(t, 33.1, .45, E.out5), us = en(t, 34.65, .25, E.in);
+  st(r.u, { c: true, o: uk * (1 - us), s: lerp(.8, 1, uk) * (1 + us * .8), b: us * 10 });
+  const n = Math.floor(clamp((t - 33.5) / 1.0) * 13.999);
+  r.u.querySelector('.tx').innerHTML = 'upgames.games'.slice(0, n).replace('upgames', '<span style="color:#fff">upgames</span>').replace('.games', '<span class="verde">.games</span>');
+  r.u.querySelector('.cur').style.opacity = Math.floor(t * 4) % 2;
+  if (t > 33.1) st(r.t1.el, { c: true, y: -520, s: .55, o: 1 - en(t, 33.1, .3) });
+});
+
+/* ════════ 11 · Comunícate por redes → promoción oficial sin costo (34.8 – 40.2) ════════ */
+M.escena(34.8, 40.25, r => {
+  r.t1 = titular(r, 'HABLEMOS EN\nTUS REDES', 't-m', TY, { stag: .025 });
+  r.t2 = titular(r, 'PROMOCIÓN\nOFICIAL', 't-l verde glow', TY, { modo: 'zoom', stag: .03 });
+  r.dm = h('div', 'vent bisel', `<div class="barra"><i></i><i></i><i></i><span>mensajes · UpGames ✓</span></div><div class="ch abs" style="left:0;right:0;top:64px;bottom:0"></div>`, r);
+  M.pos(r.dm, 190, 620, 700, 560);
+  const ch = r.dm.querySelector('.ch');
+  r.m1 = h('div', 'burb yo', 'Hola, quiero promocionar mi juego', ch); r.m1.style.top = '40px';
+  r.m2 = h('div', 'burb ug', '¡Hecho! Te hacemos una <b style="color:#39FF88">promoción oficial</b> sin costo', ch); r.m2.style.top = '230px';
+  r.redes = ['chat', 'env', 'arroba', 'users'].map(n => { const e = h('div', 'abs bisel-s', ic(n, 76, '#39FF88'), r); e.style.cssText += 'width:140px;height:140px;display:grid;place-items:center;background:rgba(10,18,32,.95);border:3px solid rgba(57,255,136,.5);box-shadow:0 0 40px rgba(57,255,136,.3)'; return e; });
+  r.cert = h('div', 'abs', `<div style="border:3px solid #39FF88;padding:14px"><div style="border:2px solid rgba(57,255,136,.4);padding:40px 50px;text-align:center">
+     <div class="mono gris" style="font-size:26px;letter-spacing:.35em">CERTIFICADO · UPGAMES</div>
+     <div class="orb" style="font-size:72px;line-height:1.05;margin:18px 0">PROMOCIÓN<br><span class="verde">OFICIAL</span></div>
+     <div class="mono" style="font-size:28px;color:#C9D2DC">para: <b style="color:#fff">@tu_estudio</b> · creador indie</div>
+     <div style="margin:26px auto 0;width:420px;height:2px;background:rgba(255,255,255,.3)"></div><div class="mono gris" style="font-size:22px;margin-top:8px">EQUIPO UPGAMES</div></div></div>`, r);
+  r.cert.style.cssText += 'left:540px;top:880px;width:820px;background:linear-gradient(160deg,#0E1A2E,#050A14);box-shadow:0 0 90px rgba(57,255,136,.35),0 60px 120px rgba(0,0,0,.8)';
+  r.cbr = h('div', 'brillo', null, r.cert);
+  r.sel = h('div', 'abs', `<svg width="260" height="260" viewBox="0 0 260 260"><g fill="none" stroke="#39FF88"><circle cx="130" cy="130" r="120" stroke-width="6" stroke-dasharray="14 8"/><circle cx="130" cy="130" r="96" stroke-width="3"/></g><text x="130" y="122" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="40" fill="#39FF88">SIN</text><text x="130" y="168" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="40" fill="#39FF88">COSTO</text></svg>`, r);
+  r.sel.style.cssText += 'left:830px;top:1170px;filter:drop-shadow(0 0 16px #39FF88)';
+  r.cs = chispas(r, 50);
+  sfx(34.85, 'whoosh', .5); sfx(35.3, 'enviar', .6); sfx(36.0, 'escribiendo', .35); sfx(36.6, 'recibir', .6);
+  barrido(37.8); golpe(37.88, .9, 'impacto'); sfx(37.95, 'brillo', .5); golpe(38.78, 1.1, 'sello'); sfx(38.85, 'moneda', .4); sfx(40.0, 'whoosh', .6);
+}, (t, r) => {
+  r.t1.anim(t, 35.22, 37.7); r.t2.anim(t, 37.88, 40.0);
+  const dk = en(t, 34.85, .55, E.out5), ds = en(t, 37.7, .3, E.in);
+  st(r.dm, { o: dk * (1 - ds), y: lerp(260, 0, dk), s: 1 - ds * .3, b: ds * 10 });
+  const m1 = en(t, 35.3, .4, E.back); st(r.m1, { s: m1, o: clamp((t - 35.3) * 5) }); r.m1.style.transformOrigin = '100% 100%';
+  const m2 = en(t, 36.6, .4, E.back); st(r.m2, { s: m2, o: clamp((t - 36.6) * 5) }); r.m2.style.transformOrigin = '0 100%';
+  r.redes.forEach((e, i) => {
+    const a = 35.0 + i * .12, k = en(t, a, .5, E.back), ang = t * .9 + i * Math.PI / 2;
+    e.style.left = 540 + Math.cos(ang) * 440 - 70 + 'px'; e.style.top = 900 + Math.sin(ang) * 400 - 70 + 'px';
+    st(e, { s: k * (1 - ds), o: clamp((t - a) * 4) * (1 - ds) });
+  });
+  const ck = en(t, 37.88, .6, E.spr), cs2 = en(t, 40.0, .25, E.in);
+  st(r.cert, { c: true, o: clamp((t - 37.88) * 6) * (1 - cs2), s: lerp(.4, 1, ck) * (1 + cs2 * .5), rx: lerp(70, 0, ck) + Math.sin(t * 1.4) * 4, b: cs2 * 10 });
+  r.cbr.style.backgroundPosition = `${lerp(160, -60, ((t - 38) % 1.5) / 1.5)}% 0`;
+  const sk = en(t, 38.78, .3, E.out5);
+  st(r.sel, { c: true, o: clamp((t - 38.78) * 8) * (1 - cs2), s: lerp(2.6, 1, sk), r: -14 + t * 10 });
+  explotar(r.cs, t, 38.78, 830, 1170, .9);
+});
+
+/* ════════ 12 · ¡El ecosistema UpGames te está esperando! (40.15 – fin) ════════ */
+M.escena(40.15, DUR + 1, r => {
+  r.lineas = h('div', 'abs', '<svg width="1080" height="1920" style="overflow:visible"><g class="ls"></g></svg>', r); r.lineas.style.cssText += 'left:0;top:0';
+  r.ls = r.lineas.querySelector('.ls');
+  const N = [['mando', 'JUEGOS'], ['app', 'APPS'], ['llave', 'MODS'], ['vivo', 'EN VIVO'], ['users', 'COMUNIDAD'], ['ia', 'NEXUS IA']];
+  r.nodos = N.map(([i, s]) => { const e = h('div', 'nodo', `<div class="hx hex">${ic(i, 70, '#39FF88')}</div><small>${s}</small>`, r); const l = document.createElementNS('http://www.w3.org/2000/svg', 'line'); l.setAttribute('stroke', 'rgba(57,255,136,.5)'); l.setAttribute('stroke-width', 3); l.setAttribute('stroke-dasharray', '10 10'); r.ls.appendChild(l); e.l = l; return e; });
+  r.orbita = h('div', 'abs', null, r); r.orbita.style.cssText += 'left:540px;top:830px;width:620px;height:620px;border-radius:50%;border:2px dashed rgba(57,255,136,.3)';
+  r.logo = h('img', 'abs', null, r); r.logo.src = 'logo.png'; r.logo.style.cssText += 'width:470px;left:540px;top:830px';
+  r.eco = h('div', 'abs etq c', '', r); r.eco.style.top = '215px';
+  r.t = titular(r, 'TE ESTÁ\nESPERANDO', 't-m', 320, { stag: .03 });
+  r.b = h('div', 'abs boton bisel', `ÚNETE GRATIS ${ic('subir', 52)}`, r); r.b.style.cssText += 'left:540px;top:1330px;font-size:52px;padding:30px 70px';
+  r.br = h('div', 'brillo', null, r.b);
+  r.url = h('div', 'abs mono c', '<span style="color:#fff">upgames</span><span class="verde">.games</span>', r); r.url.style.cssText += 'top:1650px;font-size:54px;letter-spacing:.08em';
+  r.anl = anillos(r, 3); r.cs = chispas(r, 70);
+  r.neg = h('div', 'abs', null, r); r.neg.style.cssText += 'inset:0;background:#000;z-index:80';
+  golpe(40.2, 1.6, 'boom'); sfx(40.2, 'impacto', .8); sfx(40.38, 'decode', .4); for (let i = 0; i < 6; i++) sfx(40.5 + i * .12, 'pop', .35);
+  sfx(41.5, 'whoosh', .5); sfx(42.4, 'exito', .6); sfx(43.0, 'brillo', .4);
+}, (t, r) => {
+  const lk = en(t, 40.2, .7, E.out5);
+  st(r.logo, { c: true, o: clamp((t - 40.15) * 8), s: lerp(2.4, 1, lk) + Math.sin(t * 2.5) * .01, b: (1 - lk) * 20 });
+  choque(r.anl, t, 40.2, 540, 830, 1700); explotar(r.cs, t, 40.2, 540, 830, 1.3);
+  st(r.orbita, { c: true, o: en(t, 40.4, .5) * .8, s: lerp(.5, 1, en(t, 40.4, .6, E.out5)), r: t * 8 });
+  r.nodos.forEach((e, i) => {
+    const a = 40.5 + i * .12, k = en(t, a, .5, E.back);
+    const ang = -Math.PI / 2 + i * Math.PI / 3 + (t - 40) * .25;
+    const rad = 310 * lerp(.4, 1, en(t, a, .6, E.out5));
+    const x = 540 + Math.cos(ang) * rad, y = 830 + Math.sin(ang) * rad;
+    e.style.left = x - 85 + 'px'; e.style.top = y - 95 + 'px';
+    st(e, { o: clamp((t - a) * 5), s: k });
+    e.l.setAttribute('x1', 540); e.l.setAttribute('y1', 830); e.l.setAttribute('x2', x); e.l.setAttribute('y2', y);
+    e.l.style.opacity = clamp((t - a) * 4); e.l.setAttribute('stroke-dashoffset', -t * 40);
+  });
+  M.decode(r.eco, 'EL ECOSISTEMA UPGAMES', t, 40.38, .6); st(r.eco, { c: true, o: t > 40.38 ? 1 : 0 });
+  r.t.anim(t, 41.5);
+  const bk = en(t, 42.2, .45, E.back);
+  st(r.b, { c: true, o: clamp((t - 42.2) * 6), s: bk * (1 + Math.max(0, Math.sin((t - 42.6) * 5)) * .025 * (t > 42.6)) });
+  r.b.style.boxShadow = `0 0 ${60 + 40 * Math.abs(Math.sin(t * 3))}px rgba(57,255,136,.7)`;
+  r.br.style.backgroundPosition = `${lerp(160, -60, ((t - 42.4) % 1.6) / 1.6)}% 0`;
+  st(r.url, { c: true, o: en(t, 42.7, .4), y: lerp(30, 0, en(t, 42.7, .5)) });
+  r.neg.style.opacity = en(t, DUR - .6, .6, E.in);
+});
+
+M.subtitulos([
+  ['Atención,', .30], ['creadores', 1.08], ['y', 1.38], ['desarrolladores', 1.60], ['indie.', 2.28],
+  ['¿Llevas', 2.98], ['meses', 3.38], ['trabajando', 3.70], ['en', 4.20], ['tu', 4.34], ['proyecto', 4.50],
+  ['pero', 4.90], ['no', 5.28], ['sabes', 5.48], ['dónde', 5.70], ['publicarlo', 6.00], ['o', 6.72], ['cómo', 6.98], ['conseguir', 7.26], ['visualizaciones', 7.70], ['reales?', 8.42],
+  ['Escucha', 9.20], ['esto.', 9.68],
+  ['En', 10.32], ['UpGames', 10.52], ['estamos', 11.08], ['patrocinando', 11.42], ['el', 12.20], ['talento', 12.38], ['independiente.', 12.82],
+  ['Queremos', 13.70], ['elevar', 14.02], ['tu', 14.44], ['nivel', 14.56], ['de', 14.88], ['profesionalismo.', 15.20],
+  ['Olvídate', 15.84], ['de', 16.66], ['los', 16.82], ['links', 16.98], ['perdidos.', 17.16],
+  ['Te', 17.96], ['damos', 18.12], ['un', 18.34], ['espacio', 18.52], ['premium', 18.84], ['para', 19.26], ['que', 19.56], ['presentes', 19.82], ['tus', 20.16], ['proyectos,', 20.34],
+  ['alcances', 21.28], ['visibilidad', 21.54], ['masiva', 22.08],
+  ['y', 22.56], ['construyas', 22.90], ['una', 23.38], ['comunidad', 23.64], ['de', 24.08], ['fans', 24.38], ['que', 24.54], ['te', 24.72], ['apoye.', 24.94],
+  ['Si', 25.54], ['quieres', 25.68], ['que', 25.90], ['el', 26.06], ['mundo', 26.22], ['por', 26.46], ['fin', 26.78], ['descubra', 27.00], ['lo', 27.46], ['que', 27.64], ['has', 27.66], ['creado,', 27.92],
+  ['esta', 28.78], ['es', 28.84], ['tu', 29.04], ['oportunidad.', 29.12],
+  ['¿Qué', 30.04], ['esperas?', 30.22],
+  ['Publica', 30.90], ['tu', 31.26], ['trabajo', 31.44], ['totalmente', 31.84], ['gratis', 32.44], ['entrando', 33.08], ['a', 33.42], ['upgames.games', 33.68],
+  ['o', 34.84], ['comunícate', 35.22], ['con', 35.72], ['nosotros', 35.88], ['por', 36.28], ['nuestras', 36.50], ['redes', 36.80],
+  ['para', 37.06], ['hacerte', 37.40], ['una', 37.64], ['promoción', 37.88], ['oficial', 38.30], ['sin', 38.78], ['costo', 39.18], ['alguno.', 39.56],
+  ['¡El', 40.20], ['ecosistema', 40.38], ['UpGames', 40.98], ['te', 41.50], ['está', 41.74], ['esperando!', 42.00],
+]);
+M.iniciar({ duracion: DUR, etiqueta: 'UPGAMES // ALERTA INDIE' });
+const _r = window.render;
+window.render = t => { _r(t); M.hud.marca.style.opacity = .55 * clamp((t - 12.6) * 2) * (1 - clamp((t - 39.95) * 4)); M.hud.el.style.opacity = clamp(t * 3) * (1 - en(t, DUR - .6, .6)); };
+</script>
+</body>
+</html>

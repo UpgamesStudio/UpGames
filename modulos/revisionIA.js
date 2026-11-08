@@ -164,7 +164,7 @@ async function analizar(item, deps) {
     }
 
     const sensible = !esVideo && (/^rom$/i.test(item.category || '') || SENSIBLE.exec(texto));
-    if (sensible) add('warn', 'derechos', `Es ${sensible === true ? 'una ROM' : `"${sensible[0]}"`}: revisa a mano que no incluya el juego comercial original (una ROM o un port modificado sigue llevando el juego). Se permiten mods, parches, archivos de optimización y homebrew sin los archivos del juego.`, -5);
+    if (sensible) add('warn', 'derechos', `Parece una copia o un port de un juego: revisa a mano que no incluya el juego comercial original (una copia o un port modificado sigue llevando el juego). Se permiten mods, parches, archivos de optimización y homebrew sin los archivos del juego.`, -5);
 
     // ── 5. Duplicados ───────────────────────────────────────────
     const [mismoLink, mismoTitulo] = await Promise.all([
