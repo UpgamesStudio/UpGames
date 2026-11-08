@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════════
+   UpGames · Experiencia de la portada y de la ficha
+   ───────────────────────────────────────────────────────────────
+   • Filas en la portada: "Más descargados esta semana", "Nuevos"
+     y "Para Android" (scroll horizontal), antes del catálogo completo.
+   • Guía de instalación: la escribe QUIEN PUBLICA (texto paso a paso
+     y/o un video tutorial suyo ya publicado en UpGames). UpGames no la
+     redacta: solo la muestra en la ficha bajo "Cómo instalarlo".
+   • La altura real de la cabecera se publica en --hdr-h (en móvil el
+     buscador baja a su propia fila y la cabecera crece).
+   Se carga ANTES de script.js: todo lo de script.js se usa en diferido.
+═══════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  const API = 'https://upgames-production.up.railway.app';
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ls = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  const DIA = 864e5;
+
+  // ── Altura real de la cabecera → --hdr-h (barras pegajosas debajo de ella) ──
+  function vigilarCabecera() {
+    const h = document.getElementById('app-header'); if (!h) return;
+    const poner = () => document.documentElement.style.setProperty('--hdr-h', Math.round(h.getBoundingClientRect().height) + 'px');
+    poner();
+    if (window.ResizeObserver) new ResizeObserver(poner).observe(h); else addEventListener('resize', poner);
+  }
+
+  // ── Filas de la portada ──
+  const esAndroid = i => {
+    const ex = i.extraData || {};
+    if (/android/i.test(`${ex.plataforma || ''} ${ex.so || ''}`)) return true;
+    return /\b(android|apk|obb|winlator|gamehub|m[óo]vil|mobile)\b/i.test(`${i.title} ${(i.tags || []).join(' ')}`);
+  };
+  function fila(titulo, sub, items, clase) {
+    if (typeof createTile !== 'function' || items.length < 3) return null;
+    const sec = document.createElement('section');
+    sec.className = 'ugx-fila' + (clase ? ' ' + clase : '');
+    sec.setAttribute('aria-label', titulo);
+    sec.innerHTML = `<div class="ugx-fila-h"><h2>${titulo}</h2>${sub ? `<small>${esc(sub)}</small>` : ''}</div><div class="ugx-fila-track" role="list"></div>`;
+    const track = sec.querySelector('.ugx-fila-track');
+    items.forEach(it => { const t = createTile(it, false); t.setAttribute('role', 'listitem'); track.appendChild(t); });
+    return sec;
+  }
+  /** Agrega las filas a `frag` (antes del catálogo). Devuelve cuántas se agregaron. */
+  function filas(frag, lista) {
+    const base = lista.filter(i => i.category !== 'Video');
+    if (base.length < 8) return 0;
+    const top = [...base].filter(i => (i.descargasSemana || 0) > 0).sort((a, b) => b.descargasSemana - a.descargasSemana).slice(0, 12);
+    const hayTopSemana = top.length >= 3;
+    const masDesc = hayTopSemana ? top : [...base].filter(i => i.descargasEfectivas > 0).sort((a, b) => b.descargasEfectivas - a.descargasEfectivas).slice(0, 12);
+    const nuevos = [...base].filter(i => i.createdAt && Date.now() - new Date(i.createdAt) < 45 * DIA)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 12);
+    const android = base.filter(esAndroid).sort((a, b) => (b.descargasSemana || 0) - (a.descargasSemana || 0) || (b.descargasEfectivas || 0) - (a.descargasEfectivas || 0)).slice(0, 12);
+    const secs = [
+      fila(hayTopSemana ? '🔥 Más descargados esta semana' : '🔥 Más descargados', hayTopSemana ? 'Lo que más baja la comunidad estos 7 días' : 'Lo favorito de la comunidad', masDesc, 'ugx-fila--top'),
+      fila('🆕 Nuevos', 'Recién publicados', nuevos),
+      fila('📱 Para Android', 'Juegos, mods y apps para tu móvil', android),
+    ].filter(Boolean);
+    secs.forEach(s => frag.appendChild(s));
+    if (secs.length) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
+    return secs.length;
+  }
+
+  // ── Guía de instalación: formulario (publicar y editar) ──
+  let misVideos = null;
+  async function cargarMisVideos() {
+    if (misVideos) return misVideos;
+    const u = ls('user_admin'), t = ls('token');
+    if (!u || !t) return [];
+    try {
+      const r = await fetch(`${API}/items/user/${encodeURIComponent(u)}`, { headers: { Authorization: `Bearer ${t}` } });
+      const d = await r.json();
+      misVideos = (Array.isArray(d) ? d : []).filter(i => i.category === 'Video' && i.status !== 'rechazado')
+        .map(i => ({ id: i._id, t: i.title || 'Video' }));
+    } catch (_) { misVideos = []; }
+    return misVideos;
+  }
+  function pintarFormulario(zona) {
+    const p = zona.dataset.guia;
+    zona.innerHTML = `
+      <div class="ugx-gf-h"><ion-icon name="construct-outline"></ion-icon><b>Guía de instalación</b><small>opcional · la escribes tú</small></div>
+      <p class="ugx-gf-ayuda">Quienes descargan se pierden al instalar (Winlator, GameHub, OBB, parches…). Explícalo con tus palabras o enlaza un video tuyo ya publicado en UpGames.</p>
+      <label class="pf-label" for="${p}-tutorial">Video tutorial (tuyo, publicado en UpGames)</label>
+      <select id="${p}-tutorial" class="pf-input ugx-gf-sel"><option value="">— Sin video tutorial —</option></select>
+      <small class="ugx-gf-nota" id="${p}-tutorial-nota"></small>
+      <label class="pf-label" for="${p}-guia" style="margin-top:12px">Pasos de instalación</label>
+      <textarea id="${p}-guia" class="pf-textarea ugx-gf-txt" maxlength="3000" rows="5" placeholder="1. Descarga e instala Winlator 9.0&#10;2. Copia la carpeta del juego en Download/Winlator&#10;3. En Winlator crea un contenedor con Box64 = Performance&#10;4. Abre el .exe y en Ajustes pon 30 FPS"></textarea>
+      <small class="ugx-gf-n" id="${p}-guia-n">0 / 3000</small>`;
+    const ta = zona.querySelector('textarea'), n = zona.querySelector('.ugx-gf-n');
+    ta.addEventListener('input', () => { n.textContent = `${ta.value.length} / 3000`; });
+    llenarVideos(p);
+  }
+  async function llenarVideos(p, elegido) {
+    const sel = document.getElementById(`${p}-tutorial`); if (!sel) return;
+    const vids = await cargarMisVideos();
+    const actual = elegido ?? sel.value;
+    sel.innerHTML = '<option value="">— Sin video tutorial —</option>' + vids.map(v => `<option value="${esc(v.id)}">${esc(v.t.slice(0, 70))}</option>`).join('');
+    if (actual && !vids.some(v => v.id === actual)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(actual)}">Video elegido antes</option>`);
+    sel.value = actual || '';
+    const nota = document.getElementById(`${p}-tutorial-nota`);
+    if (nota) nota.textContent = vids.length ? '' : 'Aún no tienes videos publicados. Sube uno en la categoría Video y luego elígelo aquí.';
+  }
+  function leerGuia(p) {
+    const ta = document.getElementById(`${p}-guia`), sel = document.getElementById(`${p}-tutorial`);
+    if (!ta && !sel) return {};
+    return { guiaInstalacion: (ta?.value || '').trim(), tutorialId: sel?.value || '' };
+  }
+  function ponerGuia(p, item) {
+    misVideos = null;   // pudo publicar un video nuevo desde la última vez
+    const ta = document.getElementById(`${p}-guia`);
+    if (ta) { ta.value = item?.guiaInstalacion || ''; ta.dispatchEvent(new Event('input')); }
+    llenarVideos(p, item?.tutorialId || '');
+  }
+  function limpiarGuia(p) { ponerGuia(p, null); }
+
+  // ── Guía de instalación: ficha del contenido ──
+  let pedido = 0;
+  async function guiaDetalle(item) {
+    const caja = document.getElementById('ds-guia'); if (!caja) return;
+    const n = ++pedido;
+    caja.hidden = true; caja.innerHTML = '';
+    if (!item || item.category === 'Video' || !(item.tieneGuia || item.guiaInstalacion || item.tutorialId)) return;
+    let guia = item.guiaInstalacion, tut = item.tutorialId;
+    if (guia === undefined && item.tieneGuia) {
+      try { const r = await fetch(`${API}/items/${item._id}`); if (r.ok) { const d = await r.json(); guia = d.guiaInstalacion || ''; tut = d.tutorialId || tut; item.guiaInstalacion = guia; } } catch (_) {}
+    }
+    if (n !== pedido || (!guia && !tut)) return;
+    const todos = typeof todosLosItems !== 'undefined' ? todosLosItems : [];
+    let video = tut ? todos.find(i => i._id === tut) : null;
+    if (tut && !video) { try { const r = await fetch(`${API}/items/${tut}`); if (r.ok) video = await r.json(); } catch (_) {} }
+    if (n !== pedido) return;
+    if (video && (video.category !== 'Video' || video.usuario !== item.usuario)) video = null;
+    const pasos = guia ? esc(guia).replace(/\n/g, '<br>') : '';
+    const mini = video ? (typeof cldOpt === 'function' ? cldOpt(video.image || '', 'c_fill,g_auto,w_320,h_180,q_auto,f_auto') : video.image) : '';
+    caja.innerHTML = `
+      <details class="ugx-guia" open>
+        <summary><ion-icon name="construct-outline"></ion-icon><b>Cómo instalarlo</b><small>guía de @${esc(item.usuario)}</small></summary>
+        ${video ? `<button type="button" class="ugx-guia-vid" data-id="${esc(video._id)}">
+            <span class="ugx-guia-mini">${mini ? `<img src="${esc(mini)}" alt="" loading="lazy" decoding="async">` : ''}<ion-icon name="play-circle"></ion-icon></span>
+            <span><small>Video tutorial</small><b>${esc(video.title || 'Ver tutorial')}</b></span></button>` : ''}
+        ${pasos ? `<div class="ugx-guia-txt">${pasos}</div>` : ''}
+      </details>`;
+    caja.hidden = false;
+    const b = caja.querySelector('.ugx-guia-vid');
+    if (b) b.onclick = () => { if (typeof closeDetail === 'function') closeDetail(); setTimeout(() => typeof openDetail === 'function' && openDetail(video), 320); };
+  }
+
+  function iniciar() {
+    vigilarCabecera();
+    document.querySelectorAll('.ugx-guia-form').forEach(pintarFormulario);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
+
+  window.UGUX = { filas, guiaDetalle, leerGuia, ponerGuia, limpiarGuia };
+})();

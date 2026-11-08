@@ -46,8 +46,9 @@
 <link rel="stylesheet" href="upgames-estilo.css?v=20261106d">
 <link rel="stylesheet" href="upgames-cyber.css?v=20261107f">
 <link rel="stylesheet" href="upgames-videos.css?v=20261107c">
+<link rel="stylesheet" href="upgames-ux.css?v=20261108a">
 <script src="upgames-tema.js?v=20261106d"></script>
-<script src="upgames-musica.js?v=20261106e" defer></script>
+<script src="upgames-musica.js?v=20261108a" defer></script>
 <!-- Widget de subida (pesado): solo se usa al publicar → se descarga cuando la página ya cargó
      y el navegador está libre (window.ugCargarCloudinary lo fuerza antes si hace falta) -->
 <script>
@@ -381,6 +382,7 @@
               <small class="pfp-ayuda">La plantilla trae los apartados que más buscan quienes descargan. NEXUS no inventa datos: donde no sabe, deja "(complétalo)".</small>
             </div>
             <div id="pf-extra-fields"></div>
+            <div class="ugx-guia-form" data-guia="pf"></div>
           </details>
         </section>
 
@@ -1326,6 +1328,7 @@
         <small class="pfp-ayuda" id="pf-edit-desc-n">0 / 1000</small>
       </div>
       <div id="pf-edit-extra-fields"></div>
+      <div class="ugx-guia-form" data-guia="pfe"></div>
 
       <!-- ⑤ Revisión y guardar -->
       <div class="pf-nexus-check">
@@ -1507,8 +1510,8 @@
         <div class="stat-lbl">Descargas</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val" id="ds-rep">0</div>
-        <div class="stat-lbl">Reportes</div>
+        <div class="stat-val" id="ds-upd">—</div>
+        <div class="stat-lbl">Actualizado</div>
       </div>
       <div class="stat-box">
         <div class="stat-val" id="ds-favs">❤️</div>
@@ -1524,6 +1527,8 @@
     <p class="sheet-desc" id="ds-desc"></p>
     <!-- Serie por partes (se rellena por JS) -->
     <div id="ds-serie" style="display:none"></div>
+    <!-- Cómo instalarlo: guía y/o video tutorial del creador (upgames-ux.js) -->
+    <div id="ds-guia" hidden></div>
     <!-- Featured Entry (videos only — se inyecta por JS) -->
     <div id="ds-featured-entry" style="display:none"></div>
     <!-- Social Actions -->
@@ -1856,7 +1861,9 @@
 <!-- ION ICONS -->
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-<script src="script.js?v=20261108a"></script>
+<!-- Antes de script.js: render() usa UGUX.filas al pintar el catálogo de la caché -->
+<script src="upgames-ux.js?v=20261108a"></script>
+<script src="script.js?v=20261108b"></script>
 <script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>
 <script src="upgames-guia.js?v=20261029i"></script>

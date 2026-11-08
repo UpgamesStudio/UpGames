@@ -568,6 +568,8 @@ JuegoSchema.add({ imageOrigen: { type: String, default: '' }, portadaMigrada: { 
 // destacó pagando UpCoins (aparece arriba marcado como "Promocionado")
 JuegoSchema.add({ impulsoHasta: { type: Date, default: null }, destacadoHasta: { type: Date, default: null } });
 // Revisión prioritaria pagada con UpCoins (rutas/extrasUC.js): va primero en la cola; si no se revisa en 24 h se devuelve
+// Guía de instalación opcional escrita por el autor (texto) y/o un video tutorial suyo en UpGames
+JuegoSchema.add({ guiaInstalacion: { type: String, default: '', maxlength: 3000 }, tutorialId: { type: String, default: '' } });
 JuegoSchema.add({ prioridadDesde: { type: Date, default: null }, prioridadReembolso: { type: Boolean, default: false } });
 const Juego = mongoose.model('Juego', JuegoSchema);
 
@@ -2100,8 +2102,12 @@ app.get("/items", async (req, res) => {
                 } },
                 { $sort: { promocionado: -1, _orden: -1, createdAt: -1 } },
                 { $limit: 100 },
-                { $project: { _id: 1, title: 1, description: 1, image: 1, images: 1, link: 1, category: 1, usuario: 1, resenas: 1, reportes: 1, linkStatus: 1, descargasEfectivas: 1, vistas: 1, likesCount: 1, extraData: 1, videoType: 1, featuredItemId: 1, scoreRecomendacion: 1, serie: 1, createdAt: 1, promocionado: 1 } },
+                { $project: { _id: 1, title: 1, description: 1, image: 1, images: 1, link: 1, category: 1, usuario: 1, resenas: 1, reportes: 1, linkStatus: 1, descargasEfectivas: 1, vistas: 1, likesCount: 1, extraData: 1, videoType: 1, featuredItemId: 1, scoreRecomendacion: 1, serie: 1, createdAt: 1, updatedAt: 1, promocionado: 1, tutorialId: 1,
+                    tieneGuia: { $gt: [{ $strLenCP: { $ifNull: ['$guiaInstalacion', ''] } }, 0] } } },
             ]);
+            // Descargas de los últimos 7 días (stats_items): alimenta "Más descargados esta semana"
+            const semana = await StatsItems.descargasRecientes(7);
+            items.forEach(i => { i.descargasSemana = semana[String(i._id)] || 0; });
             // Series por partes: solo la primera parte aparece en el catálogo
             return series.colapsar(items, Juego, { status: 'aprobado', linkStatus: { $in: ['online', 'revision'] } });
         });
@@ -2121,7 +2127,7 @@ app.get("/items/user/:usuario", async (req, res) => {
         if (t && t.length > 20) { try { yo = jwt.verify(t, JWT_SECRET).usuario; } catch (_) {} }
         const propio = yo && yo === String(req.params.usuario).toLowerCase();
         const filtro = propio ? { usuario: req.params.usuario, status: { $ne: 'privado' } } : { usuario: req.params.usuario, status: 'aprobado' };
-        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie motivoRechazo nexusMentor destacadoHasta prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
+        const aportes = await Juego.find(filtro).select('_id title description image images link category usuario reportes reportesDesglose linkStatus descargasEfectivas vistas likesCount status createdAt scoreRecomendacion extraData videoType featuredItemId serie guiaInstalacion tutorialId motivoRechazo nexusMentor destacadoHasta prioridadDesde prioridadReembolso').sort({ scoreRecomendacion: -1, createdAt: -1 }).lean();
         res.json(propio ? aportes : await series.colapsar(aportes, Juego, { usuario: req.params.usuario, status: 'aprobado' }));
     } catch (error) {
         res.status(500).json([]);
@@ -2149,7 +2155,30 @@ function errorLinkPublicacion(link, category) {
     return null;
 }
 
-const CAMPOS_PUBLICACION = ['title', 'description', 'link', 'image', 'images', 'category', 'videoType', 'extraData', 'featuredItemId', 'tags'];
+const CAMPOS_PUBLICACION = ['title', 'description', 'link', 'image', 'images', 'category', 'videoType', 'extraData', 'featuredItemId', 'tags', 'guiaInstalacion', 'tutorialId'];
+
+// Guía de instalación (opcional, la escribe quien publica): texto paso a paso y/o un video
+// tutorial que el mismo autor ya publicó en UpGames. UpGames no la redacta: solo la muestra.
+const GUIA_MAX = 3000;
+async function sanearGuia(datos, usuario) {
+    if (datos.guiaInstalacion !== undefined) datos.guiaInstalacion = String(datos.guiaInstalacion || '').replace(/\r\n/g, '\n').trim().slice(0, GUIA_MAX);
+    if (datos.tutorialId !== undefined) {
+        const id = String(datos.tutorialId || '').trim();
+        if (!id) datos.tutorialId = '';
+        else if (!mongoose.Types.ObjectId.isValid(id)) return 'El tutorial elegido no es válido';
+        else {
+            const v = await Juego.findOne({ _id: id, usuario, category: 'Video', status: { $in: ['aprobado', 'pendiente', 'pending'] } }).select('_id').lean();
+            if (!v) return 'El tutorial debe ser un video tuyo publicado en UpGames';
+            datos.tutorialId = id;
+        }
+    }
+    if (datos.guiaInstalacion) {
+        const modG = Moderacion.reglas(datos.guiaInstalacion, 'publicacion');
+        if (modG.bloquear) return `La guía de instalación no cumple las normas: ${Moderacion.MENSAJE[modG.categoria] || 'revísala'}`;
+        if (ContenidoLegal.revisar({ title: '', description: datos.guiaInstalacion }).bloquear) return 'La guía de instalación menciona contenido no permitido';
+    }
+    return null;
+}
 
 // POST /items/precheck — Nexus revisa la publicación ANTES de publicarla:
 // enlace (si el archivo existe), portada, texto, derechos, duplicados y si es
@@ -2222,6 +2251,8 @@ app.post("/items/add", [verificarToken, body('title').notEmpty().trim().isLength
         CAMPOS_PUBLICACION.forEach(f => { if (req.body[f] !== undefined) datos[f] = req.body[f]; });
         if (datos.extraData && (typeof datos.extraData !== 'object' || Array.isArray(datos.extraData))) datos.extraData = {};
         if (datos.tags !== undefined && !Array.isArray(datos.tags)) delete datos.tags;
+        const errGuia = await sanearGuia(datos, req.usuario);
+        if (errGuia) return res.status(400).json({ success: false, error: errGuia });
         datos.serie = series.serieDe(datos.title, req.usuario);
         const nuevoJuego = new Juego({ ...datos, usuario: req.usuario, status: "aprobado", linkStatus: "revision" });
         // Premium: sus publicaciones nuevas también tienen más visibilidad mientras dure
@@ -2294,6 +2325,8 @@ app.put("/items/:id", verificarToken, [
         if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, error: "No se enviaron campos para actualizar" });
         if (updates.tags !== undefined) updates.tags = Array.isArray(updates.tags) ? updates.tags.filter(t => typeof t === 'string').map(t => t.trim().slice(0, 40)).filter(Boolean).slice(0, 15) : undefined;
         if (updates.tags === undefined) delete updates.tags;
+        const errGuiaE = await sanearGuia(updates, item.usuario);
+        if (errGuiaE) return res.status(400).json({ success: false, error: errGuiaE });
         if (updates.title !== undefined) updates.serie = series.serieDe(updates.title, item.usuario);
         // Campos extra (plataforma, tamaño, consola…): se fusionan con lo que ya había y se
         // sanean. Los que el servidor calcula (detectedGame, duracion de videos) no los pisa el cliente.

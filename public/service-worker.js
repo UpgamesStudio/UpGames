@@ -11,7 +11,7 @@
 // IMPORTANTE: bump CACHE_VERSION cuando cambies archivos estáticos.
 // ========================================
 
-const CACHE_VERSION = 'upgames-v6.40.0';
+const CACHE_VERSION = 'upgames-v6.41.0';
 const CACHE_STATIC  = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 const CACHE_API     = `${CACHE_VERSION}-api`;
@@ -45,6 +45,8 @@ const PRECACHE_URLS = [
     './upgames-nexus-plus.js',
     './upgames-musica.js',
     './upgames-videos.js',
+    './upgames-ux.js',
+    './upgames-ux.css',
     './upgames-videos.css',
     './og-cover.png',
     './manifest.json',

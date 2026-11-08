@@ -14,6 +14,7 @@ function asegurarIndices() {
     if (indices) return; indices = true;
     col().createIndex({ autor: 1, dia: 1 }).catch(() => {});
     col().createIndex({ fecha: 1 }, { expireAfterSeconds: 400 * 86400 }).catch(() => {});
+    col().createIndex({ dia: 1 }).catch(() => {});
 }
 
 /** Suma a las estadísticas de hoy. campos: { v, d, a, auc, g } */
@@ -53,4 +54,17 @@ async function delAutor(autor, dias = 30) {
     return { desde, dias: dias_, items, serie: dias_.map(d => ({ dia: d, ...(serie[d] || { v: 0, d: 0, g: 0 }) })) };
 }
 
-module.exports = { sumar, vista, delAutor, dia };
+/** Descargas de los últimos `dias` por publicación → { itemId: n }. Para "Más descargados esta semana". */
+async function descargasRecientes(dias = 7) {
+    try {
+        asegurarIndices();
+        const desde = dia(Date.now() - (dias - 1) * 864e5);
+        const filas = await col().aggregate([
+            { $match: { dia: { $gte: desde }, d: { $gt: 0 } } },
+            { $group: { _id: '$itemId', n: { $sum: '$d' } } },
+        ]).toArray();
+        const m = {}; for (const f of filas) m[f._id] = f.n; return m;
+    } catch (_) { return {}; }
+}
+
+module.exports = { sumar, vista, delAutor, dia, descargasRecientes };

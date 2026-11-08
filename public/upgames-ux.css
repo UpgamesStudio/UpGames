@@ -1,0 +1,91 @@
+/* ═══════════════════════════════════════════════════════════════
+   UpGames · Experiencia (portada, buscador, guía de instalación)
+   Va después de los demás estilos. Sin recortar calidad visual:
+   las filas reutilizan las mismas tarjetas del catálogo.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Buscador a todo el ancho en móvil: segunda fila de la cabecera ── */
+@media (max-width: 640px) {
+  #app-header { flex-wrap: wrap; height: auto; padding: 8px 12px 10px; row-gap: 8px; }
+  #app-header .hdr-logo { order: 1; margin-right: auto; }
+  #app-header .hdr-actions { order: 2; }
+  #app-header .search-bar { order: 3; flex: 1 0 100%; min-width: 0; }
+  #buscador { height: 42px; font-size: .95rem; }
+  html[data-tema="cyber"] #buscador::placeholder { font-size: .84rem; }
+}
+
+/* ── Cartel de bienvenida (invitados): más compacto, sin tapar el contenido ── */
+.obh-teaser { padding: 8px 8px 8px 12px; gap: 8px; width: min(520px, calc(100vw - 24px)); }
+.obh-teaser b { font-size: .78rem; }
+@media (max-width: 480px) {
+  .obh-teaser small { display: none; }
+  .obh-teaser-ic { font-size: 1rem; }
+  .obh-teaser button[data-a="ver"] { padding: 8px 10px; }
+  .obh-teaser button[data-a="x"] { width: 28px; height: 28px; }
+}
+
+/* ── Descargas en la tarjeta ── */
+.tile-dl-count { font-size: .62rem; color: var(--txt3); display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.tile-dl-count ion-icon { font-size: .78rem; color: var(--g); }
+html[data-tema="cyber"] .tile-dl-count { font-family: var(--ff-mono) !important; color: var(--txt2) !important; }
+
+/* ── Filas de la portada ── */
+.ugx-fila { grid-column: 1 / -1; min-width: 0; margin: 6px 0 4px; }
+.ugx-fila-h { display: flex; align-items: baseline; gap: 10px; padding: 2px 2px 8px; }
+.ugx-fila-h h2 { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: .01em; color: var(--txt); }
+.ugx-fila-h small { font-size: .72rem; color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ugx-fila-track {
+  display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 10px) / 2.25); gap: 10px;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding: 0 2px;
+  margin: 0 -12px; padding: 0 12px 6px; scrollbar-width: none;
+}
+.ugx-fila-track::-webkit-scrollbar { display: none; }
+.ugx-fila-track > .game-tile { scroll-snap-align: start; min-width: 0; }
+@media (min-width: 700px) { .ugx-fila-track { grid-auto-columns: calc((100% - 30px) / 3.3); } }
+@media (min-width: 1100px) { .ugx-fila-track { grid-auto-columns: calc((100% - 40px) / 4.4); } }
+html[data-tema="cyber"] .ugx-fila-h h2 { font-family: var(--ff-disp) !important; text-transform: uppercase; letter-spacing: .06em; font-size: .92rem; text-shadow: 0 0 12px rgba(57,255,136,.35); }
+html[data-tema="cyber"] .ugx-fila-h small { font-family: var(--ff-mono); }
+
+/* ── Favoritos de invitados ── */
+.ugx-fav-cta { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; padding: 14px; margin-bottom: 6px; border-radius: 16px;
+  border: 1px solid rgba(var(--g-rgb, 50,213,131), .35); background: rgba(var(--g-rgb, 50,213,131), .07); }
+.ugx-fav-cta b { font-size: .92rem; }
+.ugx-fav-cta span { font-size: .8rem; color: var(--txt2); }
+.ugx-fav-cta .btn-login-action { align-self: flex-start; margin-top: 4px; }
+
+/* ── Guía de instalación: formulario ── */
+.ugx-guia-form { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--bd, rgba(255,255,255,.1)); }
+.ugx-gf-h { display: flex; align-items: center; gap: 8px; }
+.ugx-gf-h ion-icon { color: var(--g); font-size: 1.1rem; }
+.ugx-gf-h small { color: var(--txt3); font-size: .72rem; }
+.ugx-gf-ayuda { margin: 6px 0 10px; font-size: .76rem; line-height: 1.45; color: var(--txt2); }
+.ugx-gf-sel { width: 100%; }
+.ugx-gf-nota, .ugx-gf-n { display: block; margin-top: 4px; font-size: .7rem; color: var(--txt3); }
+.ugx-gf-n { text-align: right; }
+
+/* ── Guía de instalación: ficha ── */
+#ds-guia { margin: 4px 0 14px; }
+.ugx-guia { border: 1px solid rgba(var(--g-rgb, 50,213,131), .3); border-radius: 16px; background: rgba(var(--g-rgb, 50,213,131), .05); overflow: hidden; }
+.ugx-guia summary { display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer; list-style: none; }
+.ugx-guia summary::-webkit-details-marker { display: none; }
+.ugx-guia summary ion-icon { color: var(--g); font-size: 1.1rem; }
+.ugx-guia summary small { margin-left: auto; color: var(--txt3); font-size: .72rem; }
+.ugx-guia-vid { display: flex; align-items: center; gap: 12px; width: calc(100% - 28px); margin: 0 14px 12px; padding: 8px; border: 1px solid var(--bd, rgba(255,255,255,.1));
+  border-radius: 12px; background: var(--bg2, rgba(255,255,255,.04)); color: var(--txt); text-align: left; cursor: pointer; font: inherit; }
+.ugx-guia-vid > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.ugx-guia-vid small { font-size: .68rem; color: var(--cy, #5AC8FA); text-transform: uppercase; letter-spacing: .06em; font-weight: 800; }
+.ugx-guia-vid b { font-size: .86rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ugx-guia-mini { position: relative; flex: 0 0 112px; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: #000; display: grid; place-items: center; }
+.ugx-guia-mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ugx-guia-mini ion-icon { position: relative; font-size: 1.8rem; color: #fff; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); }
+.ugx-guia-txt { padding: 0 14px 14px; font-size: .85rem; line-height: 1.6; color: var(--txt2); overflow-wrap: anywhere; }
+html[data-tema="cyber"] .ugx-guia, html[data-tema="cyber"] .ugx-guia-vid, html[data-tema="cyber"] .ugx-fav-cta { border-radius: 0 !important; }
+html[data-tema="cyber"] .ugx-guia summary b { font-family: var(--ff-disp); text-transform: uppercase; letter-spacing: .05em; }
+
+/* Filas: cada tarjeta con su altura natural y título en una línea */
+.ugx-fila-track { align-items: start; grid-template-rows: auto; }
+.ugx-fila-track > .game-tile { height: auto !important; min-height: 0 !important; aspect-ratio: auto !important; content-visibility: visible !important; contain-intrinsic-size: none !important; }
+.ugx-fila-h { flex-wrap: nowrap; min-width: 0; }
+.ugx-fila-h h2 { white-space: nowrap; flex-shrink: 0; }
+html[data-tema="cyber"] .ugx-fila-h h2 { font-size: .82rem !important; line-height: 1.2; }
+@media (max-width: 420px) { .ugx-fila-h small { display: none; } }

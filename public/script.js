@@ -553,6 +553,7 @@ function createTile(item, isFeatured=false) {
         <div class="tile-meta">
           <div class="tile-avatar">${avatarLetter(item.usuario)}</div>
           <div class="tile-user">@${escH(item.usuario||'Cloud')}</div>
+          ${dl?`<div class="tile-dl-count" title="${dl} descargas"><ion-icon name="cloud-download-outline"></ion-icon>${fmt(dl)}</div>`:''}
           ${lk?`<div class="tile-downloads"><ion-icon name="heart"></ion-icon>${fmt(lk)}</div>`:''}
           ${window.UGR?.estrellasTile(item)||''}
         </div>
@@ -766,7 +767,15 @@ function render(list, reset=true) {
     return;
   }
   const frag = document.createDocumentFragment();
+  const enPortada = !activeCategory && !document.getElementById('buscador')?.value?.trim();
+  const conFilas = enPortada && window.UGUX?.filas ? window.UGUX.filas(frag, list) : 0;
   list.forEach((item, idx) => {
+    if(idx === 0 && conFilas) {
+      const sh = document.createElement('div');
+      sh.className = 'section-header';
+      sh.innerHTML = `<span class="section-title">Todo el catálogo</span><span class="section-count">${list.length} publicaciones</span>`;
+      frag.appendChild(sh);
+    }
     if(idx > 0 && idx % 12 === 0) {
       const sh = document.createElement('div');
       sh.className = 'section-header';
@@ -1184,9 +1193,12 @@ function openDetail(item) {
   document.getElementById('ds-cat').textContent=catLabel(item.category);
   document.getElementById('ds-title').textContent=item.title;
   document.getElementById('ds-dl').textContent=fmt(item.category === 'Video' ? vistasVideo(item) : item.descargasEfectivas||0);
-  document.getElementById('ds-rep').textContent=item.reportes||0;
+  const repEl = document.getElementById('ds-rep'); if (repEl) repEl.textContent = item.reportes||0;
+  const updEl = document.getElementById('ds-upd');
+  if (updEl) { const f = item.updatedAt || item.createdAt; updEl.textContent = f ? ugHace(f) : '—'; updEl.title = f ? new Date(f).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; }
   document.getElementById('ds-desc').textContent=item.description||'Sin descripción.';
   renderSerieDetalle(item);
+  window.UGUX?.guiaDetalle(item);
   const askBtn = document.getElementById('ds-btn-nexus');
   if (askBtn) askBtn.onclick = () => nexusPreguntar(item.category === 'Video'
     ? `Cuéntame sobre el video "${item.title}" de @${item.usuario} y qué contenido relacionado hay en UpGames.`
@@ -1388,7 +1400,18 @@ function renderFeaturedEntry(container, item) {
   container.querySelector('.ds-featured-card').addEventListener('click', () => openDetail(item));
 }
 
+// "hoy", "hace 3 días", "hace 2 meses"… (fecha de actualización en la ficha)
+function ugHace(f) {
+  const d = Math.floor((Date.now() - new Date(f)) / 864e5);
+  if (!(d >= 0)) return '—';
+  if (d < 1) return 'Hoy'; if (d < 2) return 'Ayer'; if (d < 7) return `Hace ${d} días`;
+  if (d < 30) { const s = Math.floor(d / 7); return `Hace ${s} sem.`; }
+  if (d < 365) { const m = Math.floor(d / 30); return `Hace ${m} ${m === 1 ? 'mes' : 'meses'}`; }
+  const a = Math.floor(d / 365); return `Hace ${a} ${a === 1 ? 'año' : 'años'}`;
+}
+
 function closeDetail() {
+  window.dispatchEvent(new Event('ug:detalle-cerrado'));
   ugSeo(null);
   // Cancelar vista pendiente si el usuario cierra antes del minuto
   if(_vistaTimer) { clearTimeout(_vistaTimer); _vistaTimer = null; }
@@ -1506,9 +1529,53 @@ async function postComment(id) {
 }
 
 // ── FAVORITES ────────────────────────────────────────────
+// Invitados: el favorito se guarda en este teléfono (favoritos + favoritos_inv) y, al
+// crear la cuenta o iniciar sesión, se suben solos (ugSubirFavsInvitado). Al tercero se
+// invita a crear la cuenta para no perderlos; antes no se interrumpe.
+function ugPintarFav(id, on) {
+  document.querySelectorAll(`[data-id="${id}"] .tile-fav-quick`).forEach(b => {
+    b.className = 'tile-fav-quick' + (on ? ' active' : '');
+    b.innerHTML = `<ion-icon name="${on ? 'heart' : 'heart-outline'}"></ion-icon>`;
+  });
+  const btnFav = document.getElementById('ds-btn-fav');
+  if (btnFav && currentItem && currentItem._id === id) {
+    btnFav.className = 'action-pill' + (on ? ' fav-active' : '');
+    btnFav.innerHTML = `<ion-icon name="${on ? 'heart' : 'heart-outline'}"></ion-icon> ${on ? 'Guardado' : 'Favorito'}`;
+  }
+}
+function ugFavInvitado(id) {
+  let favs = LS.getJSON('favoritos_inv', []);
+  const on = !favs.includes(id);
+  favs = on ? [...favs, id].slice(-200) : favs.filter(f => f !== id);
+  LS.setJSON('favoritos_inv', favs); LS.setJSON('favoritos', favs);
+  ugPintarFav(id, on);
+  if (!on) { toast('💔 Quitado de favoritos'); return; }
+  window.dispatchEvent(new CustomEvent('ug:guia', { detail: 'favorito' }));
+  if (favs.length >= 3 && !LS.get('ug_fav_aviso')) {
+    LS.set('ug_fav_aviso', '1');
+    setTimeout(() => ugPedirSesion(`no perder tus ${favs.length} favoritos`), 600);
+  } else toast(favs.length === 1 ? '❤️ Guardado en este teléfono' : `❤️ Guardado · llevas ${favs.length}`);
+}
+async function ugSubirFavsInvitado() {
+  const pend = LS.getJSON('favoritos_inv', []), token = LS.get('token');
+  if (!pend.length || !token || !LS.get('user_admin')) return;
+  const hechos = [];
+  for (const itemId of pend) {
+    try {
+      const r = await fetch(`${API_URL}/favoritos/add`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ itemId }) });
+      if (r.ok || r.status === 400 || r.status === 409) hechos.push(itemId);
+    } catch (_) {}
+  }
+  const quedan = LS.getJSON('favoritos_inv', []).filter(f => !hechos.includes(f));
+  if (quedan.length) LS.setJSON('favoritos_inv', quedan); else LS.remove('favoritos_inv');
+  const local = LS.getJSON('favoritos', []); hechos.forEach(f => { if (!local.includes(f)) local.push(f); }); LS.setJSON('favoritos', local);
+  if (hechos.length) toast(`❤️ ${hechos.length} favorito${hechos.length > 1 ? 's' : ''} guardado${hechos.length > 1 ? 's' : ''} en tu cuenta`);
+}
+setTimeout(ugSubirFavsInvitado, 2500);
+
 async function fav(id) {
   const user = LS.get('user_admin');
-  if(!user) { ugPedirSesion('guardar favoritos'); return; }
+  if(!user || !LS.get('token')) { ugFavInvitado(id); return; }
   try {
     const cr = await fetch(`${API_URL}/favoritos/${user}`);
     const favs = await cr.json();
@@ -1686,6 +1753,14 @@ async function renderFavs() {
   const user = LS.get('user_admin');
   const cont = document.getElementById('favs-grid');
   if(!cont) return;
+  if(!user && LS.getJSON('favoritos_inv', []).length) {
+    const ids = LS.getJSON('favoritos_inv', []);
+    const items = ids.map(id => todosLosItems.find(i => i._id === id)).filter(Boolean).reverse();
+    cont.innerHTML = `<div class="ugx-fav-cta"><b>❤️ ${ids.length} favorito${ids.length > 1 ? 's' : ''} guardado${ids.length > 1 ? 's' : ''} en este teléfono</b><span>Crea tu cuenta gratis y tenlos en todos tus dispositivos.</span><a href="${ugUrlLogin(true)}" class="btn-login-action">Crear cuenta gratis</a></div>`;
+    items.forEach(it => cont.appendChild(createTile(it, false)));
+    window.UGX?.estilizarTiles?.(cont);
+    return;
+  }
   if(!user) {
     cont.innerHTML=`<div class="empty-state">
       <ion-icon name="person-circle-outline"></ion-icon>
@@ -2715,7 +2790,7 @@ async function pfSubirJuego() {
     const res = await fetch(`${PF_API}/items/add`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body: JSON.stringify({ title:titulo, description:desc, link, image:imagen, images:imagesExtra, category:cat, extraData, usuario:pfUser, status:'pendiente' })
+      body: JSON.stringify({ title:titulo, description:desc, link, image:imagen, images:imagesExtra, category:cat, extraData, usuario:pfUser, status:'pendiente', ...(window.UGUX?.leerGuia('pf') || {}) })
     });
     if(res.ok) {
       LS.set('ultima_publicacion', Date.now().toString());
@@ -2723,6 +2798,7 @@ async function pfSubirJuego() {
       toast('✅ Publicado. Aparecerá como "En revisión" hasta verificar el enlace.');
       document.getElementById('pf-addTitle').value='';
       document.getElementById('pf-addDescription').value='';
+      window.UGUX?.limpiarGuia('pf');
       document.getElementById('pf-addLink').value='';
       document.getElementById('pf-addImage').value='';
       ['pf-addImage2','pf-addImage3','pf-addImage4'].forEach(id=>{
@@ -3018,6 +3094,7 @@ async function pfOpenEditModal(itemId) {
       if(el) el.value = imgs[i] || '';
     });
     pfEditCategoria(CAT_CONFIG[item.category] ? item.category : 'Juego', item.extraData || {});
+    window.UGUX?.ponerGuia('pfe', item);
     [0,1,2,3].forEach(pfEditPrevSlot);
     pfValidateEditTitle(); pfValidateEditLink(); pfValidateEditImage(); pfEditContador(); pfEditDetectar();
     // Estado actual: si está rechazada o en revisión, se explica por qué
@@ -3159,6 +3236,7 @@ async function pfSaveEdit() {
   const ex = pfLeerExtras(document.getElementById('pf-edit-extra-fields'));
   upd.extraData = {};
   PF_EX_TODAS.forEach(k => { upd.extraData[k] = ex[k] || ''; });
+  Object.assign(upd, window.UGUX?.leerGuia('pfe') || {});
   if(!upd.image) { toast('⚠️ La portada es obligatoria.'); return; }
   const vl = pfAnalizarLink(upd.link);
   if(vl.ok===false) { toast(vl.msg); return; }
@@ -4352,13 +4430,21 @@ function ugAB(evento, modo) {
   // móvil). Una barra elegante, que no tapa nada, abre la bienvenida con "Crear cuenta".
   if (window.UG_INVITADO) {
     window.ugAbrirBienvenida = () => abrir(true);
-    if (!LS.get('ug_bienv_inv')) setTimeout(() => {
-      if (!window.UG_INVITADO || document.getElementById('obh-teaser')) return;
+    // Aparece cuando la persona ya mostró interés: bajó por el catálogo o abrió y cerró una ficha
+    const mostrarTeaser = fn => {
+      let hecho = false;
+      const go = () => { if (hecho) return; hecho = true; removeEventListener('scroll', alBajar); removeEventListener('ug:detalle-cerrado', alCerrar); setTimeout(fn, 900); };
+      const alBajar = () => { if (scrollY > innerHeight * 1.2) go(); };
+      const alCerrar = () => go();
+      addEventListener('scroll', alBajar, { passive: true }); addEventListener('ug:detalle-cerrado', alCerrar);
+    };
+    if (!LS.get('ug_bienv_inv')) mostrarTeaser(() => {
+      if (!window.UG_INVITADO || document.getElementById('obh-teaser') || document.getElementById('detail-sheet')?.classList.contains('open')) return;
       const t = document.createElement('div'); t.id = 'obh-teaser'; t.className = 'obh-teaser'; t.setAttribute('role', 'region'); t.setAttribute('aria-label', 'Bienvenida');
-      t.innerHTML = `<span class="obh-teaser-ic">✦</span><span><b>Acabas de entrar a algo que no existe en otro lugar.</b><small>Descargas, videos, lives, red social e IA que te paga, en un solo ecosistema.</small></span><button type="button" data-a="ver">Descúbrelo</button><button type="button" data-a="x" aria-label="Cerrar">✕</button>`;
+      t.innerHTML = `<span class="obh-teaser-ic">✦</span><span><b>Esto no existe en otro lugar</b><small>Descargas, lives, red social e IA que te paga.</small></span><button type="button" data-a="ver">Descúbrelo</button><button type="button" data-a="x" aria-label="Cerrar">✕</button>`;
       t.onclick = e => { const a = e.target.closest('button')?.dataset.a; if (!a) return; LS.set('ug_bienv_inv', '1'); t.remove(); if (a === 'ver') abrir(true); };
       document.body.appendChild(t);
-    }, 3500);
+    });
     return;
   }
   // Bienvenida UNA vez por versión de los términos (antes volvía cada semana).

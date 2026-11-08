@@ -47,7 +47,7 @@
   }
 
   const audio = new Audio();
-  audio.preload = 'auto';
+  audio.preload = 'none';   // nada se descarga hasta que de verdad vaya a sonar
   let ctx = null, gain = null, sonando = false, ducking = 0, intentoHecho = false;
 
   const pista = () => PISTAS[ses.orden[ses.pos % ses.orden.length]];
@@ -76,7 +76,6 @@
   function play(seg = FUNDIDO_ENTRADA) {
     if (silencio || document.hidden) return Promise.resolve(false);
     if (!audio.src) cargar(ses.t || 0);
-    audio.preload = 'auto';
     grafo();
     if (!gain) audio.volume = 0;
     let pr; try { pr = audio.play(); } catch (e) { return Promise.resolve(false); }
@@ -116,8 +115,11 @@
   }
   function iniciar() {
     if (silencio) { audio.preload = 'none'; pintar(); return; }   // silenciada: no se descarga nada
-    cargar(ses.t || 0);
-    play().then(ok => { intentoHecho = true; if (!ok) alPrimerGesto(); });
+    // Primera visita: se espera al primer toque (los navegadores bloquean el audio antes y,
+    // con preload, la canción entera —4–5 MB— se bajaba al entrar sin llegar a sonar).
+    // Si ya venía sonando en esta sesión (cambio de página), se intenta seguir de inmediato.
+    if (ses.t > 0) play().then(ok => { intentoHecho = true; if (!ok) alPrimerGesto(); });
+    else { intentoHecho = true; alPrimerGesto(); }
   }
 
   // Videos: la música se aparta
