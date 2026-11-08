@@ -34,4 +34,12 @@ test('admin y POST no se modifican', () => {
     assert.strictEqual(correr('/admin/items', [pub])[0].link, pub.link);
     assert.strictEqual(correr('/economia/validar-descarga', { ...pub }, { method: 'POST' }).link, pub.link);
 });
+test('los textos visibles nunca muestran la palabra ROM (catálogo y perfil propio)', () => {
+    const p2 = { ...pub, title: 'Pack ROMs', description: 'Rom para winlator' };
+    const r = correr('/items', [p2])[0];
+    assert.strictEqual(r.title, 'Pack VERSIONES'); assert.strictEqual(r.description, 'Versión para winlator');
+    const yo = correr('/items/user/pepe', [p2], { yo: 'pepe' })[0];
+    assert.strictEqual(yo.description, 'Versión para winlator'); assert.strictEqual(yo.link, pub.link);
+    assert.strictEqual(require('../modulos/textoPublico').sinPalabrasVetadas('Roma y el romero'), 'Roma y el romero');
+});
 console.log(`\nsinEnlace: ${passed} pruebas OK`);
