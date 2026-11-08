@@ -157,7 +157,7 @@ const mezclar = async (n, dur, cues, videoMudo, salida) => {
   fs.unlinkSync(sfxWav);
 };
 
-module.exports = { mezclar, GEN, VIDEOS };
+module.exports = { mezclar, GEN, VIDEOS, SR, sintetizarPista, util: { tono, whoosh, ruidoFiltrado, sumar, retrasar, ganancia, campana2, mono, ruido, rnd, lpK, sat } };
 
 /* Solo remezclar el audio de un video ya grabado (sin volver a grabar cuadros):
  *   node audio.js 1   → rehace el audio de upgames-patrocinio-1.mp4 */
