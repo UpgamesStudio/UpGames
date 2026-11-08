@@ -2,12 +2,21 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url><loc>https://upgames.games/public/biblioteca.html</loc><lastmod>2026-11-07</lastmod><changefreq>hourly</changefreq><priority>1.0</priority></url>
 <url><loc>https://upgames.games/public/live.html</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>
-<url><loc>https://upgames.games/public/biblioteca.html?id=6aee95bed50e6d2754da3654</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://upgames.games/public/biblioteca.html?id=6aee9550d50e6d2754da3616</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://upgames.games/public/biblioteca.html?id=6aedeb7281c7add0fef07b1f</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://upgames.games/public/biblioteca.html?id=6aed638281c7add0fef073d0</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/j/mods-de-resident-evil.html</loc><lastmod>2026-10-27</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/mods-de-need-for-speed-most-wanted-2005.html</loc><lastmod>2026-03-13</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/mods-de-dark-souls-remastered.html</loc><lastmod>2026-03-13</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/mods-de-project-zomboid.html</loc><lastmod>2026-03-13</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/juegos-para-winlator.html</loc><lastmod>2026-03-14</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/juegos-para-gamehub.html</loc><lastmod>2026-10-27</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/juegos-y-mods-para-android.html</loc><lastmod>2026-11-03</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/j/mods-de-rendimiento.html</loc><lastmod>2026-10-28</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://upgames.games/public/p/need-for-speed-underground-2-mod-6aef992adbe583e046e2035c.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/p/apex-gp-racing-trailer-oficial-6aee95bed50e6d2754da3654.html</loc><lastmod>2026-11-08</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/p/apex-gp-upgames-6aee9550d50e6d2754da3616.html</loc><lastmod>2026-11-08</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/p/upgames-6aedeb7281c7add0fef07b1f.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/p/upgames-6aed638281c7add0fef073d0.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/gran-velocita-mod-offline-6aea367681c7add0fef0570b.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://upgames.games/public/p/grid-autosport-mobile-6ae9ea0481c7add0fef05196.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://upgames.games/public/p/grid-autosport-mobile-6ae9ea0481c7add0fef05196.html</loc><lastmod>2026-11-08</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/f1-racing-mobile-mod-6ae9cd5781c7add0fef04f9f.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/real-racing-3-mod-dinero-ilimitado-6ae9738d81c7add0fef04b9f.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/halo-ce-mod-compatibilidad-6ae2948b0e686a57d884c50c.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -51,8 +60,8 @@
 <url><loc>https://upgames.games/public/p/mods-para-project-zomboid-698fa0c20570f431e283ae6b.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/project-zomdroid-launcher-para-android-698f9e920570f431e283acad.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 <url><loc>https://upgames.games/public/p/dar-souls-3-mod-de-rendimiento-698c1045c3da7e6da551dc00.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://upgames.games/public/u/upgames.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
-<url><loc>https://upgames.games/public/u/keroxenee.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
+<url><loc>https://upgames.games/public/u/keroxenee.html</loc><lastmod>2026-11-08</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
+<url><loc>https://upgames.games/public/u/upgames.html</loc><lastmod>2026-11-08</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://upgames.games/public/u/kale_ab.html</loc><lastmod>2026-11-07</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://upgames.games/public/terminos_condiciones.html</loc><changefreq>monthly</changefreq><priority>0.2</priority></url>
 <url><loc>https://upgames.games/public/politica-privacidad.html</loc><changefreq>monthly</changefreq><priority>0.2</priority></url>
