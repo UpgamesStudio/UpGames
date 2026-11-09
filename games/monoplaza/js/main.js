@@ -486,7 +486,7 @@ function ponerEtalonado(hora) {
   [u.contraste.value, u.saturacion.value, u.calidez.value, u.vineta.value] = v;
   // acabado de cámara de cine en alta y ultra: nitidez fina y una pizca de aberración en los bordes
   u.nitidez.value = calidad >= 3 ? 0.55 : calidad >= 2 ? 0.4 : 0;
-  u.aberracion.value = calidad >= 2 && ajustes.aberracion !== false ? 0.012 : 0;
+  u.aberracion.value = calidad >= 2 && ajustes.aberracion !== false ? 0.006 : 0;
 }
 // Retrovisores de verdad en el coche del jugador: una textura pequeña con dos mitades (izquierda
 // y derecha), cada una con su cámara mirando hacia atrás desde el espejo. Se pinta un lado por

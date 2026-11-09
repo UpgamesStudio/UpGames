@@ -129,7 +129,20 @@ export function matFlanco(compuesto, calidad = 2) {
   textoEnArco(x, 'APEX GP  18"', R * 0.735, Math.PI / 2, false);
   textoEnArco(x, (COMPUESTOS[compuesto]?.nombre || '').toUpperCase(), R * 0.735, -Math.PI / 2, false);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
-  const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.78, metalness: 0 });
+  // rugosidad: la goma es mate y la pintura de los rótulos y las franjas, satinada
+  const cr = document.createElement('canvas'); cr.width = cr.height = N;
+  const xr = cr.getContext('2d'), src = x.getImageData(0, 0, N, N).data, dst = xr.createImageData(N, N);
+  for (let i = 0; i < src.length; i += 4) {
+    const mx = Math.max(src[i], src[i + 1], src[i + 2]);
+    const r = mx > 70 ? 0.42 : 0.86 - (((i >> 2) * 2654435761 >>> 0) % 7) * 0.012;   // micro variación de la goma
+    dst.data[i] = dst.data[i + 1] = dst.data[i + 2] = r * 255; dst.data[i + 3] = 255;
+  }
+  xr.putImageData(dst, 0, 0);
+  const tr = new THREE.CanvasTexture(cr); tr.anisotropy = 8;
+  // brillo aterciopelado de la goma (sheen): la luz rasante resbala por el flanco como en un neumático real
+  const m = calidad >= 2
+    ? new THREE.MeshPhysicalMaterial({ map: t, roughnessMap: tr, roughness: 1, metalness: 0, sheen: 0.45, sheenRoughness: 0.75, sheenColor: 0x4a4a52 })
+    : new THREE.MeshStandardMaterial({ map: t, roughnessMap: tr, roughness: 1, metalness: 0 });
   cacheFlanco.set(clave, m);
   return m;
 }
@@ -174,17 +187,18 @@ export function texturaLlanta(N = 512) {
 }
 
 /** Máscara del brillo del disco de freno al rojo visto entre los radios (blanco = brilla). */
-export function mascaraBrilloLlanta(N = 128) {
+export function mascaraBrilloLlanta(N = 256) {
   const cv = document.createElement('canvas'); cv.width = cv.height = N;
   const x = cv.getContext('2d'), R = N / 2;
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.translate(R, R);
   const g = x.createRadialGradient(0, 0, R * 0.3, 0, 0, R * 0.88);
-  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.3, 'rgba(255,255,255,0.75)'); g.addColorStop(0.85, 'rgba(255,200,160,0.6)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  // el brillo está en la pista del disco (corona exterior), no en la campana del centro
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.35, 'rgba(255,255,255,0.15)'); g.addColorStop(0.6, 'rgba(255,255,255,0.8)'); g.addColorStop(0.88, 'rgba(255,200,160,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
   x.fillStyle = g; x.beginPath(); x.arc(0, 0, R * 0.88, 0, Math.PI * 2); x.fill();
   x.fillStyle = '#000';
   for (let k = 0; k < RADIOS; k++) {
     x.save(); x.rotate(k * Math.PI * 2 / RADIOS);
-    x.beginPath(); x.moveTo(R * 0.26, -R * 0.085); x.lineTo(R * 0.9, -R * 0.045); x.lineTo(R * 0.9, R * 0.045); x.lineTo(R * 0.26, R * 0.085); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(R * 0.26, -R * 0.105); x.lineTo(R * 0.9, -R * 0.06); x.lineTo(R * 0.9, R * 0.06); x.lineTo(R * 0.26, R * 0.105); x.closePath(); x.fill();
     x.restore();
   }
   return new THREE.CanvasTexture(cv);
@@ -193,8 +207,9 @@ export function mascaraBrilloLlanta(N = 128) {
 let matsLlanta = null;
 function materialesLlanta() {
   if (!matsLlanta) matsLlanta = {
-    cara: new THREE.MeshStandardMaterial({ map: texturaLlanta(), roughness: 0.38, metalness: 0.55 }),
-    labio: new THREE.MeshStandardMaterial({ color: 0xc9cdd3, roughness: 0.22, metalness: 1 }),
+    // llanta de magnesio forjado pintada con barniz y labio mecanizado brillante
+    cara: new THREE.MeshPhysicalMaterial({ map: texturaLlanta(), roughness: 0.32, metalness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.1 }),
+    labio: new THREE.MeshPhysicalMaterial({ color: 0xd2d6dc, roughness: 0.16, metalness: 1 }),
     tambor: new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.45, metalness: 0.7, side: THREE.DoubleSide }),
   };
   return matsLlanta;
@@ -268,7 +283,7 @@ function materialGomaLisa(compuesto) {
     x.fillStyle = '#1a1a1c'; x.fillRect(0, 64 * 0.3, 512, 64 * 0.4);
     dibujoBanda(x, 512, 64, compuesto);
     const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping;
-    gomaLisa.set(compuesto, new THREE.MeshStandardMaterial({ map: t, roughness: 0.88 }));
+    gomaLisa.set(compuesto, new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.82, sheen: 0.35, sheenRoughness: 0.8, sheenColor: 0x45454c }));
   }
   return gomaLisa.get(compuesto);
 }

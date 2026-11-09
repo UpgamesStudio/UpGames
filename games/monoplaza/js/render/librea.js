@@ -303,7 +303,7 @@ function texturaEscamas() {
   ctx.putImageData(img, 0, 0);
   _escamas = new THREE.CanvasTexture(cv);
   _escamas.wrapS = _escamas.wrapT = THREE.RepeatWrapping;
-  _escamas.repeat.set(48, 48);
+  _escamas.repeat.set(90, 90);
   _escamas.anisotropy = 4;
   return _escamas;
 }
@@ -314,9 +314,9 @@ function materialLibreaBase(textura, acabado, fisico) {
   if (!fisico) return new THREE.MeshStandardMaterial({ ...base, metalness: acabado === 'cromado' || acabado === 'dorado' ? 0.8 : 0.3, roughness: acabado === 'mate' ? 0.8 : 0.35 });
   switch (acabado) {
     case 'mate': return new THREE.MeshPhysicalMaterial({ ...base, metalness: 0.1, roughness: 0.78, clearcoat: 0 });
-    case 'perlado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.22), metalness: 0.3, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0.8, iridescenceIOR: 1.6, sheen: 0.4 });
+    case 'perlado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.14), metalness: 0.3, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0.8, iridescenceIOR: 1.6, sheen: 0.4 });
     case 'cromado': return new THREE.MeshPhysicalMaterial({ ...base, metalness: 1, roughness: 0.07, clearcoat: 1, clearcoatRoughness: 0.02 });
-    case 'dorado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.12), color: 0xffd27a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.03 });
-    default: return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.16), metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06 });
+    case 'dorado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.08), color: 0xffd27a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.03 });
+    default: return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.1), metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.06 });
   }
 }

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COCHE, CAT, COMPUESTOS } from '../config.js';
 import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS, formaDe } from './carroceriaCerrada.js';
-import { texturaCarbono } from './texturas.js';
+import { texturaCarbono, texturaCarbonoNormal } from './texturas.js';
 import { proyectarUV, dibujarLibrea, materialLibrea } from './librea.js';
 import { normalPliegues } from './personas.js';
 import { crearPiloto } from './piloto.js';
@@ -318,9 +318,9 @@ const texturaBrilloLlanta = () => (_brilloLlanta ||= mascaraBrilloLlanta());
 const cacheMat = new Map();
 const CREAR_MAT = {
   // fibra de carbono barnizada: el tejido se ve y la capa de barniz da reflejos
-  carbono: () => new THREE.MeshPhysicalMaterial({ map: texturaCarbono(), roughness: 0.42, metalness: 0.25, color: 0xd2d2d2, clearcoat: 0.9, clearcoatRoughness: 0.12 }),
+  carbono: () => new THREE.MeshPhysicalMaterial({ map: texturaCarbono(), normalMap: texturaCarbonoNormal(), normalScale: new THREE.Vector2(0.55, 0.55), roughness: 0.34, metalness: 0.2, color: 0xe6e6e6, clearcoat: 1, clearcoatRoughness: 0.06 }),
   negro: () => new THREE.MeshStandardMaterial({ color: 0x0a0a0b, roughness: 0.6 }),
-  metal: () => new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.25, metalness: 1 }),
+  metal: () => new THREE.MeshPhysicalMaterial({ color: 0xa4aab1, roughness: 0.22, metalness: 1 }),
   goma: () => new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.88, metalness: 0 }),
   // el neumático es un perfil abierto (se ve también su cara interior junto a la llanta)
   gomaNeum: () => new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.88, metalness: 0, side: THREE.DoubleSide }),
@@ -908,7 +908,7 @@ export function crearModelo(opc) {
   // cara de la llanta: entre los radios se ve el disco, que brilla al rojo cuando está caliente
   // (se ve desde fuera y desde cualquier ángulo); una por eje
   const brilloLlanta = texturaBrilloLlanta();
-  const nuevaTapa = () => new THREE.MeshStandardMaterial({ map: texLlanta(), roughness: 0.38, metalness: 0.55, emissive: new THREE.Color(0xff5a14), emissiveMap: brilloLlanta, emissiveIntensity: 0 });
+  const nuevaTapa = () => new THREE.MeshPhysicalMaterial({ map: texLlanta(), roughness: 0.32, metalness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.1, emissive: new THREE.Color(0xff3c0c), emissiveMap: brilloLlanta, emissiveIntensity: 0 });
   const matTapaDel = nuevaTapa(), matTapaTras = nuevaTapa();
   const matFreno = matComun('freno', () => new THREE.MeshStandardMaterial({ color: 0x1c1c1f, roughness: 0.5, metalness: 0.4 }));
   const segN = calidad >= 2 ? 64 : calidad >= 1 ? 40 : 28;
@@ -1191,11 +1191,12 @@ export function crearModelo(opc) {
       // frenos al rojo (por encima de ~550 °C): el disco y su brillo a través de la llanta
       for (let k = 0; k < 4; k++) {
         const tf = car.ruedas[k]?.tFreno ?? 0;
-        ruedas[k].matFreno.emissiveIntensity = Math.max(0, Math.min(3.5, (tf - 550) / 160));
+        ruedas[k].matFreno.emissiveIntensity = Math.max(0, Math.min(2.5, (tf - 550) / 180));
       }
       const tfD = Math.max(car.ruedas[0]?.tFreno ?? 0, car.ruedas[1]?.tFreno ?? 0), tfT = Math.max(car.ruedas[2]?.tFreno ?? 0, car.ruedas[3]?.tFreno ?? 0);
-      matTapaDel.emissiveIntensity = Math.max(0, Math.min(7, (tfD - 560) / 70));
-      matTapaTras.emissiveIntensity = Math.max(0, Math.min(7, (tfT - 560) / 70));
+      // (tope bajo: el disco al rojo asoma entre los radios, sin que el resplandor tape la llanta)
+      matTapaDel.emissiveIntensity = Math.max(0, Math.min(1.6, (tfD - 560) / 180));
+      matTapaTras.emissiveIntensity = Math.max(0, Math.min(1.6, (tfT - 560) / 180));
       // también en el disco borroso de la llanta a alta velocidad (si no, lo tapaba)
       for (let k = 0; k < 4; k++) ruedas[k].borroso.material.emissiveIntensity = (k < 2 ? matTapaDel : matTapaTras).emissiveIntensity;
       // calor del escape con el acelerador a fondo
