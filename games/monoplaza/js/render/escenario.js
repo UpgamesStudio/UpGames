@@ -224,17 +224,8 @@ export function construirEscenario(scene, renderer, c, calidad) {
   const sol = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - SOL_ELEVACION), THREE.MathUtils.degToRad(SOL_AZIMUT));
   u.sunPosition.value.copy(sol);
   scene.add(cielo);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const escenaCielo = new THREE.Scene();
-  const cielo2 = new Sky(); cielo2.scale.setScalar(1000);
-  for (const k in u) if (cielo2.material.uniforms[k]) cielo2.material.uniforms[k].value = u[k].value;
-  escenaCielo.add(cielo2);
-  // suelo verdoso en el mapa de entorno para reflejos creíbles en la pintura
-  const sueloEnv = new THREE.Mesh(new THREE.CircleGeometry(900, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x4d5a3a }));
-  sueloEnv.position.y = -20; escenaCielo.add(sueloEnv);
-  const env = pmrem.fromScene(escenaCielo, 0.02).texture;
-  scene.environment = env;
-  pmrem.dispose();
+  res.cielo = cielo; res.calidad = calidad;
+  entornoCielo(res, scene, renderer, 0x4d5a3a);
   // bruma del color del horizonte: lo lejano se aclara y azulea (perspectiva aérea), da profundidad
   scene.fog = new THREE.Fog(0xb4c8de, 420, calidad >= 2 ? 5200 : 3200);
   res.sol = sol;
@@ -255,7 +246,6 @@ export function construirEscenario(scene, renderer, c, calidad) {
   // luz del cielo: rellena las sombras de azul (de arriba) y de verde (rebote del césped)
   res.hemi = new THREE.HemisphereLight(0xb8d4ff, 0x4f5c2e, 0.55);
   scene.add(res.hemi);
-  res.cielo = cielo;
   res.base = { sol: luzSol.intensity, fogColor: scene.fog.color.clone(), fogFar: scene.fog.far, exp: 0.86, hemi: 0.55 };
   scene.environmentIntensity = 0.75;
   // nubes altas que se mueven despacio
@@ -266,7 +256,7 @@ export function construirEscenario(scene, renderer, c, calidad) {
   for (const t of [asf.mapa, asf.normal, asf.rugosidad]) { t.anisotropy = anis; }
   const matAsfalto = new THREE.MeshStandardMaterial({
     map: asf.mapa, normalMap: calidad >= 2 ? asf.normal : null, roughnessMap: asf.rugosidad,
-    roughness: 1, metalness: 0, color: 0x6c6d72, normalScale: new THREE.Vector2(0.6, 0.6),
+    roughness: 1, metalness: 0, color: 0x6c6d72, normalScale: new THREE.Vector2(0.45, 0.45),
   });
   const matEscape = matAsfalto.clone(); matEscape.color = new THREE.Color(0x85878d);
   res.matAsfalto = matAsfalto;
@@ -545,6 +535,10 @@ export function construirEscenario(scene, renderer, c, calidad) {
   arboles(scene, c, terreno, calidad, urbano ? 140 : 48);
   montanas(scene, terreno);
 
+  // reflejos del circuito de verdad: desde 8 m sobre la recta de meta se ven gradas, boxes y árboles
+  // (sobre la parrilla, lejos del pórtico del semáforo, que taparía el cielo)
+  { const mp = c.muestra(c.largo - 90); res.puntoEntorno = new THREE.Vector3(mp.x, mp.y + 14, mp.z); }
+  actualizarEntorno(res, scene, renderer);
   return res;
 }
 
@@ -670,6 +664,47 @@ function focos(scene, c, calidad) {
 }
 
 /** Hora de la carrera: 'dia' | 'atardecer' | 'noche'. Cambia el cielo, las luces y los focos. */
+// --- Mapa de entorno (reflejos de pintura, cascos, cristales y charcos) ------------------------
+// En calidad alta y ultra se fotografía el circuito real con una cámara cúbica (gradas, edificios,
+// árboles, focos y el cielo de esa hora) y se prefiltra con PMREM: la pintura refleja lo que hay
+// alrededor, como en los juegos de consola. En baja y media, solo el cielo con un suelo neutro.
+// Se rehace al cambiar la hora, para que de noche o al atardecer no se refleje el cielo de mediodía.
+function entornoCielo(esc, scene, renderer, colorSuelo) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const escenaCielo = new THREE.Scene();
+  const cielo2 = new Sky(); cielo2.scale.setScalar(1000);
+  const u = esc.cielo.material.uniforms;
+  for (const k in u) if (cielo2.material.uniforms[k]) cielo2.material.uniforms[k].value = u[k].value;
+  escenaCielo.add(cielo2);
+  const sueloEnv = new THREE.Mesh(new THREE.CircleGeometry(900, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: colorSuelo }));
+  sueloEnv.position.y = -20; escenaCielo.add(sueloEnv);
+  ponerEntorno(scene, pmrem.fromScene(escenaCielo, 0.02).texture);
+  pmrem.dispose();
+  cielo2.geometry.dispose(); cielo2.material.dispose(); sueloEnv.geometry.dispose(); sueloEnv.material.dispose();
+}
+function ponerEntorno(scene, env) {
+  const viejo = scene.environment;
+  scene.environment = env;
+  if (viejo && viejo !== env) viejo.dispose();
+}
+export function actualizarEntorno(esc, scene, renderer) {
+  if (!(esc.calidad >= 2 && esc.puntoEntorno)) {
+    entornoCielo(esc, scene, renderer, esc.hora === 'noche' ? 0x0c0e12 : esc.hora === 'atardecer' ? 0x4a3a2c : 0x4d5a3a);
+    return;
+  }
+  const rt = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
+  const cam = new THREE.CubeCamera(1, 26000, rt);
+  cam.position.copy(esc.puntoEntorno);
+  scene.add(cam);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  try {
+    cam.update(renderer, scene);
+    ponerEntorno(scene, pmrem.fromCubemap(rt.texture).texture);
+  } finally {
+    scene.remove(cam); pmrem.dispose(); rt.dispose();
+  }
+}
+
 export function ponerHora(esc, scene, renderer, hora = 'dia') {
   const u = esc.cielo.material.uniforms;
   const [elev, azim] = hora === 'noche' ? [-8, 215] : hora === 'atardecer' ? [3.5, 255] : [SOL_ELEVACION, SOL_AZIMUT];
@@ -693,7 +728,8 @@ export function ponerHora(esc, scene, renderer, hora = 'dia') {
     esc.base = { sol: 3.4, fogColor: new THREE.Color(0xe0a080), fogFar: 4200, exp: 0.92, hemi: 0.4 };
     esc.nubes?.material.uniforms.color.value.set(0xffb27a); if (esc.nubes) esc.nubes.material.uniforms.opacidad.value = 0.9;
     esc.hemi.color.set(0xffc8a0); esc.hemi.groundColor.set(0x504030);
-    scene.environmentIntensity = 0.7;
+    // (el cielo del atardecer da poca luz: el entorno se refuerza para que no se apague el relleno)
+    scene.environmentIntensity = 1.6;
   } else {
     esc.sol = sol;
     esc.luzSol.color.set(0xffeccc);
@@ -715,6 +751,7 @@ export function ponerHora(esc, scene, renderer, hora = 'dia') {
   scene.fog.color.copy(esc.base.fogColor); scene.fog.far = esc.base.fogFar;
   if (renderer) renderer.toneMappingExposure = esc.base.exp;
   if (esc.nubes) esc.nubes.material.uniforms.sol.value.copy(sol);
+  if (renderer) actualizarEntorno(esc, scene, renderer);
 }
 
 function cuadros() {

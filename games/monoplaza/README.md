@@ -60,6 +60,15 @@ Pensado primero para Android en horizontal: la información va en franjas finas 
 - **Radio con voz siempre**: todos los avisos del ingeniero tienen voz y subtítulo. En la app de Android usa el motor de voz del sistema (el WebView no trae síntesis de voz); en Ajustes hay un botón para probarla.
 - Rendimiento: coches lejanos sin piezas pequeñas y sombras solo de los cercanos.
 
+## Acabado visual de los coches
+
+- **Reflejos del circuito real** (calidad alta y ultra): una cámara cúbica fotografía el circuito desde la parrilla (gradas, boxes, árboles, focos y cielo) y se prefiltra con PMREM; la pintura, el casco y el carbono reflejan lo que hay alrededor. Se rehace al cambiar la hora, así que de noche y al atardecer ya no se refleja el cielo de mediodía. En baja y media, cielo de la hora con suelo neutro.
+- **Pintura metálica**: escamas finas en la capa base bajo un barniz liso (brillo, perlado y dorado), que chispean con el sol.
+- **Fibra de carbono en sarga 2×2** con relieve de las mechas bajo el barniz.
+- **Neumáticos**: goma mate con brillo aterciopelado (sheen) y rótulos y franjas satinados; llantas de magnesio barnizadas con labio mecanizado.
+- **Frenos al rojo** solo en la pista del disco, entre los radios, sin que el resplandor tape la llanta.
+- **Acabado de cámara** (alta y ultra): nitidez adaptativa por contraste y una ligera aberración cromática en los bordes.
+
 ## Rendimiento
 
 - **Resolución dinámica**: con la calidad elegida, si los FPS bajan de 50 la resolución interna baja poco a poco (hasta el 70 %) y vuelve a subir cuando sobra margen; sombras, efectos y detalle se mantienen.

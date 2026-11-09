@@ -33,6 +33,8 @@ fs.mkdirSync(dir, { recursive: true });
   for (let quedan = Math.round(+DESDE * fps); quedan > 0; quedan -= 10)
     await p.evaluate(([d, n]) => { for (let k = 0; k < n; k++) window.__paso(d, d * window.__escalaJuego(window.__virtual.tVideo)); }, [1 / fps, Math.min(10, quedan)]);
   await p.evaluate(() => { const r = window.apexTrailer.renderer; r.render = r._render; });
+  // los reflejos se generan dibujando: si la hora cambió con el dibujado apagado, se rehacen
+  await p.evaluate(() => { const T = window.apexTrailer, h = T.escenario.hora; T.aplicarHora(h === 'dia' ? 'noche' : 'dia'); T.aplicarHora(h); });
   const n0 = Math.round(+DESDE * fps), n1 = Math.round(+HASTA * fps), t0 = Date.now();
   for (let n = n0; n < n1; n++) {
     await p.evaluate((d) => window.__paso(d, d * window.__escalaJuego(window.__virtual.tVideo)), 1 / fps);

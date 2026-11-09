@@ -383,18 +383,38 @@ export function texturaPublico() {
   return aTextura(c);
 }
 
-export function texturaCarbono() {
-  const c = lienzo(64), ctx = c.getContext('2d');
-  for (let y = 0; y < 64; y += 8) for (let x = 0; x < 64; x += 8) {
-    const par = ((x + y) / 8) % 2;
-    const g = ctx.createLinearGradient(x, y, par ? x + 8 : x, par ? y : y + 8);
-    g.addColorStop(0, '#0c0c0e'); g.addColorStop(0.5, '#2a2b30'); g.addColorStop(1, '#0c0c0e');
-    ctx.fillStyle = g; ctx.fillRect(x, y, 8, 8);
+// Fibra de carbono en sarga 2×2 (como la de un monoplaza): cada mecha es un haz de fibras con
+// brillo direccional, y las mechas que van a lo ancho y a lo largo se cruzan escalonadas. Se
+// genera junto a su relieve (mapa de normales) para que el tejido se note bajo el barniz liso.
+let _carbono = null;
+function generarCarbono() {
+  if (_carbono) return _carbono;
+  const N = 256, C = 32;                         // 8×8 mechas por tesela
+  const c = lienzo(N), ctx = c.getContext('2d'), img = ctx.createImageData(N, N);
+  const alt = new Float32Array(N * N), rnd = aleatorio(91);
+  const ruidoFibra = new Float32Array(N); for (let i = 0; i < N; i++) ruidoFibra[i] = rnd();
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const cx = Math.floor(x / C), cy = Math.floor(y / C);
+    // sarga 2×2: la mecha de arriba cambia cada dos celdas, desplazada una por fila
+    const horizontal = (((cx - cy) % 4) + 4) % 4 < 2;
+    const u = horizontal ? (y % C) / C : (x % C) / C;          // posición a lo ancho de la mecha
+    const fib = horizontal ? ruidoFibra[y] : ruidoFibra[x];     // fibras sueltas a lo largo
+    const bombeo = Math.sin(Math.PI * u);                        // la mecha es abombada
+    // brillo direccional: las mechas en un sentido reflejan más que las del otro
+    const brillo = (horizontal ? 0.22 : 0.12) * bombeo + fib * 0.05;
+    const v = 0.035 + brillo * 0.55 + (1 - bombeo) * -0.02;
+    const g = Math.max(0, Math.min(1, v));
+    const i = (y * N + x) * 4;
+    img.data[i] = g * 255 * 0.96; img.data[i + 1] = g * 255 * 0.98; img.data[i + 2] = g * 255 * 1.04; img.data[i + 3] = 255;
+    alt[y * N + x] = bombeo * 0.8 + fib * 0.12;
   }
-  const t = aTextura(c);
-  t.repeat.set(6, 6);
-  return t;
+  ctx.putImageData(img, 0, 0);
+  const mapa = aTextura(c); mapa.repeat.set(6, 6);
+  const normal = normalDesdeAltura(alt, N, 1.6); normal.repeat.set(6, 6);
+  return (_carbono = { mapa, normal });
 }
+export function texturaCarbono() { return generarCarbono().mapa; }
+export function texturaCarbonoNormal() { return generarCarbono().normal; }
 
 export function texturaHumo() {
   const c = lienzo(128), ctx = c.getContext('2d');
