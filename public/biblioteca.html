@@ -43,10 +43,9 @@
 
 <!-- css:inicio -->
 <!-- Paquete de: biblioteca.css, upgames-glass.css, upgames-estilo.css, upgames-cyber.css, upgames-videos.css, upgames-ux.css (scripts/unir-css.js) -->
-<link rel="stylesheet" href="upgames-app.css?v=303bdb6ef7">
+<link rel="stylesheet" href="upgames-app.css?v=54fde7325c">
 <!-- css:fin -->
 <script src="upgames-tema.js?v=20261106d"></script>
-<script src="upgames-intro.js?v=20261108a"></script>
 <script src="upgames-musica.js?v=20261108a" defer></script>
 <!-- Widget de subida (pesado): solo se usa al publicar → se descarga cuando la página ya cargó
      y el navegador está libre (window.ugCargarCloudinary lo fuerza antes si hace falta) -->
@@ -1623,7 +1622,7 @@
   TERMS MODAL
 ══════════════════════════════════ -->
 <!-- ══════════════════════════════════════════════════════
-  BIENVENIDA — 3 pantallas, UNA vez por versión de los términos
+  BIENVENIDA — animación (6 capítulos) + reglas, UNA vez por versión de los términos
   (script.js → TERMINOS_VERSION). Si los términos cambian, solo se
   muestra un aviso pequeño, no esta bienvenida otra vez.
 ══════════════════════════════════════════════════════ -->
@@ -1633,55 +1632,78 @@
   <!-- ── TRACK DE SLIDES ── -->
   <div class="ob-track" id="ob-track">
 
-    <!-- SLIDE 0 — Impacto: un ecosistema que no existe en otro lugar + exclusividad Fundador -->
-    <div class="ob-slide obh" data-slide="0">
+    <!-- PANTALLA 0 — Bienvenida animada (js/11-bienvenida.js → ugBienvAnim): la misma información de
+         siempre contada en 6 capítulos. Al terminar, o con «Saltar», pasa a las reglas y a aceptar. -->
+    <div class="ob-slide oba" data-slide="0">
       <div class="obh-fondo" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="ob-slide-inner obh-in">
-        <div class="obh-pill"><span class="obh-dot"></span> ACCESO FUNDADOR · ERES DE LOS PRIMEROS</div>
-        <div class="obh-logo"><span>UP</span>GAMES</div>
-        <h2 class="obh-titulo">No es otra app.<br><span>Es un ecosistema que no existe en ningún otro lugar.</span></h2>
-        <p class="obh-sub">Lo que hoy haces en <b>seis apps distintas</b>, aquí está unido, conectado… <b>y te paga.</b></p>
+      <div class="oba-rejilla" aria-hidden="true"></div>
+      <div class="oba-escena" id="oba-escena">
 
-        <div class="obh-fusion" role="list">
-          <div class="obh-app" role="listitem" style="--i:0"><span>📚</span><b>Descargas</b><small>Juegos, mods y apps</small></div>
-          <div class="obh-app" role="listitem" style="--i:1"><span>▶️</span><b>Videos</b><small>De creadores reales</small></div>
-          <div class="obh-app" role="listitem" style="--i:2"><span>🔴</span><b>Lives</b><small>Con chat, regalos y Super Chat</small></div>
-          <div class="obh-app" role="listitem" style="--i:3"><span>👥</span><b>Red social</b><small>Perfiles, seguidores y chat</small></div>
-          <div class="obh-app" role="listitem" style="--i:4"><span>✦</span><b>NEXUS IA</b><small>Te conoce y te guía</small></div>
-          <div class="obh-app" role="listitem" style="--i:5"><span>🪙</span><b>UpCoins</b><small>Una moneda para todo</small></div>
-        </div>
-        <div class="obh-igual"><span>6 apps</span><i>→</i><b>1 UpGames</b></div>
+        <section class="oba-cap" data-cap="0" aria-label="Bienvenida">
+          <div class="obh-pill oba-e"><span class="obh-dot"></span> ACCESO FUNDADOR · ERES DE LOS PRIMEROS</div>
+          <div class="obh-logo oba-logo"><span>UP</span>GAMES</div>
+          <h2 class="obh-titulo">No es otra app.<br><span>Es un ecosistema que no existe en ningún otro lugar.</span></h2>
+          <p class="obh-sub oba-e">Lo que hoy haces en <b>seis apps distintas</b>, aquí está unido, conectado… <b>y te paga.</b></p>
+        </section>
 
-        <div class="obh-props">
-          <div><b>Gratis</b><small>mira y descarga, incluso sin cuenta</small></div>
-          <div><b>Te paga</b><small>ganas desde la primera descarga</small></div>
-          <div><b>Tuyo</b><small>tu perfil, tu estilo, tu comunidad</small></div>
-        </div>
+        <section class="oba-cap" data-cap="1" aria-label="Seis apps en una">
+          <div class="oba-kicker oba-e">Todo en un solo lugar</div>
+          <div class="oba-fusion" role="list">
+            <div class="oba-app" role="listitem"><span>📚</span><b>Descargas</b><small>Juegos, mods y apps</small></div>
+            <div class="oba-app" role="listitem"><span>▶️</span><b>Videos</b><small>De creadores reales</small></div>
+            <div class="oba-app" role="listitem"><span>🔴</span><b>Lives</b><small>Con chat, regalos y Super Chat</small></div>
+            <div class="oba-app" role="listitem"><span>👥</span><b>Red social</b><small>Perfiles, seguidores y chat</small></div>
+            <div class="oba-app" role="listitem"><span>✦</span><b>NEXUS IA</b><small>Te conoce y te guía</small></div>
+            <div class="oba-app" role="listitem"><span>🪙</span><b>UpCoins</b><small>Una moneda para todo</small></div>
+          </div>
+          <div class="oba-igual"><span class="oba-seis">6 apps</span><i class="oba-e">→</i><b class="oba-uno">1 UpGames</b></div>
+        </section>
 
-        <div class="obh-fundador"><span class="obh-medalla">🏛️</span><div><b>Insignia Fundador</b><small id="obh-fundador-txt">Solo para las cuentas creadas en esta etapa. No se vende y no vuelve a salir.</small></div></div>
+        <section class="oba-cap" data-cap="2" aria-label="Gratis, te paga y es tuyo">
+          <div class="oba-kicker oba-e">Así de simple</div>
+          <div class="oba-props">
+            <div class="oba-e"><b>Gratis</b><small>mira y descarga, incluso sin cuenta</small></div>
+            <div class="oba-e"><b>Te paga</b><small>ganas desde la primera descarga</small></div>
+            <div class="oba-e"><b>Tuyo</b><small>tu perfil, tu estilo, tu comunidad</small></div>
+          </div>
+          <div class="obh-fundador oba-fundador oba-e"><span class="obh-medalla">🏛️</span><div><b>Insignia Fundador</b><small id="obh-fundador-txt">Solo para las cuentas creadas en esta etapa. No se vende y no vuelve a salir.</small></div><i class="oba-brillo" aria-hidden="true"></i></div>
+        </section>
+
+        <section class="oba-cap" data-cap="3" aria-label="Gana UpCoins">
+          <div class="oba-kicker oba-kicker-cy oba-e">Crea, gana y disfruta</div>
+          <h2 class="oba-titulo">Publica una vez.<br><span>Gana UpCoins para siempre.</span></h2>
+          <div class="oba-panel oba-e">
+            <div class="oba-panel-h"><span>Descargas verificadas</span><b class="oba-num">0</b></div>
+            <div class="oba-barra"><i></i></div>
+            <div class="oba-premio">🪙 <b>+50 UpCoins</b> <small>por cada 1.000</small></div>
+          </div>
+          <div class="oba-fila oba-e"><span class="oba-ic">🎁</span><span>Regalos, Super Chats y apoyos de tus fans</span><b>25 % para ti</b></div>
+          <div class="oba-fila oba-e"><span class="oba-ic">💸</span><span>Retira lo ganado</span><b>desde 500 UC</b></div>
+          <div class="oba-metodos"><i class="oba-e">PayPal</i><i class="oba-e">Nequi</i><i class="oba-e">Daviplata</i><i class="oba-e">Banco</i><i class="oba-e">Mercado Pago</i></div>
+        </section>
+
+        <section class="oba-cap" data-cap="4" aria-label="Y además">
+          <div class="oba-kicker oba-e">Y además</div>
+          <div class="oba-feat oba-e"><ion-icon name="star-outline"></ion-icon><div><b>Premium</b><small>sin anuncios, NEXUS ilimitado y más visibilidad</small></div></div>
+          <div class="oba-feat oba-e"><ion-icon name="sparkles-outline"></ion-icon><div><b>Misiones semanales</b><small>personaliza tu perfil y gana UpCoins</small></div></div>
+          <div class="oba-feat oba-e"><ion-icon name="hardware-chip-outline"></ion-icon><div><b>NEXUS IA</b><small>te recomienda, resuelve dudas y te guía · 10 mensajes gratis al día</small></div></div>
+          <p class="oba-nota oba-e">1 UpCoin = US$0,02. Lo que ganas como creador se retira como dinero; lo que compras se usa dentro de UpGames.</p>
+        </section>
+
+        <section class="oba-cap" data-cap="5" aria-label="Reglas claras">
+          <div class="oba-kicker oba-e">Reglas claras</div>
+          <h2 class="oba-titulo">Lo esencial,<br><span>en 30 segundos.</span></h2>
+          <div class="oba-reglas">
+            <div class="oba-e"><span>📚</span><small>La biblioteca son referencias</small></div>
+            <div class="oba-e"><span>▶</span><small>Cada creador responde por lo que publica</small></div>
+            <div class="oba-e"><span>🛡</span><small>Tus datos y pagos, protegidos</small></div>
+          </div>
+        </section>
       </div>
     </div>
-    <!-- SLIDE 1 — Gana y usa tus UpCoins -->
+
+    <!-- PANTALLA 1 — Reglas claras + aceptar (también a donde lleva «Saltar») -->
     <div class="ob-slide" data-slide="1">
-      <div class="ob-slide-inner">
-        <div class="ob-kicker ob-kicker-cy">Crea, gana y disfruta</div>
-        <h2 class="ob-title-sm">Publica una vez.<br><span class="ob-accent-g">Gana UpCoins para siempre.</span></h2>
-        <div class="ob-cpm-card">
-          <div class="ob-cpm-row"><span class="ob-cpm-label">Por cada 1.000 descargas verificadas</span><span class="ob-cpm-val">🪙 50 UpCoins</span></div>
-          <div class="ob-cpm-row ob-cpm-row-sub"><span class="ob-cpm-label">Regalos, Super Chats y apoyos de tus fans</span><span class="ob-cpm-val-sm">25 % para ti</span></div>
-          <div class="ob-cpm-row ob-cpm-row-sub"><span class="ob-cpm-label">Retira lo ganado · PayPal, Nequi, Daviplata, banco o Mercado Pago</span><span class="ob-cpm-val-sm">desde 500 UC</span></div>
-        </div>
-        <div class="ob-nexus-feats">
-          <div class="ob-nfeat"><ion-icon name="star-outline"></ion-icon> <strong>Premium</strong>: sin anuncios, NEXUS ilimitado y más visibilidad</div>
-          <div class="ob-nfeat"><ion-icon name="sparkles-outline"></ion-icon> Personaliza tu perfil y gana UpCoins con <strong>misiones semanales</strong></div>
-          <div class="ob-nfeat"><ion-icon name="hardware-chip-outline"></ion-icon> <strong>NEXUS IA</strong> te recomienda, resuelve dudas y te guía (10 mensajes gratis al día)</div>
-        </div>
-        <p class="ob-note">1 UpCoin = US$0,02. Lo que ganas como creador se retira como dinero; lo que compras se usa dentro de UpGames.</p>
-      </div>
-    </div>
-
-    <!-- SLIDE 2 — Reglas claras + aceptar -->
-    <div class="ob-slide" data-slide="2">
       <div class="ob-slide-inner">
         <div class="ob-kicker">Reglas claras</div>
         <h2 class="ob-title-sm">Lo esencial,<br><span class="ob-accent-g">en 30 segundos.</span></h2>
@@ -1709,11 +1731,7 @@
 
   <!-- ── FOOTER FIJO: dots + botón siguiente ── -->
   <div class="ob-footer" id="ob-footer">
-    <div class="ob-dots" id="ob-dots">
-      <span class="ob-dot active" data-i="0"></span>
-      <span class="ob-dot" data-i="1"></span>
-      <span class="ob-dot" data-i="2"></span>
-    </div>
+    <div class="oba-prog" id="oba-prog" aria-hidden="true"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
     <button class="ob-btn-next" id="ob-btn-next" aria-label="Siguiente">
       Siguiente <ion-icon name="arrow-forward-outline"></ion-icon>
     </button>
@@ -1880,7 +1898,7 @@
 <script src="upgames-metricas.js?v=20261108a"></script>
 <script src="upgames-ranking.js?v=20261108c"></script>
 <script src="upgames-ux.js?v=20261108e"></script>
-<script src="script.js?v=e4b17a96e9"></script>
+<script src="script.js?v=ca6b041839"></script>
 <script src="upgames-publicar.js?v=20261108a"></script>
 <script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>
