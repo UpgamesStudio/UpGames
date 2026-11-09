@@ -1,6 +1,6 @@
 # Intro «Entrar a la red»
 
-> **No está en la web.** Se quitó de upgames.games: la bienvenida del sitio es ahora la animación de `public/js/11-bienvenida.js`. Esta carpeta queda para generar los MP4 (redes, tráilers).
+> En la web conviven dos animaciones: esta intro (primera visita de cada dispositivo) y, después, la bienvenida animada con los términos (`public/js/11-bienvenida.js`), que espera a que la intro se cierre para empezar.
 
 Intro de UpGames: la sensación de **conectarse a la red y entrar a un mundo digital nuevo** (rejilla de luz, muros de luz que corren por el suelo, túnel de datos, ciudad de neón) con la identidad de UpGames: verde neón, blanco y negro, con un acento menta frío.
 
@@ -10,8 +10,9 @@ Dura 71,5 s y tiene botón **SALTAR**. La locución va en 8 frases separadas por
 
 | Archivo | Qué es |
 |---|---|
-| `web/index.html` + `intro.js` | La animación, en tiempo real (Canvas 2D con proyección 3D propia y resplandor). Sigue al reloj del audio, se adapta a horizontal y vertical y baja la resolución sola si el equipo no da |
-| `web/intro-audio.mp3` | Voz + música + efectos ya mezclados (1,7 MB) |
+| `public/intro/index.html` + `intro.js` | La animación, en tiempo real (Canvas 2D con proyección 3D propia y resplandor). Sigue al reloj del audio, se adapta a horizontal y vertical y baja la resolución sola si el equipo no da |
+| `public/intro/intro-audio.mp3` |
+| `public/upgames-intro.js` | La abre a pantalla completa sobre la biblioteca en la primera visita de cada dispositivo y la retira con un fundido al terminar o al saltar | Voz + música + efectos ya mezclados (1,7 MB) |
 | `marketing/intro/render.js` | Graba la intro a MP4 (16:9 y 9:16, 60 fps) para redes |
 | `marketing/intro/mezcla.js` | Genera el audio |
 
@@ -21,13 +22,13 @@ Dura 71,5 s y tiene botón **SALTAR**. La locución va en 8 frases separadas por
 
 ```bash
 cd marketing/intro
-node mezcla.js          # audio → web/intro-audio.mp3 y intro-mezcla.wav
+node mezcla.js          # audio → public/intro/intro-audio.mp3 y intro-mezcla.wav
 node render.js h        # upgames-intro-16x9.mp4
 node render.js v        # upgames-intro-9x16.mp4
 PREVIEW="0.6,30.5" node render.js h   # PNG de instantes
 ```
 
-Vista previa en el navegador: `web/index.html` (en vivo) o `web/index.html?render&w=1920&h=1080&t=30.5` (un instante).
+Vista previa en el navegador: `public/intro/index.html` (en vivo) o `public/intro/index.html?render&w=1920&h=1080&t=30.5` (un instante).
 
 ## Línea de tiempo
 
