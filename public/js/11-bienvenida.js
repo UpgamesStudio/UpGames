@@ -178,10 +178,14 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
     a.querySelector('button').onclick = () => { LS.set('upgames_terms_v', TERMINOS_VERSION); a.remove(); };
     setTimeout(() => document.body.appendChild(a), 2500);
   }
-  // Invitados: nada a pantalla completa al entrar (Google penaliza los intersticiales en
-  // móvil). Una barra elegante, que no tapa nada, abre la bienvenida con "Crear cuenta".
+  // Invitados: en su PRIMERA visita también ven la bienvenida animada completa (después de la
+  // intro) y aceptan los términos, igual que las cuentas. Si ya la aceptaron, solo queda la barra
+  // elegante que vuelve a abrirla con "Crear cuenta". (Los buscadores no ven ninguna de las dos.)
   if (window.UG_INVITADO) {
     window.ugAbrirBienvenida = () => abrir(true);
+    const yaAceptada = LS.get('upgames_terms_v') || LS.getJSON('upgames_terms_seen_ts');
+    const esBot = /bot|crawl|spider|slurp|lighthouse|headless|preview/i.test(navigator.userAgent || '');
+    if (!yaAceptada && !esBot) { abrir(false); return; }
     // Aparece cuando la persona ya mostró interés: bajó por el catálogo o abrió y cerró una ficha
     const mostrarTeaser = fn => {
       let hecho = false;
@@ -241,7 +245,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
     if (t) t.innerHTML = 'Aquí lo que creas, juegas y transmites<br><span>te genera dinero real.</span>';
     if (sub) sub.innerHTML = 'Descargas, videos, lives, red social e IA en <b>un solo ecosistema</b>. Gratis, sin límites… <b>y cada descarga te paga.</b>';
   }
-  const modoAB = invitado ? 'inv' : 'usr';
+  const modoAB = (invitado || window.UG_INVITADO) ? 'inv' : 'usr';
   ugAB('visto', modoAB);
 
   let current = 0;
@@ -306,7 +310,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
     LS.set('upgames_terms_v', TERMINOS_VERSION);
     modal.classList.remove('show');
     document.body.style.overflow = '';
-    setTimeout(() => window.UGG?.bienvenida(), 700);   // presenta la Guía de inicio (no bloquea)
+    if (!window.UG_INVITADO) setTimeout(() => window.UGG?.bienvenida(), 700);   // presenta la Guía de inicio (no bloquea)
   });
   }   // fin abrir()
 })();
