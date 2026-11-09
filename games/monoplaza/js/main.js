@@ -484,6 +484,9 @@ function ponerEtalonado(hora) {
   // de noche menos saturación y más viñeta; al atardecer, más calidez
   const v = { dia: [1.1, 1.16, 0.03, 0.2], atardecer: [1.08, 1.12, 0.06, 0.24], noche: [1.06, 1.0, -0.02, 0.3] }[hora] || [1.1, 1.16, 0.03, 0.2];
   [u.contraste.value, u.saturacion.value, u.calidez.value, u.vineta.value] = v;
+  // acabado de cámara de cine en alta y ultra: nitidez fina y una pizca de aberración en los bordes
+  u.nitidez.value = calidad >= 3 ? 0.55 : calidad >= 2 ? 0.4 : 0;
+  u.aberracion.value = calidad >= 2 && ajustes.aberracion !== false ? 0.012 : 0;
 }
 // Retrovisores de verdad en el coche del jugador: una textura pequeña con dos mitades (izquierda
 // y derecha), cada una con su cámara mirando hacia atrás desde el espejo. Se pinta un lado por
@@ -626,11 +629,27 @@ let pasoVelocidad = null;
 // vivo sin quemar la piel ni los cielos (vibrance), sombras algo frías y luces cálidas, y una
 // viñeta suave que lleva la mirada al centro. Va después de la conversión a sRGB.
 const ETALONADO = {
-  uniforms: { tDiffuse: { value: null }, contraste: { value: 1.1 }, saturacion: { value: 1.16 }, calidez: { value: 0.03 }, vineta: { value: 0.22 } },
+  uniforms: { tDiffuse: { value: null }, contraste: { value: 1.1 }, saturacion: { value: 1.16 }, calidez: { value: 0.03 }, vineta: { value: 0.22 }, nitidez: { value: 0 }, aberracion: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float contraste, saturacion, calidez, vineta; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float contraste, saturacion, calidez, vineta, nitidez, aberracion; varying vec2 vUv;
     void main() {
       vec4 t = texture2D(tDiffuse, vUv); vec3 c = t.rgb;
+      vec2 px = 1.0 / vec2(textureSize(tDiffuse, 0));
+      // aberración cromática de lente, solo hacia los bordes (el centro queda limpio)
+      if (aberracion > 0.0) {
+        vec2 dc = (vUv - 0.5) * aberracion * dot(vUv - 0.5, vUv - 0.5);
+        c.r = texture2D(tDiffuse, vUv + dc).r; c.b = texture2D(tDiffuse, vUv - dc).b;
+      }
+      // nitidez adaptativa por contraste (tipo CAS): recupera el detalle que quitan el MSAA y la
+      // resolución dinámica sin crear halos en los bordes fuertes
+      if (nitidez > 0.0) {
+        vec3 n = texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb, s = texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb;
+        vec3 e = texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb, w = texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb;
+        vec3 mn = min(c, min(min(n, s), min(e, w))), mx = max(c, max(max(n, s), max(e, w)));
+        vec3 amp = sqrt(clamp(min(mn, 1.0 - mx) / max(mx, 1e-3), 0.0, 1.0));
+        vec3 peso = -amp * nitidez * 0.2;
+        c = clamp((c + (n + s + e + w) * peso) / (1.0 + 4.0 * peso), 0.0, 1.0);
+      }
       // curva en S suave alrededor del gris medio
       c = clamp((c - 0.5) * contraste + 0.5, 0.0, 1.0);
       c = mix(c, c * c * (3.0 - 2.0 * c), (contraste - 1.0) * 1.2);
@@ -681,7 +700,7 @@ function redimensionar() {
 
 function cambiarCalidad(nueva) {
   if (nueva === calidad) return;
-  calidad = nueva;
+  calidad = nueva; if (escenario) escenario.calidad = nueva;
   renderer.setPixelRatio(pixelRatio());
   renderer.shadowMap.enabled = true;
   escenario.luzSol.castShadow = true;
