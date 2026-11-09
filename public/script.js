@@ -807,7 +807,7 @@ function fetchTimeout(url, ms=10000, opts={}) {
 async function loadContent() {
   // ── PASO 1: Caché instantáneo — mostrar ANTES de red ──
   const cachedUsers = cacheGet(CACHE_KEY_USERS);
-  if(cachedUsers) {
+  if(Array.isArray(cachedUsers)) {   // (una respuesta de error guardada antes no rompe la carga)
     cachedUsers.forEach(u=>{ mapaUsuarios[u.usuario]=u.verificadoNivel||0; });
   }
 
@@ -829,6 +829,7 @@ async function loadContent() {
   try {
     // Catálogo y usuarios EN PARALELO (antes uno esperaba al otro: ~1 RTT + consulta de más)
     const pUsers = fetchTimeout(`${API_URL}/auth/users/public`, 8000).then(ru => ru.json()).then(users => {
+      if (!Array.isArray(users)) return;   // solo se guarda una lista válida, nunca un error del servidor
       cacheSet(CACHE_KEY_USERS, users);
       users.forEach(u=>{ mapaUsuarios[u.usuario]=u.verificadoNivel||0; });
     }).catch(()=>{});
@@ -4728,11 +4729,17 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
 // ── BIENVENIDA — animación + términos ───────────────────
 (function initOnboarding() {
   const TERMINOS_VERSION = '7.3';   // súbela al cambiar los Términos o la Privacidad
-  // La bienvenida animada es OBLIGATORIA: cada dispositivo la ve (y acepta los términos en ella)
-  // aunque ya hubiera aceptado con el banner anterior. Solo deja de salir al pulsar «Acepto».
-  const BIENV_VERSION = 'anim-1';
+  // La bienvenida animada (con la aceptación de términos y privacidad) es OBLIGATORIA:
+  //  · sin cuenta: una vez al día (día de Colombia);
+  //  · con cuenta: cada vez que inicia sesión (cada inicio trae un token nuevo; se guarda
+  //    solo una huella del token, nunca el token).
+  // Se marca como vista solo al pulsar «Acepto».
   const esBot = /bot|crawl|spider|slurp|lighthouse|headless|preview/i.test(navigator.userAgent || '');
-  if (LS.get('ug_bienv_v') !== BIENV_VERSION && !esBot) {
+  const huella = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  const BIENV_MARCA = window.UG_INVITADO
+    ? 'dia:' + new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
+    : 'ses:' + huella((() => { try { return localStorage.getItem('token') || ''; } catch (_) { return ''; } })());
+  if (LS.get('ug_bienv_marca') !== BIENV_MARCA && !esBot) {
     if (window.UG_INVITADO) window.ugAbrirBienvenida = () => abrir(true);
     abrir(false);
     return;
@@ -4870,7 +4877,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
     if (invitado) { location.href = ugUrlLogin(true); return; }
     LS.setJSON('upgames_terms_seen_ts', Date.now());
     LS.set('upgames_terms_v', TERMINOS_VERSION);
-    LS.set('ug_bienv_v', BIENV_VERSION);
+    LS.set('ug_bienv_marca', BIENV_MARCA);
     modal.classList.remove('show');
     document.body.style.overflow = '';
     if (!window.UG_INVITADO) setTimeout(() => window.UGG?.bienvenida(), 700);   // presenta la Guía de inicio (no bloquea)
