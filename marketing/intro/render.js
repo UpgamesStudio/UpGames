@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Graba la intro (public/intro/index.html) cuadro a cuadro.
+ * Graba la intro (web/index.html) cuadro a cuadro.
  *   node render.js h        → upgames-intro-16x9.mp4 (1920×1080, 60 fps, con audio)
  *   node render.js v        → upgames-intro-9x16.mp4 (1080×1920)
  *   PREVIEW="0.6,8.5,31" node render.js h   → PNG de esos instantes
- * El audio es public/intro/intro-audio.mp3 (lo genera mezcla.js).
+ * El audio es web/intro-audio.mp3 (lo genera mezcla.js).
  */
 'use strict';
 const { chromium } = require('playwright');
@@ -17,7 +17,7 @@ const fs = require('fs');
   const [w, h] = f === 'v' ? [1080, 1920] : [1920, 1080];
   const fps = +(process.env.FPS || 60);
   const salida = path.join(__dirname, `upgames-intro-${f === 'v' ? '9x16' : '16x9'}.mp4`);
-  const pag = path.join(__dirname, '..', '..', 'public', 'intro', 'index.html');
+  const pag = path.join(__dirname, 'web', 'index.html');
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   p.on('pageerror', e => console.error('ERROR página:', e.message));

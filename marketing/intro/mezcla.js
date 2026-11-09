@@ -7,7 +7,7 @@
  *      justo al salir del túnel; baja sola cuando habla la voz.
  *   3. Efectos sintetizados en los instantes de INTRO.SFX.
  *   4. Normaliza a −14 LUFS → intro-mezcla.wav (para los MP4) y
- *      public/intro/intro-audio.mp3 (el que suena en la web).
+ *      web/intro-audio.mp3 (el que usa la versión en vivo).
  *   node mezcla.js
  */
 'use strict';
@@ -36,7 +36,7 @@ Object.assign(A.GEN, {
 });
 
 (async () => {
-  const pag = path.join(__dirname, '..', '..', 'public', 'intro', 'index.html');
+  const pag = path.join(__dirname, 'web', 'index.html');
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 640, height: 360 } });
   await p.goto(`file://${pag}?render&w=640&h=360`);
@@ -67,7 +67,7 @@ Object.assign(A.GEN, {
   const ln = `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${j.input_i}:measured_TP=${j.input_tp}:measured_LRA=${j.input_lra}:measured_thresh=${j.input_thresh}:offset=${j.target_offset}:linear=true`;
   const wav = path.join(__dirname, 'intro-mezcla.wav');
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...ent, '-filter_complex', grafo + `;[mix]${ln},alimiter=limit=0.89,aresample=${SR}[o]`, '-map', '[o]', '-c:a', 'pcm_s16le', wav], { stdio: 'inherit' });
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', '192k', path.join(__dirname, '..', '..', 'public', 'intro', 'intro-audio.mp3')], { stdio: 'inherit' });
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', '192k', path.join(__dirname, 'web', 'intro-audio.mp3')], { stdio: 'inherit' });
   fs.unlinkSync(sfx);
-  console.log('Listo: intro-mezcla.wav y public/intro/intro-audio.mp3 ·', cues.length, 'efectos ·', n, 'frases');
+  console.log('Listo: intro-mezcla.wav y web/intro-audio.mp3 ·', cues.length, 'efectos ·', n, 'frases');
 })();

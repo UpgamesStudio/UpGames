@@ -891,3 +891,84 @@ html[data-tema="cyber"] .ugm-disco { background: radial-gradient(circle, #03060C
 /* Con el aviso de bienvenida abajo, el control sube para no quedar tapado */
 body:has(#obh-teaser) .ugm { bottom: calc(var(--nav-h, 72px) + 150px + env(safe-area-inset-bottom)); }
 .ugm { transition: bottom .8s cubic-bezier(.16,1,.3,1); }
+
+/* ═════════ Bienvenida animada (js/11-bienvenida.js → ugBienvAnim) ═════════
+   6 capítulos con la información de la bienvenida; al terminar o con «Saltar» → reglas y aceptar. */
+#onboarding-modal .oba { padding: 0; overflow: hidden; }
+.oba-rejilla { position: absolute; left: -50%; right: -50%; bottom: -8%; height: 46%; z-index: 0; pointer-events: none; opacity: .35;
+  background-image: linear-gradient(rgba(50,213,131,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(90,200,250,.18) 1px, transparent 1px); background-size: 46px 46px;
+  transform: perspective(320px) rotateX(64deg); transform-origin: 50% 100%; -webkit-mask-image: linear-gradient(to top, #000, transparent 85%); mask-image: linear-gradient(to top, #000, transparent 85%);
+  animation: obaRejilla 2.8s linear infinite; }
+@keyframes obaRejilla { to { background-position: 0 46px; } }
+.oba-escena { position: absolute; inset: 0; z-index: 1; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.oba-cap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center;
+  padding: calc(58px + env(safe-area-inset-top, 0px)) 22px 14px; opacity: 0; visibility: hidden; will-change: opacity, transform; }
+.oba-e, .oba-w, .oba-app { will-change: opacity, transform; }
+.oba-w { display: inline-block; white-space: pre; }
+.oba-cap .obh-pill { margin-top: 0; }
+.oba-logo { margin: 4px 0 0; font-size: 2.6rem; }
+.oba-logo span { background: none; -webkit-text-fill-color: initial; }
+.oba-logo > span .oba-w { background: linear-gradient(135deg, #32D583, #5AC8FA); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.oba-cap .obh-titulo { font-size: 1.5rem; margin: 2px 0 0; }
+.oba-cap .obh-titulo > span { animation: none; background: none; -webkit-text-fill-color: initial; display: block; }
+.oba-cap .obh-titulo .oba-w, .oba-cap .oba-titulo .oba-w { display: inline-block; margin: 0; }
+.oba-cap .obh-titulo span .oba-w { background: linear-gradient(90deg, #32D583, #5AC8FA); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.oba-cap .obh-sub { margin: 0 auto; }
+.oba-kicker { font-size: .7rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: #32D583; }
+.oba-kicker-cy { color: #5AC8FA; }
+.oba-titulo { margin: 0; font-size: 1.55rem; line-height: 1.18; font-weight: 900; color: #fff; }
+.oba-titulo span .oba-w { color: #32D583; }
+/* 1 · seis apps */
+.oba-fusion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 420px; }
+.oba-app { padding: 14px 6px 11px; border-radius: 16px; background: linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.12); opacity: 0; }
+.oba-app span { display: block; font-size: 1.55rem; line-height: 1; }
+.oba-app b { display: block; margin-top: 7px; font-size: .8rem; color: #fff; }
+.oba-app small { display: block; margin-top: 3px; font-size: .64rem; color: #9aa1af; line-height: 1.25; }
+.oba-igual { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 6px; font-weight: 900; }
+.oba-igual i { font-style: normal; color: #32D583; font-size: 1.2rem; opacity: 0; }
+.oba-seis { position: relative; color: #6c7180; font-size: 1rem; opacity: 0; --tachado: 0%; }
+.oba-seis::after { content: ''; position: absolute; left: -2px; top: 52%; height: 2px; width: var(--tachado); background: #ff6b7a; }
+.oba-uno { padding: 9px 18px; border-radius: 999px; background: linear-gradient(135deg, #32D583, #5AC8FA); color: #06210f; font-size: 1.15rem; opacity: 0; }
+/* 2 · propuestas + fundador */
+.oba-props { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; max-width: 380px; }
+.oba-props div { display: flex; align-items: baseline; gap: 12px; padding: 14px 16px; border-radius: 14px; text-align: left; background: rgba(10,11,15,.6); border: 1px solid rgba(50,213,131,.25); opacity: 0; }
+.oba-props b { min-width: 78px; font-size: 1.1rem; color: #32D583; }
+.oba-props small { font-size: .82rem; color: #b9bfcc; line-height: 1.3; }
+.oba-fundador { position: relative; overflow: hidden; width: 100%; max-width: 380px; margin: 4px 0 0; opacity: 0; }
+.oba-fundador .obh-medalla { display: inline-block; }
+.oba-brillo { position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255,230,150,.35), transparent); pointer-events: none; }
+/* 3 · ganancias */
+.oba-panel { width: 100%; max-width: 380px; padding: 16px 18px; border-radius: 16px; text-align: left; background: rgba(10,14,20,.75); border: 1px solid rgba(50,213,131,.35); box-shadow: 0 18px 40px -20px rgba(50,213,131,.6); opacity: 0; }
+.oba-panel-h { display: flex; justify-content: space-between; align-items: baseline; font-size: .78rem; color: #a3a8b6; }
+.oba-num { font-size: 1.6rem; color: #fff; font-variant-numeric: tabular-nums; }
+.oba-barra { height: 8px; margin: 10px 0 12px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.oba-barra i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #32D583, #5AC8FA); box-shadow: 0 0 12px rgba(50,213,131,.8); }
+.oba-premio { display: flex; align-items: baseline; gap: 8px; font-size: 1.4rem; opacity: 0; }
+.oba-premio b { color: #32D583; font-size: 1.35rem; }
+.oba-premio small { color: #a3a8b6; font-size: .75rem; }
+.oba-fila { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 380px; padding: 10px 14px; border-radius: 12px; text-align: left; font-size: .8rem; color: #c9ced8; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); opacity: 0; }
+.oba-fila span:nth-child(2) { flex: 1; line-height: 1.3; }
+.oba-fila b { color: #32D583; white-space: nowrap; }
+.oba-ic { font-size: 1.15rem; }
+.oba-metodos { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 380px; }
+.oba-metodos i { font-style: normal; font-size: .7rem; font-weight: 800; padding: 5px 10px; border-radius: 99px; color: #dfe4ea; background: rgba(90,200,250,.1); border: 1px solid rgba(90,200,250,.3); opacity: 0; }
+/* 4 · funciones */
+.oba-feat { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 380px; padding: 14px 16px; border-radius: 14px; text-align: left; background: rgba(10,14,20,.7); border: 1px solid rgba(50,213,131,.25); opacity: 0; }
+.oba-feat ion-icon { flex-shrink: 0; font-size: 1.5rem; color: #32D583; padding: 9px; border-radius: 12px; background: rgba(50,213,131,.12); }
+.oba-feat b { display: block; color: #fff; font-size: .95rem; }
+.oba-feat small { display: block; margin-top: 2px; color: #a3a8b6; font-size: .78rem; line-height: 1.3; }
+.oba-nota { max-width: 380px; margin: 4px 0 0; font-size: .72rem; color: #8d93a3; line-height: 1.4; opacity: 0; }
+/* 5 · reglas */
+.oba-reglas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; margin-top: 6px; }
+.oba-reglas div { padding: 16px 8px; border-radius: 16px; background: rgba(10,14,20,.7); border: 1px solid rgba(50,213,131,.25); opacity: 0; }
+.oba-reglas span { display: block; font-size: 1.8rem; }
+.oba-reglas small { display: block; margin-top: 8px; font-size: .72rem; color: #c9ced8; line-height: 1.3; }
+/* barra de progreso por capítulos (reemplaza los puntos) */
+.oba-prog { display: flex; gap: 5px; flex: 1; max-width: 200px; margin-right: 14px; }
+.oba-prog i { flex: 1; height: 4px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
+.oba-prog b { display: block; height: 100%; width: 0; background: #32D583; }
+.ob-footer.is-last .oba-prog { display: none; }
+.oba-escena.pausada .oba-cap { filter: brightness(.85); }
+@media (max-height: 740px) { .oba-cap { gap: 9px; padding-top: calc(52px + env(safe-area-inset-top, 0px)); } .oba-logo { font-size: 2.1rem; } .oba-cap .obh-titulo, .oba-titulo { font-size: 1.3rem; }
+  .oba-app { padding: 10px 5px 8px; } .oba-app small { display: none; } .oba-props div, .oba-feat { padding: 10px 13px; } .oba-panel { padding: 12px 14px; } }
+@media (prefers-reduced-motion: reduce) { .oba-rejilla { animation: none; } }
