@@ -10,7 +10,7 @@ function fetchTimeout(url, ms=10000, opts={}) {
 async function loadContent() {
   // ── PASO 1: Caché instantáneo — mostrar ANTES de red ──
   const cachedUsers = cacheGet(CACHE_KEY_USERS);
-  if(cachedUsers) {
+  if(Array.isArray(cachedUsers)) {   // (una respuesta de error guardada antes no rompe la carga)
     cachedUsers.forEach(u=>{ mapaUsuarios[u.usuario]=u.verificadoNivel||0; });
   }
 
@@ -32,6 +32,7 @@ async function loadContent() {
   try {
     // Catálogo y usuarios EN PARALELO (antes uno esperaba al otro: ~1 RTT + consulta de más)
     const pUsers = fetchTimeout(`${API_URL}/auth/users/public`, 8000).then(ru => ru.json()).then(users => {
+      if (!Array.isArray(users)) return;   // solo se guarda una lista válida, nunca un error del servidor
       cacheSet(CACHE_KEY_USERS, users);
       users.forEach(u=>{ mapaUsuarios[u.usuario]=u.verificadoNivel||0; });
     }).catch(()=>{});
