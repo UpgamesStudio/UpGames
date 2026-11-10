@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COCHE, CAT, COMPUESTOS } from '../config.js';
-import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS, formaDe } from './carroceriaCerrada.js';
+import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS, formaDe, FORMAS_GT } from './carroceriaCerrada.js';
 import { texturaCarbono, texturaCarbonoNormal } from './texturas.js';
 import { proyectarUV, dibujarLibrea, materialLibrea, LLUVIA_CARROCERIA } from './librea.js';
 import { normalPliegues } from './personas.js';
@@ -978,7 +978,7 @@ export function crearModelo(opc) {
     const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512, transparente = calidad >= 1;
     // en GT cada equipo lleva uno de los tres coches (coupé, berlinetta o muscle)
     const semilla = [...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) + (opc.variante ?? 0);
-    const forma = opc.forma || formaDe(cat, semilla);
+    const forma = opc.forma || (cat === 'gt' && FORMAS_GT.includes(eq.forma) ? eq.forma : formaDe(cat, semilla));
     const patronC = eq.patron || equipo.patron || 'franjas';
     const claveC = `cerrado|${forma}|${patronC}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tamC}|${transparente}`;
     let texC = cacheTex.get(claveC);
@@ -1136,6 +1136,7 @@ export function crearModelo(opc) {
   const propia = (m) => { if (m.geometry.userData.compartida) { m.geometry = m.geometry.clone(); m.geometry.userData.compartida = false; } };
 
   let tPantalla = 0, tLlama = 0;
+  const susp = { x: { p: 0, v: 0 }, z: { p: 0, v: 0 } };
   if (pinturaFinal.userData.sucio) pinturaFinal.userData.sucio.value = opc.suciedad ?? 0.12;
   const estadoDanos = { alaDel: false, alaTras: false };
   const modelo = {
@@ -1179,8 +1180,14 @@ export function crearModelo(opc) {
           m.matGoma.roughness = 0.88 - 0.45 * Math.min(1, car.aguaAqui || 0);
         }
       }
-      carroceria.rotation.z = -car.cabeceo;
-      carroceria.rotation.x = -car.balanceo;
+      // la carrocería se mueve sobre sus muelles: sigue al cabeceo y al balanceo de la física con un
+      // muelle amortiguado (se apoya, se pasa un poco y se asienta); los coches cerrados, más blandos
+      { const g = cerrado ? 1.7 : 1.15, w = cerrado ? 11 : 17, z = cerrado ? 0.42 : 0.6, h = Math.min(0.033, Math.max(0, dt));
+        for (const [k, obj] of [['z', -car.cabeceo * g], ['x', -car.balanceo * g]]) {
+          const s = susp[k]; s.v += ((obj - s.p) * w * w - 2 * z * w * s.v) * h; s.p += s.v * h;
+          if (!(Math.abs(s.p) < 0.5)) { s.p = obj; s.v = 0; }
+          carroceria.rotation[k] = s.p;
+        } }
       carroceria.position.y = ((car.alturaDel + car.alturaTras) / 2 - 0.05) * 0.8 + this.elevar;
       // alerones dañados: se doblan y, rotos del todo, se desprenden
       const da = car.danoAleron || 0;
@@ -1235,12 +1242,12 @@ export function crearModelo(opc) {
       // de luz en el asfalto) y llamaradas del escape al levantar el pie a muchas vueltas
       if (lucesC) {
         const noche = !!this.luzTrasera?.(), freno = car.mandos?.freno ?? 0;
-        lucesC.freno.emissiveIntensity = lucesC.frenoBase * (freno > 0.05 ? 1.6 + freno : noche ? 0.75 : 0.4);
+        lucesC.freno.emissiveIntensity = lucesC.frenoBase * (freno > 0.05 ? 1.25 : noche ? 0.7 : 0.4);
         lucesC.faro.emissiveIntensity = lucesC.faroBase * (noche ? 1.9 : 0.85);
         lucesC.charco.visible = noche && !car.volcado;
         if (lucesC.llamas) {
           tLlama = acelM < 0.05 && car.rpm > 10500 && (car.velocidad || 0) > 15 ? Math.min(0.35, tLlama + dt * 3) : Math.max(0, tLlama - dt);
-          lucesC.llamas.visible = tLlama > 0.05 && Math.sin(performance.now() / 23) > -0.2;
+          lucesC.llamas.visible = tLlama > 0.12;        // (fija, sin parpadeo: con el resplandor hacía destellar la imagen)
         }
       }
       matCalor.opacity += (acelM * 0.14 - matCalor.opacity) * Math.min(1, dt * 4);

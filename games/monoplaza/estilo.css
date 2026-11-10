@@ -944,3 +944,12 @@ body.teclado #tactil { display: none !important; }
   .lobby-modos.agrupado .modo.destacado .ir { font-size: 11px; padding: 4px 9px; }
 }
 @media (max-width: 700px) { .lobby-modos.agrupado { grid-template-columns: 1fr; } .grupo .fila { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Garaje: tarjetas de carrocería con su silueta */
+.rejilla.carros { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.ficha.carro { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px 9px; text-align: center; border-radius: 12px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); transition: transform .12s ease, box-shadow .12s ease; }
+.ficha.carro svg { width: 100%; height: 44px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.ficha.carro b { font-size: 13px; }
+.ficha.carro small { color: var(--tenue); font-size: 10.5px; line-height: 1.2; }
+.ficha.carro.sel { box-shadow: inset 0 0 0 2px var(--rojo), 0 6px 18px rgba(0,0,0,.35); transform: translateY(-2px); }
+.ficha.carro:active { transform: scale(.97); }
