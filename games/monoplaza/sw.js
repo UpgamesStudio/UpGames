@@ -1,5 +1,5 @@
 // Caché para jugar sin conexión. Cambia VERSION al publicar archivos nuevos.
-const VERSION = 'apexgp-v66';
+const VERSION = 'apexgp-v67';
 const ARCHIVOS = [
   './', './index.html', './estilo.css', './manifest.webmanifest', './favicon.png', './logo.webp', './icono-192.png', './icono-512.png', './icono-maskable-512.png',
   './lib/three.module.min.js', './lib/addons/objects/Sky.js', './lib/addons/utils/BufferGeometryUtils.js',

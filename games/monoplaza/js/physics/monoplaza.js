@@ -33,6 +33,7 @@ function parMotor(rpm) {
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 
+const SUSP_F1 = { kc: 900, cc: 38, kb: 700, cb: 34, gan: 1, peso: 1 };
 export class Rueda {
   constructor(idx, px, py, radio, delantera) {
     this.idx = idx;
@@ -317,7 +318,9 @@ export class Monoplaza {
     if (this.aireSucio > 0.001) {
       const s = this.aireSucio;
       const tiembla = 1 + 0.07 * s * Math.sin(this.reloj * 23.7) * Math.sin(this.reloj * 7.3 + 1.3);
-      clDel *= (1 - 0.30 * s) * tiembla; clTras *= 1 - 0.12 * s;
+      // (cada categoría lo sufre distinto: mucho el monoplaza, que vive de sus alerones; poco un GT)
+      const ks = CAT.sucio ?? 1;
+      clDel *= (1 - Math.min(0.6, 0.30 * s * ks)) * tiembla; clTras *= 1 - Math.min(0.4, 0.12 * s * ks);
     }
     this.turbulencia = this.aireSucio;
     // rebufo: dentro del cono de baja presión de detrás del otro coche hay menos resistencia
@@ -403,11 +406,14 @@ export class Monoplaza {
     // ángulos visibles de cabeceo y balanceo (oscilador amortiguado)
     // el cabeceo sale de la diferencia de alturas de los ejes (más un poco de flexión del chasis):
     // un F1 apenas se inclina 1-2° al frenar; más haría que el morro tocara el suelo
-    const objCab = clamp(-(this.axF * m * h) / COCHE.rigidezCabeceo * 0.25 + (this.alturaTras - this.alturaDel - (h0Tras - h0Del)) / L, -0.02, 0.026);
-    const objBal = (this.ayF * m * (h - hRc)) / COCHE.rigidezBalanceoTotal / ((kDel + kTras) / 1.1);
-    this.vCabeceo += ((objCab - this.cabeceo) * 900 - this.vCabeceo * 38) * dt;
+    // (muelles y amortiguadores de cada categoría: un GT o un Stock son más blandos, se hunden más al
+    // frenar, se apoyan más en curva y tardan más en asentarse que un monoplaza)
+    const su = CAT.susp || SUSP_F1;
+    const objCab = clamp(-(this.axF * m * h) / COCHE.rigidezCabeceo * 0.25 * su.gan + (this.alturaTras - this.alturaDel - (h0Tras - h0Del)) / L, -0.02 * su.gan, 0.026 * su.gan);
+    const objBal = (this.ayF * m * (h - hRc)) / COCHE.rigidezBalanceoTotal / ((kDel + kTras) / 1.1) * su.gan;
+    this.vCabeceo += ((objCab - this.cabeceo) * su.kc - this.vCabeceo * su.cc) * dt;
     this.cabeceo += this.vCabeceo * dt;
-    this.vBalanceo += ((objBal - this.balanceo) * 700 - this.vBalanceo * 34) * dt;
+    this.vBalanceo += ((objBal - this.balanceo) * su.kb - this.vBalanceo * su.cb) * dt;
     this.balanceo += this.vBalanceo * dt;
 
     // --- Dirección --------------------------------------------------------
@@ -730,7 +736,8 @@ export class Monoplaza {
     this.z += (this.vx * sin + this.vy * cos) * dt;
     this.psi += this.r * dt;
     this.ax = axc; this.ay = ayc;
-    const kf = Math.min(1, dt / 0.07);
+    // la carga tarda en pasar de un lado a otro: más en los coches pesados y blandos (se nota el peso)
+    const kf = Math.min(1, dt / (0.07 / (CAT.susp?.peso ?? 1)));
     this.axF += (axc - this.axF) * kf;
     this.ayF += (ayc - this.ayF) * kf;
 

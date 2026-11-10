@@ -12,6 +12,8 @@ import { VOCES, archivoVoz, POR_CLAVE } from './vozRadio.js';
 const voces = () => (window.speechSynthesis?.getVoices?.() || []).filter(v => v.lang?.toLowerCase().startsWith(idiomaActual()));
 const MAX_COLA = 10;
 
+// segundos mínimos entre dos avisos normales, y cuánto baja el resto del sonido mientras se habla
+const PAUSA_RADIO = 28, ATENUA = 0.45;
 export class Radio {
   constructor({ alSubtitulo, sonido } = {}) {
     this.alSubtitulo = alSubtitulo;
@@ -73,6 +75,9 @@ export class Radio {
   /** tipo: 'ingeniero' | 'megafonia'. clave evita repetir el mismo aviso en `cada` segundos. */
   decir(texto, { tipo = 'ingeniero', clave = null, cada = 25, prioridad = false, voz = null } = {}) {
     const ahora = performance.now() / 1000;
+    // la radio solo habla cuando hace falta: un aviso normal no entra si ya se está hablando, hay otro
+    // esperando o se habló hace poco (los prioritarios —banderas, boxes, averías— entran siempre)
+    if (!prioridad && (this.hablando || this.cola.length || ahora - (this._ultimaVez ?? -1e9) < PAUSA_RADIO)) return false;
     if (clave) {
       if (ahora - (this.ultimo.get(clave) ?? -1e9) < cada) return false;
       this.ultimo.set(clave, ahora);
@@ -83,6 +88,7 @@ export class Radio {
     const msgs = lista.some(k => k !== '@') && this.grabadas
       ? lista.map(k => k === '@' ? { texto: tr(texto), tipo, t: ahora, prioridad } : { texto: VOCES[k], tipo: k.startsWith('pil:') ? 'piloto' : 'ingeniero', clip: k, t: ahora, prioridad })
       : [{ texto: tr(texto), tipo, t: ahora, prioridad }];
+    this._ultimaVez = ahora;
     if (prioridad) this.cola.unshift(...msgs); else this.cola.push(...msgs);
     // (si se acumulan se descartan conversaciones enteras, no frases sueltas de una)
     // si se acumulan, se descartan los mensajes normales más viejos (nunca los prioritarios)
@@ -103,6 +109,7 @@ export class Radio {
     if (!this.cola.length) return;
     const m = this.cola.shift();
     this.hablando = true;
+    this.sonido?.atenuar?.(true);          // el motor baja mientras se habla
     // la radio del equipo se abre con su chasquido y pitidos, y la voz entra justo al terminar
     let abre = 0;
     const mega = m.tipo === 'megafonia';
@@ -115,6 +122,7 @@ export class Radio {
       if (cerrado) return;
       cerrado = true;
       this.hablando = false; this._fin = null;
+      if (!this.cola.length) this.sonido?.atenuar?.(false);
       const sigueConv = !!m.conv && this.cola[0]?.conv === m.conv;
       if (m.tipo !== 'megafonia' && !sigueConv) this.sonido?.radio(true);
       this._ultimaFin = sigueConv ? performance.now() : 0;
@@ -133,7 +141,7 @@ export class Radio {
         setTimeout(() => {
           if (cerrado) return;
           const s = ctx.createBufferSource(); s.buffer = buf;
-          const g = ctx.createGain(); g.gain.value = m.tipo === 'piloto' ? 1.05 : 1.15;
+          const g = ctx.createGain(); g.gain.value = (m.tipo === 'piloto' ? 1.9 : 2.3) / ATENUA;      // más alta (y compensa la bajada del resto)
           s.connect(g); g.connect(this.sonido.maestro || ctx.destination);
           s.onended = () => setTimeout(fin, 120);
           this._fuente = s;
@@ -170,5 +178,6 @@ export class Radio {
     try { window.ApexVoz?.callar?.(); } catch { /* nada */ }
     this._fin?.();
     this.hablando = false;
+    this.sonido?.atenuar?.(false);
   }
 }
