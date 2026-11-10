@@ -262,9 +262,9 @@ function conGotas(mat) {
         if (h > uMojado * 0.6) return 0.0;
         float cx = fract(h * 7.31 + lado * uTiempoG * (0.12 + 0.45 * h));
         float cy = 0.25 + 0.5 * fract(h * 13.7);
-        float gota = smoothstep(0.2, 0.06, length((f - vec2(cx, cy)) * vec2(1.0, 0.7)));
+        float gota = 1.0 - smoothstep(0.06, 0.2, length((f - vec2(cx, cy)) * vec2(1.0, 0.7)));
         float tras = (f.x - cx) * lado;             // por detrás de la gota, en su camino
-        float rastro = smoothstep(0.05, 0.0, abs(f.y - cy)) * step(0.0, tras) * (1.0 - smoothstep(0.0, 0.45, tras)) * 0.5;
+        float rastro = (1.0 - smoothstep(0.0, 0.05, abs(f.y - cy))) * step(0.0, tras) * (1.0 - smoothstep(0.0, 0.45, tras)) * 0.5;
         return max(gota, rastro);
       }`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
@@ -277,9 +277,10 @@ function conGotas(mat) {
         if (uSucio > 0.01) {
           // polvo y goma: más en los bajos, tras las ruedas y en la zaga; a manchas, no uniforme
           float nS = ruidoG(vPosCoche.xy * 7.0 + vPosCoche.z * 2.3) * 0.55 + ruidoG(vPosCoche.xz * 23.0 + vPosCoche.y * 19.0) * 0.45;
-          float bajo = smoothstep(0.62, 0.10, vPosCoche.y);
-          float zaga = smoothstep(-0.6, -2.2, vPosCoche.x) * 0.45;
+          float bajo = 1.0 - smoothstep(0.10, 0.62, vPosCoche.y);
+          float zaga = (1.0 - smoothstep(-2.2, -0.6, vPosCoche.x)) * 0.45;
           float pol = clamp(uSucio * (bajo * (0.45 + 1.1 * nS) + zaga * nS + 0.10 * nS), 0.0, 0.82) * (1.0 - 0.6 * uMojado);
+          pol = clamp(pol, 0.0, 0.82);
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.30, 0.26, 0.21), pol);
           roughnessFactor = mix(roughnessFactor, 0.85, pol);
         }
@@ -297,7 +298,7 @@ function conGotas(mat) {
         }
       #endif`);
   };
-  mat.customProgramCacheKey = () => 'libreaGotas3';
+  mat.customProgramCacheKey = () => 'libreaGotas4';
   return mat;
 }
 
