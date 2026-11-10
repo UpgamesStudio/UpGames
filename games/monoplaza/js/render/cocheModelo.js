@@ -6,9 +6,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COCHE, CAT, COMPUESTOS } from '../config.js';
 import { crearCarroceria, pintarLibreaCerrada, ANCHO_RUEDAS, formaDe } from './carroceriaCerrada.js';
 import { texturaCarbono, texturaCarbonoNormal } from './texturas.js';
-import { proyectarUV, dibujarLibrea, materialLibrea } from './librea.js';
+import { proyectarUV, dibujarLibrea, materialLibrea, LLUVIA_CARROCERIA } from './librea.js';
 import { normalPliegues } from './personas.js';
-import { crearPiloto } from './piloto.js';
+import { crearPiloto } from './pilotoFijo.js';
 import { geoNeumatico, matFlanco, texturaLlanta, mascaraBrilloLlanta, aroLlanta, dibujoBanda, LLANTA, HUNDIDO } from './neumatico3D.js';
 
 const A = COCHE.wheelbase * (1 - COCHE.repartoDel); // eje delantero
@@ -311,6 +311,9 @@ function pintarGoma(cv, desgaste, graining, ampollas, semilla = 0, suciedad = 0,
 
 // Cara de la llanta (radios, aro y buje) y máscara del brillo del disco de freno entre los
 // radios: una de cada para todos los coches
+const TONOS_LLANTA = [['#5a4326', '#a8834e', '#d9b77c'], ['#8b9097', '#d9dde2', '#ffffff'], ['#101113', '#2c2e33', '#55595f'], ['#6e5510', '#c9a227', '#f0d470'], ['#4a4d53', '#9a9fa7', '#d5d9de']];
+const _llantasGT = new Map();
+function texLlantaGT(tono, pinza) { const k = tono[1] + pinza; if (!_llantasGT.has(k)) _llantasGT.set(k, texturaLlanta(512, [...tono, pinza])); return _llantasGT.get(k); }
 let _texLlanta = null, _brilloLlanta = null;
 const texLlanta = () => (_texLlanta ||= texturaLlanta());
 const texturaBrilloLlanta = () => (_brilloLlanta ||= mascaraBrilloLlanta());
@@ -879,9 +882,9 @@ export function crearModelo(opc) {
   columna.add(giroVolante);
   carroceria.add(columna);
 
-  // Piloto: modelo aparte (render/piloto.js), sentado en la carrocería
+  // Piloto fijo, parte del coche (render/pilotoFijo.js): casco, pecho y manos en el volante
   const piloto = crearPiloto({ traje: new THREE.MeshStandardMaterial({ map: texturaMono(colores), roughness: 0.78, normalMap: calidad >= 1 ? normalPliegues() : null, normalScale: new THREE.Vector2(0.6, 0.6) }), guante: new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.8 }),
-    matNegro: matComun('negro'), equipado: eq, colores, columna, calidad });
+    equipado: eq, colores, giroVolante, calidad });
   // piloto algo más pequeño que antes (holgura en la cabina, casco bajo el arco del halo) y
   // sentado bajo, como en un monoplaza real: se escala alrededor del asiento
   const ESC_PILOTO = 0.88, ASIENTO = new THREE.Vector3(0.04, 0.6, 0);
@@ -909,7 +912,9 @@ export function crearModelo(opc) {
   // cara de la llanta: entre los radios se ve el disco, que brilla al rojo cuando está caliente
   // (se ve desde fuera y desde cualquier ángulo); una por eje
   const brilloLlanta = texturaBrilloLlanta();
-  const nuevaTapa = () => new THREE.MeshPhysicalMaterial({ map: texLlanta(), roughness: 0.32, metalness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.1, emissive: new THREE.Color(0xff3c0c), emissiveMap: brilloLlanta, emissiveIntensity: 0 });
+  // GT y Stock Car: llanta pintada (bronce, blanca, negra, oro o del color del equipo) con su disco y pinza
+  const tonoLl = cerrado ? TONOS_LLANTA[[...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a + ch.charCodeAt(0), 0) % TONOS_LLANTA.length] : null;
+  const nuevaTapa = () => new THREE.MeshPhysicalMaterial({ map: tonoLl ? texLlantaGT(tonoLl, colores.acento) : texLlanta(), roughness: 0.32, metalness: 0.7, clearcoat: 0.6, clearcoatRoughness: 0.1, emissive: new THREE.Color(0xff3c0c), emissiveMap: brilloLlanta, emissiveIntensity: 0 });
   const matTapaDel = nuevaTapa(), matTapaTras = nuevaTapa();
   const matFreno = matComun('freno', () => new THREE.MeshStandardMaterial({ color: 0x1c1c1f, roughness: 0.5, metalness: 0.4 }));
   const segN = calidad >= 2 ? 64 : calidad >= 1 ? 40 : 28;
@@ -967,25 +972,28 @@ export function crearModelo(opc) {
 
   // ── Carrocería cerrada (GT / Stock Car): el chasis, las ruedas y el piloto son los mismos; la
   // piel del monoplaza se quita y se pone la del coche cerrado (con su propia librea)
-  let pinturaFinal = pintura, camaras = null;
+  let pinturaFinal = pintura, camaras = null, lucesC = null, interior = null;
   if (cerrado) {
     // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
-    const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512;
+    const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512, transparente = calidad >= 1;
     // en GT cada equipo lleva uno de los tres coches (coupé, berlinetta o muscle)
     const semilla = [...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) + (opc.variante ?? 0);
     const forma = opc.forma || formaDe(cat, semilla);
     const patronC = eq.patron || equipo.patron || 'franjas';
-    const claveC = `cerrado|${forma}|${patronC}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tamC}`;
+    const claveC = `cerrado|${forma}|${patronC}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tamC}|${transparente}`;
     let texC = cacheTex.get(claveC);
     if (!texC) {
       const cvC = document.createElement('canvas'); cvC.width = tamC; cvC.height = tamC;
-      pintarLibreaCerrada(cvC, { categoria: forma, patron: patronC, colores, numero, nombre: equipo.nombre || '' });
+      pintarLibreaCerrada(cvC, { categoria: forma, patron: patronC, colores, numero, nombre: equipo.nombre || '', transparente });
       texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 8;
       cacheTex.set(claveC, texC);
     }
     pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
     const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
-    const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad, colores, numero, nombre: equipo.nombre || '' });
+    const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad, colores, numero, nombre: equipo.nombre || '', transparente });
+    lucesC = cc.luces;
+    // relieve de las juntas y rejillas (sustituye a las escamas de la pintura)
+    if (cc.relieve) { pinturaFinal.normalMap = cc.relieve; pinturaFinal.normalScale = new THREE.Vector2(1, 1); }
     for (const o of [cuerpo, halo, mCarbono, mNegro, mMetal, forroCabina, alaDel, alaTras, luzLluvia]) if (o) o.visible = false;
     carroceria.remove(cuerpo);
     for (const gp of gruposPieza) gp.g.visible = false;
@@ -995,9 +1003,9 @@ export function crearModelo(opc) {
     const [dx, dy, dz] = cc.forma.piloto;
     piloto.grupo.position.add(new THREE.Vector3(dx, dy, dz));
     columna.position.add(new THREE.Vector3(dx, dy, dz));
-    // los cristales son opacos: el piloto y el volante no se ven, así que no se dibujan (el grupo
-    // sigue existiendo para la animación, las cámaras y cuando el piloto sale del coche)
-    const interior = new THREE.Group(); interior.name = 'interior'; interior.visible = false;
+    // el piloto y el volante se ven por los cristales; van en un grupo que solo se dibuja de cerca
+    // (y nunca con los cristales opacos de la calidad baja)
+    interior = new THREE.Group(); interior.name = 'interior'; interior.visible = transparente; interior.userData.nunca = !transparente;
     carroceria.add(interior); interior.add(piloto.grupo); interior.add(columna);
     // retrovisores de verdad para el coche del jugador
     espejos.length = 0;
@@ -1109,6 +1117,7 @@ export function crearModelo(opc) {
     alaTras.visible = false; estadoDanos.alaTras = true;
     for (const gp of gruposPieza) { gp.g.visible = false; if (gp.glb) gp.glb.visible = false; }
     calor.visible = false; pivDrs.visible = false; luzLluvia.visible = false;
+    for (const n of ['forro', 'cristal']) { const o = carroceria.getObjectByName(n); if (o) o.visible = false; }     // sin la zaga, el forro y los cristales sobran
   }
   function recomponer() {
     for (const malla of [cuerpo, mCarbono, mNegro, mMetal].filter(Boolean)) {
@@ -1116,6 +1125,7 @@ export function crearModelo(opc) {
       malla.geometry.attributes.position.array.set(malla.userData.orig); malla.geometry.attributes.position.needsUpdate = true;
     }
     calor.visible = true; pivDrs.visible = !cerrado; luzLluvia.visible = !cerrado;
+    for (const n of ['forro', 'cristal']) { const o = carroceria.getObjectByName(n); if (o) o.visible = true; }
     if (posOrig) cuerpo.geometry.attributes.normal.array.set(nrmOrig);
     cuerpo.geometry.attributes.normal.needsUpdate = true;
     const gol = cuerpo.geometry.attributes.golpe;
@@ -1125,10 +1135,11 @@ export function crearModelo(opc) {
 
   const propia = (m) => { if (m.geometry.userData.compartida) { m.geometry = m.geometry.clone(); m.geometry.userData.compartida = false; } };
 
-  let tPantalla = 0;
+  let tPantalla = 0, tLlama = 0;
+  if (pinturaFinal.userData.sucio) pinturaFinal.userData.sucio.value = opc.suciedad ?? 0.12;
   const estadoDanos = { alaDel: false, alaTras: false };
   const modelo = {
-    raiz, carroceria, ruedas, pivDrs, luzLluvia, pintura: pinturaFinal, categoria: cat, cerrado, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
+    raiz, carroceria, ruedas, pivDrs, luzLluvia, interior, pintura: pinturaFinal, categoria: cat, cerrado, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
     // cámaras a bordo (coordenadas de la carrocería): la de cabina en los ojos del piloto, centrada
     // entre el arco del halo (0,94 m) y el borde de la cabina (0,72 m); la de la cara, sobre el
     // arco del halo (detrás del pilar) mirando al casco; la T-Cam, sobre la toma de aire
@@ -1213,6 +1224,25 @@ export function crearModelo(opc) {
       for (let k = 0; k < 4; k++) ruedas[k].borroso.material.emissiveIntensity = (k < 2 ? matTapaDel : matTapaTras).emissiveIntensity;
       // calor del escape con el acelerador a fondo
       const acelM = car.mandos?.acelerador ?? 0;
+      // suciedad de carrera: el coche sale casi limpio y se va cubriendo de polvo y goma (unos 25 km
+      // para estar sucio del todo; pisar hierba o grava ensucia más y la lluvia lo lava)
+      const su = pinturaFinal.userData.sucio;
+      if (su) {
+        const fuera = Math.max(car.ruedas[0]?.suciedad || 0, car.ruedas[2]?.suciedad || 0);
+        su.value = Math.min(1, Math.max(0, su.value + Math.abs(car.velocidad || 0) * dt * (1 + 6 * fuera) / 25000 - LLUVIA_CARROCERIA.mojado.value * dt * 0.02));
+      }
+      // luces de los coches cerrados: freno, faros (más fuertes de noche o con lluvia, con su charco
+      // de luz en el asfalto) y llamaradas del escape al levantar el pie a muchas vueltas
+      if (lucesC) {
+        const noche = !!this.luzTrasera?.(), freno = car.mandos?.freno ?? 0;
+        lucesC.freno.emissiveIntensity = lucesC.frenoBase * (freno > 0.05 ? 1.6 + freno : noche ? 0.75 : 0.4);
+        lucesC.faro.emissiveIntensity = lucesC.faroBase * (noche ? 1.9 : 0.85);
+        lucesC.charco.visible = noche && !car.volcado;
+        if (lucesC.llamas) {
+          tLlama = acelM < 0.05 && car.rpm > 10500 && (car.velocidad || 0) > 15 ? Math.min(0.35, tLlama + dt * 3) : Math.max(0, tLlama - dt);
+          lucesC.llamas.visible = tLlama > 0.05 && Math.sin(performance.now() / 23) > -0.2;
+        }
+      }
       matCalor.opacity += (acelM * 0.14 - matCalor.opacity) * Math.min(1, dt * 4);
       if (matCalor.map) { matCalor.map.offset.y = (matCalor.map.offset.y + dt * 1.7) % 1; calor.scale.x = 1 + Math.sin(performance.now() / 60) * 0.06; }
       const objDrs = car.drsAbierto ? 1.05 : 0.45;

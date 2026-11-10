@@ -152,7 +152,8 @@ export function matFlanco(compuesto, calidad = 2) {
 export const RADIOS = 10;
 
 /** Textura de la cara de la llanta (disco de radio = el de la llanta). */
-export function texturaLlanta(N = 512) {
+export function texturaLlanta(N = 512, tono = null) {
+  // tono: [sombra, medio, luz] de los radios (llantas pintadas de los GT); por defecto, magnesio
   const cv = document.createElement('canvas'); cv.width = cv.height = N;
   const x = cv.getContext('2d'), R = N / 2;
   x.fillStyle = '#060607'; x.fillRect(0, 0, N, N);
@@ -161,11 +162,20 @@ export function texturaLlanta(N = 512) {
   const f = x.createRadialGradient(0, 0, R * 0.2, 0, 0, R * 0.9);
   f.addColorStop(0, '#1d1e22'); f.addColorStop(1, '#0a0a0c');
   x.fillStyle = f; x.beginPath(); x.arc(0, 0, R * 0.9, 0, Math.PI * 2); x.fill();
+  // llantas de GT: detrás de los radios se ve el disco de freno ventilado y su pinza
+  if (tono) {
+    const d = x.createRadialGradient(0, 0, R * 0.34, 0, 0, R * 0.80);
+    d.addColorStop(0, '#2a2c30'); d.addColorStop(0.12, '#6c7077'); d.addColorStop(0.55, '#8b9097'); d.addColorStop(1, '#55595f');
+    x.fillStyle = d; x.beginPath(); x.arc(0, 0, R * 0.80, 0, Math.PI * 2); x.arc(0, 0, R * 0.36, 0, Math.PI * 2, true); x.fill();
+    x.fillStyle = 'rgba(20,21,24,.75)';
+    for (let k = 0; k < 36; k++) for (const rr of [0.50, 0.62, 0.72]) { const an = k * Math.PI / 18 + rr * 3; x.beginPath(); x.arc(Math.cos(an) * R * rr, Math.sin(an) * R * rr, R * 0.012, 0, Math.PI * 2); x.fill(); }
+    x.fillStyle = tono[3] || '#d8201c'; x.beginPath(); x.arc(0, 0, R * 0.82, -0.55, 0.55); x.arc(0, 0, R * 0.56, 0.55, -0.55, true); x.closePath(); x.fill();
+  }
   // radios: más anchos en el buje, se afinan hacia el aro
   for (let k = 0; k < RADIOS; k++) {
     x.save(); x.rotate(k * Math.PI * 2 / RADIOS);
     const gr = x.createLinearGradient(0, -R * 0.06, 0, R * 0.06);
-    gr.addColorStop(0, '#5d6168'); gr.addColorStop(0.45, '#a9aeb6'); gr.addColorStop(1, '#3d4046');
+    gr.addColorStop(0, tono ? tono[1] : '#5d6168'); gr.addColorStop(0.45, tono ? tono[2] : '#a9aeb6'); gr.addColorStop(1, tono ? tono[0] : '#3d4046');
     x.fillStyle = gr;
     x.beginPath(); x.moveTo(R * 0.26, -R * 0.075); x.lineTo(R * 0.9, -R * 0.035); x.lineTo(R * 0.9, R * 0.035); x.lineTo(R * 0.26, R * 0.075); x.closePath(); x.fill();
     x.restore();

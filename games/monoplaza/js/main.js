@@ -35,7 +35,6 @@ import { Efectos } from './render/efectos.js';
 import { Camara, NOMBRES_CAMARA } from './render/camara.js';
 import { Sonido } from './audio.js';
 import { Entrada } from './input.js';
-import { PilotosFuera } from './render/pilotoFuera.js';
 import * as ESC from './escuela.js';
 import * as ESTR from './estrategia.js';
 import * as PROG from './progresion.js';
@@ -43,7 +42,6 @@ import * as ED from './editorCircuito.js';
 import { iniciarIdioma } from './idioma.js';
 import { PIVOTE_VUELO, MEZCLA_NOMBRES } from './physics/monoplaza.js';
 import { Podio } from './render/podio.js';
-import { SalidaBoxes } from './render/salidaBoxes.js';
 import { RuedaMandos } from './ruedaMandos.js';
 
 const $ = (s) => document.querySelector(s);
@@ -300,7 +298,7 @@ async function cargarCircuito(id, forzar = false) {
   });
   escombros = new Escombros(scene, (x, z) => { const p = circuito.proyectar(x, z, -1, {}); return p.y + circuito.caida(p.i, p.d); });
   lluviaFx = new Lluvia(scene, escenario, calidad);
-  pilotosFuera = new PilotosFuera(scene, circuito, calidad);
+  pilotosFuera = null;      // el piloto ya no sale del coche (va integrado en el modelo)
   barreras = new Barreras(scene, circuito, { escombros, efectos, calidad, deformar: (g) => escenario.deformarMuro(g), reparar: () => escenario.repararMuros() });
   comisarios = new Comisarios(scene, circuito, calidad);
   gruas = new Gruas(scene, circuito);
@@ -875,7 +873,7 @@ function arrancarSesion(modo) {
   telemetria = new Telemetria(circuito.largo);
   salidaB?.quitar(); salidaB = null;
   ordenEq = { t: 0, cuenta: 0, activa: null, ultima: -999 };
-  if (sesion.jugador?.salidaBoxes) iniciarSalidaBoxes();
+  if (sesion.jugador?.salidaBoxes) terminarSalidaBoxes();     // sin cinemática del garaje: directo a la calle de boxes
   presentacion = null; $('#presenta').classList.remove('visible');
   if (modo === 'carrera' && !enRed && !qActual && sesion.estado !== 'formacion' && !momentoActual) iniciarPresentacion();
   if (sesion.estado === 'formacion') { mensaje('VUELTA DE FORMACIÓN', 'Sigue al de delante y vuelve a tu casilla', 3); radio.decir('Vuelta de formación. Calienta neumáticos y frenos, y vuelve a tu casilla.', { clave: 'form', cada: 5 }); }
@@ -1642,7 +1640,7 @@ function procesarEventos() {
     }
     else if (e.tipo === 'abandono') {
       // el piloto se baja cuando el coche se detiene (en carrera; en práctica te dan otro coche)
-      if ((sesion.modo === 'carrera' || e.p.jugador) && !e.p.remoto) salidasPendientes.push({ p: e.p, t: 0, herido: (e.p.coche.picoGolpe || 0) > 24 });
+      // (el piloto se queda en el coche: ya no hay animación de salida)
       if (!e.p.jugador && sesion.modo === 'carrera') radio.decir(`Abandono de ${e.p.nombre.replace('@', '')}.`, { tipo: 'megafonia', clave: 'ab:' + e.p.nombre, cada: 999 });
       if (e.p.jugador) {
         mensaje('ABANDONO', e.motivo || 'Coche demasiado dañado', 3.5);
@@ -2227,14 +2225,7 @@ function cerrarMomento() {
 
 // --- Salida desde el garaje (práctica y clasificación) -----------------------------------
 let salidaB = null;
-function iniciarSalidaBoxes() {
-  const k = sesion.participantes.indexOf(sesion.jugador);
-  if (!modelos[k]) { terminarSalidaBoxes(); return; }
-  salidaB = new SalidaBoxes(scene, modelos[k], sesion.jugador.equipo, calidad);
-  document.body.classList.add('cine-salida'); $('#cineEtiqueta').textContent = '🔧 GARAJE';
-  radio.decir('Coche listo. Cinturones, volante… cuando baje el cartel, primera y sal con el limitador.', { clave: 'garaje', cada: 5 });
-  setTimeout(() => { addEventListener('pointerdown', saltarSalidaBoxes, { once: true }); addEventListener('keydown', saltarSalidaBoxes, { once: true }); }, 600);
-}
+function iniciarSalidaBoxes() { terminarSalidaBoxes(); }
 function saltarSalidaBoxes() { if (salidaB) terminarSalidaBoxes(); }
 function terminarSalidaBoxes() {
   removeEventListener('pointerdown', saltarSalidaBoxes); removeEventListener('keydown', saltarSalidaBoxes);
@@ -3132,6 +3123,8 @@ function nivelDetalle() {
       m._nivel = nivel;
       for (const o of m._detalle) o.visible = nivel === 0 && !o.userData.oculto;
       for (const o of m._medio) o.visible = nivel < 2 && !o.userData.oculto;
+      // interior de los coches cerrados (piloto y volante tras los cristales): solo de cerca
+      if (m.interior) m.interior.visible = nivel === 0 && !m.interior.userData.nunca;
     }
     // sombras: solo las piezas grandes (la sombra de un tornillo no se ve y duplica el coste)
     if (sombra !== m._sombra) { m._sombra = sombra; for (const o of m._mallas) o.castShadow = sombra && !o.userData.sinSombra; }
