@@ -606,13 +606,14 @@ export function crearModelo(opc) {
   const colores = { base: equipo.base, acento: equipo.acento, tercero: equipo.tercero || '#ffffff', ...(eq.colores || {}) };
   const numero = eq.numero ?? opc.numero ?? 7;
   // textura de la librea (compartida entre los dos coches de un equipo de la IA)
-  const tam = calidad >= 2 ? 1024 : 512;
-  const claveTex = opc.imagen ? null : `${eq.patron || equipo.patron || 'franjas'}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${tam}`;
+  // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
+  const tam = calidad >= 2 ? (cabina && !cerrado ? 2048 : 1024) : 512;
+  const claveTex = opc.imagen ? null : `${eq.patron || equipo.patron || 'franjas'}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tam}`;
   let tex = claveTex && cacheTex.get(claveTex);
   if (!tex) {
     const cv = document.createElement('canvas'); cv.width = tam; cv.height = tam;
-    dibujarLibrea(cv, { patron: eq.patron || equipo.patron || 'franjas', colores, numero, imagen: opc.imagen || null });
-    tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    dibujarLibrea(cv, { patron: eq.patron || equipo.patron || 'franjas', colores, numero, imagen: opc.imagen || null, nombre: equipo.nombre || '' });
+    tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
     if (claveTex) cacheTex.set(claveTex, tex);
   }
   const pintura = materialLibrea(tex, eq.acabado || 'brillo', fisico);
@@ -968,16 +969,23 @@ export function crearModelo(opc) {
   // piel del monoplaza se quita y se pone la del coche cerrado (con su propia librea)
   let pinturaFinal = pintura, camaras = null;
   if (cerrado) {
-    const tamC = calidad >= 2 ? 1024 : 512;
-    const cvC = document.createElement('canvas'); cvC.width = tamC; cvC.height = tamC;
+    // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
+    const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512;
     // en GT cada equipo lleva uno de los tres coches (coupé, berlinetta o muscle)
     const semilla = [...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) + (opc.variante ?? 0);
     const forma = opc.forma || formaDe(cat, semilla);
-    pintarLibreaCerrada(cvC, { categoria: forma, patron: eq.patron || equipo.patron || 'franjas', colores, numero });
-    const texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 4;
+    const patronC = eq.patron || equipo.patron || 'franjas';
+    const claveC = `cerrado|${forma}|${patronC}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tamC}`;
+    let texC = cacheTex.get(claveC);
+    if (!texC) {
+      const cvC = document.createElement('canvas'); cvC.width = tamC; cvC.height = tamC;
+      pintarLibreaCerrada(cvC, { categoria: forma, patron: patronC, colores, numero, nombre: equipo.nombre || '' });
+      texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 8;
+      cacheTex.set(claveC, texC);
+    }
     pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
     const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
-    const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad });
+    const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad, colores, numero, nombre: equipo.nombre || '' });
     for (const o of [cuerpo, halo, mCarbono, mNegro, mMetal, forroCabina, alaDel, alaTras, luzLluvia]) if (o) o.visible = false;
     carroceria.remove(cuerpo);
     for (const gp of gruposPieza) gp.g.visible = false;
