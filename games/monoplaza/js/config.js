@@ -84,7 +84,7 @@ export const CATEGORIAS = {
       relaciones: [22.6, 16.6, 13.0, 10.5, 8.6, 7.07], relacionReversa: -18, tiempoCambioSubir: 0.06, tiempoCambioBajar: 0.09,
       ersPotencia: 0, parFrenoMax: 11500, consumoMax: 90 / 3600,
     },
-    cl: 0.30, cd: 0.86, mu: 0.86, rebufo: 1.4, sucio: 0.5, susp: { kc: 330, cc: 14, kb: 250, cb: 11.5, gan: 1.5, peso: 0.55 }, drs: false, ers: false, rpmReal: 0.55, radio: 0.96, tono: 0.72, brillo: 0.8,
+    cl: 0.30, cd: 0.86, mu: 0.86, rebufo: 1.4, sucio: 0.5, susp: { kc: 330, cc: 14, kb: 250, cb: 11.5, gan: 1.5, peso: 0.75 }, drs: false, ers: false, rpmReal: 0.55, radio: 0.96, tono: 0.72, brillo: 0.8,
     perfil: { mu: 1.30, clA: 1.4, cdA: 0.92, P: 390000, vmax: 82 },
   },
   stock: {
@@ -98,7 +98,7 @@ export const CATEGORIAS = {
       relaciones: [15.5, 11.0, 8.2, 5.6], relacionReversa: -16, tiempoCambioSubir: 0.08, tiempoCambioBajar: 0.11,
       ersPotencia: 0, parFrenoMax: 10500, consumoMax: 110 / 3600,
     },
-    cl: 0.21, cd: 0.90, mu: 0.80, rebufo: 1.45, sucio: 0.9, susp: { kc: 260, cc: 11.5, kb: 200, cb: 9.5, gan: 1.7, peso: 0.45 }, drs: false, ers: false, rpmReal: 0.62, radio: 1, tono: 0.66, brillo: 0.7,
+    cl: 0.21, cd: 0.90, mu: 0.80, rebufo: 1.45, sucio: 0.9, susp: { kc: 260, cc: 11.5, kb: 200, cb: 9.5, gan: 1.7, peso: 0.65 }, drs: false, ers: false, rpmReal: 0.62, radio: 1, tono: 0.66, brillo: 0.7,
     perfil: { mu: 1.14, clA: 0.95, cdA: 0.95, P: 500000, vmax: 101 },
   },
 };

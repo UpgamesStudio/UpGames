@@ -227,7 +227,7 @@ export function construirEscenario(scene, renderer, c, calidad) {
   res.cielo = cielo; res.calidad = calidad;
   entornoCielo(res, scene, renderer, 0x4d5a3a);
   // bruma del color del horizonte: lo lejano se aclara y azulea (perspectiva aérea), da profundidad
-  scene.fog = new THREE.Fog(0xb4c8de, 420, calidad >= 2 ? 5200 : 3200);
+  scene.fog = new THREE.Fog(0xb4c8de, 420, calidad >= 3 ? 5200 : 3200);
   res.sol = sol;
 
   const luzSol = new THREE.DirectionalLight(0xffeccc, 4.3);

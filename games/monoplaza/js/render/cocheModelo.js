@@ -972,7 +972,7 @@ export function crearModelo(opc) {
 
   // ── Carrocería cerrada (GT / Stock Car): el chasis, las ruedas y el piloto son los mismos; la
   // piel del monoplaza se quita y se pone la del coche cerrado (con su propia librea)
-  let pinturaFinal = pintura, camaras = null, lucesC = null, interior = null;
+  let pinturaFinal = pintura, camaras = null, lucesC = null, interior = null, formaFinal = null;
   if (cerrado) {
     // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
     const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512, transparente = calidad >= 1;
@@ -990,6 +990,7 @@ export function crearModelo(opc) {
     }
     pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
     const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
+    formaFinal = forma;
     const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad, colores, numero, nombre: equipo.nombre || '', transparente });
     lucesC = cc.luces;
     // relieve de las juntas y rejillas (sustituye a las escamas de la pintura)
@@ -1140,7 +1141,7 @@ export function crearModelo(opc) {
   if (pinturaFinal.userData.sucio) pinturaFinal.userData.sucio.value = opc.suciedad ?? 0.12;
   const estadoDanos = { alaDel: false, alaTras: false };
   const modelo = {
-    raiz, carroceria, ruedas, pivDrs, luzLluvia, interior, pintura: pinturaFinal, categoria: cat, cerrado, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
+    raiz, carroceria, ruedas, pivDrs, luzLluvia, interior, forma: formaFinal, pintura: pinturaFinal, categoria: cat, cerrado, alaDel, alaTras, casco, cuello, piloto, compuesto, espejos, volanteG: giroVolante, columna, halo,
     // cámaras a bordo (coordenadas de la carrocería): la de cabina en los ojos del piloto, centrada
     // entre el arco del halo (0,94 m) y el borde de la cabina (0,72 m); la de la cara, sobre el
     // arco del halo (detrás del pilar) mirando al casco; la T-Cam, sobre la toma de aire
