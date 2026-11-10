@@ -1182,7 +1182,7 @@ export function crearModelo(opc) {
       }
       // la carrocería se mueve sobre sus muelles: sigue al cabeceo y al balanceo de la física con un
       // muelle amortiguado (se apoya, se pasa un poco y se asienta); los coches cerrados, más blandos
-      { const g = cerrado ? 1.7 : 1.15, w = cerrado ? 11 : 17, z = cerrado ? 0.42 : 0.6, h = Math.min(0.033, Math.max(0, dt));
+      { const g = cerrado ? 1.2 : 1.15, w = cerrado ? 22 : 17, z = cerrado ? 0.7 : 0.6, h = Math.min(0.033, Math.max(0, dt));
         for (const [k, obj] of [['z', -car.cabeceo * g], ['x', -car.balanceo * g]]) {
           const s = susp[k]; s.v += ((obj - s.p) * w * w - 2 * z * w * s.v) * h; s.p += s.v * h;
           if (!(Math.abs(s.p) < 0.5)) { s.p = obj; s.v = 0; }

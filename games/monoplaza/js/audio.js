@@ -490,7 +490,14 @@ export class Sonido {
 
   ponerVolumen(v) {
     this.volumen = v;
-    if (this.maestro) this.maestro.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+    if (this.maestro) this.maestro.gain.setTargetAtTime(v * (this._atenuado ? 0.45 : 1), this.ctx.currentTime, 0.05);
+  }
+
+  /** Baja el motor y el ambiente mientras habla la radio (la voz va compensada). */
+  atenuar(si) {
+    if (this._atenuado === !!si) return;
+    this._atenuado = !!si;
+    if (this.maestro) this.maestro.gain.setTargetAtTime((this.volumen ?? 1) * (si ? 0.45 : 1), this.ctx.currentTime, 0.12);
   }
 
   silenciar(si) {
