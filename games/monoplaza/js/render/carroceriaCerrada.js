@@ -62,6 +62,35 @@ const FORMAS = {
     ruedas: { del: 0.31, tras: 0.33 }, piloto: [-0.68, 0.15, -0.38],
     ala: true, toma: [0.92, 1.52], branquia: true, tomaLateral: false, faro: 'barra', escape: 'lado',
   },
+  // Turismo de tres volúmenes (berlina de carreras): cabina alta y recta, maletero y alerón bajo
+  gtt: {
+    baja: [
+      [2.33, 0.84, 0.11, 0.60, 0.60], [2.28, 0.90, 0.105, 0.66, 0.64], [2.14, 0.94, 0.11, 0.72, 0.67],
+      [1.90, 0.965, 0.12, 0.79, 0.70], [1.46, 0.975, 0.12, 0.84, 0.73], [1.00, 0.95, 0.12, 0.84, 0.78],
+      [0.40, 0.93, 0.12, 0.85, 0.83], [-0.30, 0.93, 0.12, 0.87, 0.86], [-0.80, 0.95, 0.12, 0.89, 0.88],
+      [-1.24, 0.975, 0.12, 0.92, 0.90], [-1.72, 0.965, 0.13, 0.93, 0.92], [-2.02, 0.94, 0.20, 0.93, 0.92],
+      [-2.12, 0.89, 0.30, 0.90, 0.90],
+    ],
+    techo: [[0.95, 0.72], [0.75, 0.84], [0.45, 1.08], [0.20, 1.27], [-0.10, 1.335], [-0.75, 1.33], [-1.10, 1.26], [-1.38, 1.08], [-1.62, 0.90]],
+    ancho: [[0.95, 0.80, 0.76], [0.45, 0.82, 0.70], [-0.10, 0.83, 0.68], [-0.75, 0.84, 0.67], [-1.20, 0.85, 0.62], [-1.62, 0.85, 0.58]],
+    xPar: 0.20, xLun: -0.75, kF: 0.20, kR: 0.14, pilarB: [-0.34, -0.26], lat: [0.70, -1.25], puerta: [0.72, -0.30],
+    ruedas: { del: 0.31, tras: 0.33 }, piloto: [-0.35, 0.22, -0.36],
+    ala: true, alaY: 1.19, toma: null, branquia: false, tomaLateral: false, faro: 'redondos', escape: 'tras',
+  },
+  // Compacto de dos volúmenes (hatchback de carreras): techo largo y portón casi vertical
+  gth: {
+    baja: [
+      [2.30, 0.84, 0.11, 0.58, 0.58], [2.25, 0.90, 0.105, 0.64, 0.62], [2.12, 0.94, 0.11, 0.70, 0.65],
+      [1.88, 0.97, 0.12, 0.78, 0.69], [1.46, 0.985, 0.12, 0.83, 0.72], [1.00, 0.95, 0.12, 0.83, 0.78],
+      [0.40, 0.93, 0.12, 0.85, 0.83], [-0.40, 0.94, 0.12, 0.88, 0.87], [-1.24, 0.99, 0.12, 0.93, 0.91],
+      [-1.62, 0.98, 0.13, 0.94, 0.93], [-1.88, 0.95, 0.20, 0.93, 0.93], [-1.96, 0.90, 0.30, 0.90, 0.90],
+    ],
+    techo: [[0.98, 0.71], [0.78, 0.83], [0.48, 1.07], [0.22, 1.26], [-0.10, 1.33], [-0.80, 1.33], [-1.35, 1.29], [-1.62, 1.15], [-1.80, 0.95], [-1.90, 0.86]],
+    ancho: [[0.98, 0.80, 0.76], [0.48, 0.82, 0.70], [-0.10, 0.83, 0.68], [-0.80, 0.84, 0.67], [-1.35, 0.85, 0.64], [-1.90, 0.85, 0.60]],
+    xPar: 0.22, xLun: -1.35, kF: 0.20, kR: 0.12, pilarB: [-0.36, -0.28], lat: [0.72, -1.32], puerta: [0.74, -0.32],
+    ruedas: { del: 0.31, tras: 0.33 }, piloto: [-0.35, 0.22, -0.36],
+    ala: true, toma: null, branquia: true, tomaLateral: false, faro: 'barra', escape: 'tras',
+  },
   // Stock Car: berlina de tres volúmenes para óvalos
   stock: {
     baja: [
@@ -79,10 +108,10 @@ const FORMAS = {
 };
 for (const F of Object.values(FORMAS)) { F.xN = F.baja[0][0]; F.xC = F.baja[F.baja.length - 1][0]; }
 export const ANCHO_RUEDAS = { gt: FORMAS.gt.ruedas, stock: FORMAS.stock.ruedas };
-/** Carrocería de cada coche: en GT hay tres (coupé, berlinetta de motor central y muscle). */
+/** Carrocería de cada coche: en GT hay cinco (coupé, berlinetta, muscle, turismo y compacto). */
 export function formaDe(categoria, semilla = 0) {
   if (categoria !== 'gt') return categoria;
-  return ['gt', 'gtb', 'gtm'][Math.abs(Math.floor(semilla)) % 3];
+  return ['gt', 'gtb', 'gtm', 'gtt', 'gth'][Math.abs(Math.floor(semilla)) % 5];
 }
 
 // ─── Superficie ──────────────────────────────────────────────────────────────────────────────
@@ -204,6 +233,8 @@ function carroceriaBaja(F, ruedas, q) {
     const lado = [...media.map(p => [p[0], p[1], p[2], 1]), ...media.slice(0, -1).reverse().map(p => [p[0], p[1], p[2], -1])];
     bruto.push(lado.map(([zz, y, tipo, sg]) => {
       const v = { x, y, z: zz * sg, tipo, marca: tipo === 2 ? 2 : 0, rueda: null };
+      // lo que queda bajo la cabina se quita: por los cristales se ve el interior
+      if (tipo === 3 && x < F.techo[0][0] - 0.02 && x > F.techo[F.techo.length - 1][0] + 0.02 && zz < anchoCab(F, x)[0] - 0.05 && yTecho(F, x, zz) > y + 0.035) v.marca = 4;
       if (tipo !== 3) for (const r of ruedas) {
         const zIn = Math.abs(r.z) - r.w / 2 - 0.05;
         if (Math.sign(v.z || 1) !== Math.sign(r.z) || Math.abs(v.z) <= zIn) continue;
@@ -242,7 +273,9 @@ function cabina(F, q) {
     m.push([wr + 0.012, yL - 0.03], [wr - 0.03, yL - 0.008]);
     for (let i = 0; i <= q.nR; i++) { const z = (wr - 0.09) * (1 - i / q.nR); m.push([z, yTecho(F, x, z)]); }
     const media = m.map(([z, y]) => [z, Math.max(base, y)]);
-    anillos.push([...media.map(p => [x, p[1], p[0], 0]), ...media.slice(0, -1).reverse().map(p => [x, p[1], -p[0], 0])]);
+    // (marca 5: costado de la cabina; su librea sale siempre de la vista de costado)
+    const mc = (i) => (i <= q.nS + 1 ? 5 : 0), n = media.length;
+    anillos.push([...media.map((p, i) => [x, p[1], p[0], mc(i)]), ...media.slice(0, -1).reverse().map((p, i) => [x, p[1], -p[0], mc(n - 2 - i)])]);
   }
   return haciaFuera(coser(anillos, false), [(xA + xB) / 2, 0.6]);
 }
@@ -275,7 +308,9 @@ function asignarUV(g, F) {
     const xc = (a.x + b.x + c.x) / 3, zc = (a.z + b.z + c.z) / 3;
     const paso = M[i] === 1 || M[i + 1] === 1 || M[i + 2] === 1, fondo = M[i] === 2 && M[i + 1] === 2 && M[i + 2] === 2;
     let v = null;
+    const costado = M[i] === 5 && M[i + 1] === 5 && M[i + 2] === 5;
     if (paso || fondo) v = null;
+    else if (costado) v = zc >= 0 ? 'der' : 'izq';
     else if (nr.x > 0.6 && xc > F.xN - 0.45) v = 'frente';
     else if (nr.x < -0.6 && xc < F.xC + 0.45) v = 'tras';
     else if (nr.y > 0.55 || (nr.y > Math.abs(nr.z) && Math.abs(nr.x) < 0.7)) v = 'arriba';
@@ -424,19 +459,21 @@ const PATRONES = {
       c.closePath();
     };
     const x0 = F.rx[0] + 0.25;
+    // primero todas en el tercer color y algo mayores (el filo de la llama) y encima las del acento;
+    // las raíces se solapan y forman un frente continuo
     const todas = (lista) => {
       for (const pasada of [0, 1]) for (const [yc, largo, alto] of lista) {
-        lengua(x0 + 0.02, yc, largo, alto);
-        if (pasada === 0) { c.lineWidth = 0.035; c.lineJoin = 'round'; c.strokeStyle = col.tercero; c.stroke(); } else { c.fillStyle = col.acento; c.fill(); }
+        if (pasada === 0) lengua(x0 + 0.03, yc, largo + 0.10, alto * 1.32); else lengua(x0 + 0.03, yc, largo, alto);
+        c.fillStyle = pasada === 0 ? col.tercero : col.acento; c.fill();
       }
     };
     if (k === 'l') {
-      c.fillStyle = col.tercero; c.fillRect(x0 - 0.025, 0, F.xN - x0 + 0.3, 1.4); c.fillStyle = col.acento; c.fillRect(x0, 0, F.xN - x0 + 0.3, 1.4);
-      todas([[0.33, 1.7, 0.16], [0.62, 2.6, 0.18], [0.88, 2.0, 0.13]]);
+      c.fillStyle = col.acento; c.fillRect(x0, 0, F.xN - x0 + 0.3, 1.4);
+      todas([[0.26, 1.2, 0.13], [0.45, 2.1, 0.14], [0.64, 1.5, 0.14], [0.83, 2.4, 0.13], [1.0, 1.1, 0.12]]);
     }
     if (k === 'a') {
-      c.fillStyle = col.tercero; c.fillRect(x0 - 0.025, -1.2, F.xN - x0 + 0.3, 2.4); c.fillStyle = col.acento; c.fillRect(x0, -1.2, F.xN - x0 + 0.3, 2.4);
-      todas([[-0.74, 1.6, 0.17], [-0.27, 2.6, 0.21], [0.27, 2.6, 0.21], [0.74, 1.6, 0.17]]);
+      c.fillStyle = col.acento; c.fillRect(x0, -1.2, F.xN - x0 + 0.3, 2.4);
+      todas([[-0.92, 1.0, 0.13], [-0.68, 1.9, 0.15], [-0.42, 1.3, 0.15], [-0.15, 2.3, 0.16], [0.15, 2.3, 0.16], [0.42, 1.3, 0.15], [0.68, 1.9, 0.15], [0.92, 1.0, 0.13]]);
     }
     if (k === 'f') { c.fillStyle = col.acento; c.fillRect(-1.2, 0, 2.4, 1.4); }
   },
@@ -471,7 +508,7 @@ function enVista(c, v, fn) {
   fn(v); c.restore();
 }
 /** Dibuja algo «derecho» (letras) en (x, y) de la vista, en centímetros; rot en radianes. */
-function sello(c, v, x, y, fn, rot = 0) {
+function selloV(c, v, x, y, fn, rot = 0) {
   c.save(); c.translate(x, y); c.scale(0.01 * Math.sign(v.m[0]), 0.01 * Math.sign(v.m[1])); if (rot) c.rotate(rot);
   fn(); c.restore();
 }
@@ -480,16 +517,21 @@ function sello(c, v, x, y, fn, rot = 0) {
  * Pinta la librea completa de una carrocería cerrada: colores y dibujo del equipo, cristales,
  * líneas de las piezas, rejillas, dorsales y patrocinadores.
  */
-export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores, numero = 7, nombre = '' }) {
+export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores, numero = 7, nombre = '', transparente = false, relieve = false }) {
   const W = cv.width, H = cv.height, c = cv.getContext('2d');
   const F = FORMAS[categoria] || FORMAS.gt, stock = categoria === 'stock';
-  const col = { base: '#0d47ff', acento: '#00e5ff', tercero: '#ffffff', ...colores };
-  const V = vistas(F, W, H), pat = PATRONES[patron] || PATRONES.lisa;
+  // (relieve: el mismo dibujo en blanco con solo las juntas, rejillas y huecos; de ahí sale el mapa de normales)
+  const col = relieve ? { base: '#ffffff', acento: '#ffffff', tercero: '#ffffff' } : { base: '#0d47ff', acento: '#00e5ff', tercero: '#ffffff', ...colores };
+  const V = vistas(F, W, H), pat = relieve ? () => {} : (PATRONES[patron] || PATRONES.lisa);
+  const sello = relieve ? () => {} : selloV;
+  // cristal: transparente (se recorta la textura) u oscuro
+  const luna = (g) => { if (transparente) { c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; c.fill(); c.globalCompositeOperation = 'source-over'; } else { c.fillStyle = relieve ? '#9a9a9a' : g; c.fill(); } };
   const pub = patrocinadores(nombre || col.base + col.acento);
   const [xf, xr] = F.rx, rF = F.rr[0], rT = F.rr[1];
   const [xCowl, xDeck] = limitesCabina(F), techoMax = Math.max(...F.techo.map(p => p[1]));
   const dN = datos(F, F.xN), dC = datos(F, F.xC), cinturon = (x) => datos(F, x).ys;
-  const tinta = contraste(col.base), linea = luma(col.base) > 60 ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.22)';
+  const tinta = contraste(col.base), linea = relieve ? '#000000' : luma(col.base) > 60 ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.22)';
+  const sello_ = (v, x, y, fn, rot) => sello(c, v, x, y, fn, rot);
   const xd = (F.puerta[0] + F.puerta[1]) / 2;
 
   c.setTransform(1, 0, 0, 1, 0, 0);
@@ -525,18 +567,18 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
         poli(c, [...tramo.map(([x, ab]) => [x, ab]), ...tramo.map(([x, , ar]) => [x, ar]).reverse()]);
         const g = c.createLinearGradient(0, techoMax, 0, cinturon(0));
         g.addColorStop(0, '#1b2531'); g.addColorStop(0.45, CRISTAL); g.addColorStop(1, '#0c1016');
-        c.fillStyle = g; c.fill();
+        luna(g);
       }
       // red de la ventanilla del piloto y nombre del equipo en la trasera
       const del = corta(F.lat[0], F.pilarB[1]);
-      if (del.length > 3) {
+      if (del.length > 3 && !relieve) {
         c.save(); poli(c, [...del.map(([x, ab]) => [x, ab]), ...del.map(([x, , ar]) => [x, ar]).reverse()]); c.clip();
-        c.strokeStyle = 'rgba(150,160,175,.22)'; c.lineWidth = 0.006; c.beginPath();
-        for (let x = F.pilarB[1]; x < F.lat[0] + 0.5; x += 0.05) { c.moveTo(x, 0.6); c.lineTo(x - 0.5, 1.4); c.moveTo(x - 0.5, 0.6); c.lineTo(x, 1.4); }
+        c.strokeStyle = transparente ? 'rgba(20,22,26,1)' : 'rgba(150,160,175,.22)'; c.lineWidth = transparente ? 0.009 : 0.006; c.beginPath();
+        for (let x = F.pilarB[1]; x < F.lat[0] + 0.5; x += transparente ? 0.085 : 0.05) { c.moveTo(x, 0.6); c.lineTo(x - 0.5, 1.4); c.moveTo(x - 0.5, 0.6); c.lineTo(x, 1.4); }
         c.stroke(); c.restore();
       }
       const tras = corta(F.pilarB[0], F.lat[1]);
-      if (tras.length > 4) { const m = tras[Math.min(tras.length - 1, 3)]; sello(c, v, m[0] - 0.14, (m[1] + m[2]) / 2, () => { c.fillStyle = '#ffffff'; c.font = fuente(4.2); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(numero), 0, 0); }); }
+      if (tras.length > 4) { const m = tras[Math.min(tras.length - 1, 3)]; sello_(v, m[0] - 0.14, (m[1] + m[2]) / 2, () => { c.fillStyle = '#ffffff'; c.font = fuente(4.2); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(numero), 0, 0); }); }
     }
     // líneas de las piezas: puerta, paragolpes, tapón de gasolina
     c.strokeStyle = linea; c.lineWidth = 0.009; c.lineJoin = 'round';
@@ -553,28 +595,28 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
       c.fillStyle = '#1a1c20'; c.beginPath(); c.arc(x, y, 0.011, 0, Math.PI * 2); c.fill(); }
     // ── publicidad ──
     if (stock) {
-      sello(c, v, xd - 0.05, 0.535, () => numeroGrande(c, numero, 58, col.tercero, contraste(col.tercero), 'rgba(0,0,0,.35)'));
-      sello(c, v, xr + 0.02, cinturon(xr) - 0.075, () => logo(c, pub.principal, 8.5, { ancho: 78 }));
-      sello(c, v, xf - 0.02, cinturon(xf) - 0.045, () => logo(c, pub.segundo, 5, { ancho: 60 }));
-      sello(c, v, xf - rF - 0.21, 0.50, () => columna(c, pub.tecnicas.slice(0, 5), 3.6, 27));
-      sello(c, v, xf - rF - 0.50, 0.50, () => columna(c, pub.tecnicas.slice(5, 10), 3.6, 27));
-      sello(c, v, xr + rT + 0.42, 0.42, () => logo(c, pub.tercero, 6.5, { ancho: 62 }));
-      sello(c, v, (xr - rT + F.xC) / 2, 0.52, () => logo(c, pub.cuarto, 6, { ancho: 46 }));
+      sello_(v, xd - 0.05, 0.535, () => numeroGrande(c, numero, 58, col.tercero, contraste(col.tercero), 'rgba(0,0,0,.35)'));
+      sello_(v, xr + 0.02, cinturon(xr) - 0.075, () => logo(c, pub.principal, 8.5, { ancho: 78 }));
+      sello_(v, xf - 0.02, cinturon(xf) - 0.045, () => logo(c, pub.segundo, 5, { ancho: 60 }));
+      sello_(v, xf - rF - 0.21, 0.50, () => columna(c, pub.tecnicas.slice(0, 5), 3.6, 27));
+      sello_(v, xf - rF - 0.50, 0.50, () => columna(c, pub.tecnicas.slice(5, 10), 3.6, 27));
+      sello_(v, xr + rT + 0.42, 0.42, () => logo(c, pub.tercero, 6.5, { ancho: 62 }));
+      sello_(v, (xr - rT + F.xC) / 2, 0.52, () => logo(c, pub.cuarto, 6, { ancho: 46 }));
     } else {
-      sello(c, v, xd + 0.20, 0.60, () => dorsal(c, numero, 31, { clase: 'GT3', colorClase: col.acento }));
-      sello(c, v, xd - 0.07, 0.315, () => logo(c, pub.principal, 11.5, { ancho: (F.puerta[0] - F.puerta[1]) * 92, borde: col.acento }));
-      sello(c, v, xd - 0.30, 0.60, () => columna(c, pub.tecnicas.slice(0, 4), 3.8, 30));
-      if (F.branquia) sello(c, v, xf - rF - 0.30, 0.685, () => logo(c, pub.segundo, 5.2, { ancho: 46 }));
-      else sello(c, v, xf - rF - 0.36, 0.46, () => logo(c, pub.segundo, 6.5, { ancho: 56 }));
-      sello(c, v, xr - 0.02, cinturon(xr) - 0.085, () => logo(c, pub.tercero, 5.6, { ancho: 70 }));
-      sello(c, v, (xr - rT + F.xC) / 2 - 0.02, 0.60, () => logo(c, pub.cuarto, 5.2, { ancho: 40 }));
-      sello(c, v, (xf + rF + F.xN) / 2, 0.37, () => logo(c, 'APEX', 4.6, { ancho: 40 }));
+      sello_(v, xd + 0.20, 0.60, () => dorsal(c, numero, 31, { clase: 'GT3', colorClase: col.acento }));
+      sello_(v, xd - 0.07, 0.315, () => logo(c, pub.principal, 11.5, { ancho: (F.puerta[0] - F.puerta[1]) * 92, borde: col.acento }));
+      sello_(v, xd - 0.30, 0.60, () => columna(c, pub.tecnicas.slice(0, 4), 3.8, 30));
+      if (F.branquia) sello_(v, xf - rF - 0.30, 0.685, () => logo(c, pub.segundo, 5.2, { ancho: 46 }));
+      else sello_(v, xf - rF - 0.36, 0.46, () => logo(c, pub.segundo, 6.5, { ancho: 56 }));
+      sello_(v, xr - 0.02, cinturon(xr) - 0.085, () => logo(c, pub.tercero, 5.6, { ancho: 70 }));
+      sello_(v, (xr - rT + F.xC) / 2 - 0.02, 0.60, () => logo(c, pub.cuarto, 5.2, { ancho: 40 }));
+      sello_(v, (xf + rF + F.xN) / 2, 0.37, () => logo(c, 'APEX', 4.6, { ancho: 40 }));
     }
-    sello(c, v, (xf + xr) / 2, 0.155, () => { c.fillStyle = '#f2f4f7'; c.font = fuente(4.6); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('UPGAMES.GAMES', 0, 0); });
+    sello_(v, (xf + xr) / 2, 0.155, () => { c.fillStyle = '#f2f4f7'; c.font = fuente(4.6); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('UPGAMES.GAMES', 0, 0); });
     // pegatinas técnicas
-    sello(c, v, F.puerta[0] + 0.10, cinturon(F.puerta[0]) - 0.075, () => tecnica(c, 'corriente', 3.4));
-    sello(c, v, F.puerta[0] + 0.19, cinturon(F.puerta[0]) - 0.075, () => tecnica(c, 'extintor', 3));
-    sello(c, v, xr - rT - 0.10, 0.27, () => tecnica(c, 'gato', 3));
+    sello_(v, F.puerta[0] + 0.10, cinturon(F.puerta[0]) - 0.075, () => tecnica(c, 'corriente', 3.4));
+    sello_(v, F.puerta[0] + 0.19, cinturon(F.puerta[0]) - 0.075, () => tecnica(c, 'extintor', 3));
+    sello_(v, xr - rT - 0.10, 0.27, () => tecnica(c, 'gato', 3));
   });
 
   // ── arriba ──
@@ -607,41 +649,41 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
     }
     // parabrisas con su parasol y luneta
     const par = lunaArriba(F, true), lun = lunaArriba(F, false);
-    const cristal = (pts, x0, x1) => { poli(c, pts); const g = c.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#0b0f15'); g.addColorStop(0.55, CRISTAL); g.addColorStop(1, '#1d2834'); c.fillStyle = g; c.fill(); c.lineWidth = 0.022; c.strokeStyle = '#101216'; c.stroke(); };
+    const cristal = (pts, x0, x1) => { poli(c, pts); const g = c.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#0b0f15'); g.addColorStop(0.55, CRISTAL); g.addColorStop(1, '#1d2834'); luna(g); c.lineWidth = 0.022; c.strokeStyle = '#101216'; c.stroke(); };
     cristal(par, xCowl, F.xPar); cristal(lun, xDeck, F.xLun);
     c.save(); poli(c, par); c.clip();
     const zPar = anchoCab(F, F.xPar)[1];
     relleno(c, [...Array.from({ length: 21 }, (_, i) => { const z = zPar * (i - 10) / 10; return [F.xPar + 0.21 - F.kF * z * z, z]; }), ...Array.from({ length: 21 }, (_, i) => { const z = zPar * (10 - i) / 10; return [F.xPar - 0.1 - F.kF * z * z, z]; })], oscuro(col.acento, luma(col.acento) > 170 ? 0.15 : 0));
     c.restore();
-    sello(c, v, F.xPar + 0.125, 0, () => { const t = (nombre || 'UPGAMES').toUpperCase(); c.fillStyle = contraste(col.acento); c.font = fuente(9.5); c.textAlign = 'center'; c.textBaseline = 'middle'; const m = c.measureText(t).width; if (m > 96) c.scale(96 / m, 1); c.fillText(t, 0, 0.4); }, -Math.PI / 2);
+    sello_(v, F.xPar + 0.125, 0, () => { const t = (nombre || 'UPGAMES').toUpperCase(); c.fillStyle = contraste(col.acento); c.font = fuente(9.5); c.textAlign = 'center'; c.textBaseline = 'middle'; const m = c.measureText(t).width; if (m > 96) c.scale(96 / m, 1); c.fillText(t, 0, 0.4); }, -Math.PI / 2);
     // luneta: lamas (motor central) o parasol trasero
     c.save(); poli(c, lun); c.clip();
     if (F.tomaLateral) { c.fillStyle = 'rgba(30,34,40,.95)'; for (let x = F.xLun - 0.12; x > xDeck; x -= 0.085) c.fillRect(x, -1, 0.03, 2); }
     else { c.fillStyle = oscuro(col.acento, luma(col.acento) > 170 ? 0.15 : 0); c.fillRect(F.xLun - 0.19, -1, 0.14, 2); }
     c.restore();
-    if (!F.tomaLateral) sello(c, v, F.xLun - 0.125, 0, () => { c.fillStyle = contraste(col.acento); c.font = fuente(6.2); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('UPGAMES.GAMES', 0, 0.3); }, Math.PI / 2);
+    if (!F.tomaLateral) sello_(v, F.xLun - 0.125, 0, () => { c.fillStyle = contraste(col.acento); c.font = fuente(6.2); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('UPGAMES.GAMES', 0, 0.3); }, Math.PI / 2);
     // techo: trampilla, dorsal y luces de posición
     const xt = (F.xPar + F.xLun) / 2;
-    if (stock) sello(c, v, xt - 0.04, 0, () => numeroGrande(c, numero, 62, col.tercero, contraste(col.tercero), 'rgba(0,0,0,.35)'), Math.PI / 2);
+    if (stock) sello_(v, xt - 0.04, 0, () => numeroGrande(c, numero, 62, col.tercero, contraste(col.tercero), 'rgba(0,0,0,.35)'), Math.PI / 2);
     else {
       c.strokeStyle = linea; c.lineWidth = 0.008; c.strokeRect(xt - 0.06, -0.50, 0.32, 0.30);
-      sello(c, v, xt - 0.08, 0.20, () => dorsal(c, numero, 30, { clase: 'GT3', colorClase: col.acento }), Math.PI / 2);
-      sello(c, v, xt + 0.24, 0.20, () => logo(c, pub.segundo, 4.6, { ancho: 46 }), Math.PI / 2);
+      sello_(v, xt - 0.08, 0.20, () => dorsal(c, numero, 30, { clase: 'GT3', colorClase: col.acento }), Math.PI / 2);
+      sello_(v, xt + 0.24, 0.20, () => logo(c, pub.segundo, 4.6, { ancho: 46 }), Math.PI / 2);
     }
     // capó: patrocinador principal (se lee de frente) y dorsal
     const xLogo = F.toma ? (F.toma[1] + xc1) / 2 + 0.02 : stock ? (xc0 + xc1) / 2 : xc1 - 0.30;
-    sello(c, v, xLogo, 0, () => logo(c, pub.principal, stock ? 24 : F.toma ? Math.min(13, (xc1 - F.toma[1]) * 42) : 12, { ancho: stock ? 150 : 104, borde: col.acento }), -Math.PI / 2);
-    if (stock) sello(c, v, xc1 - 0.22, 0, () => logo(c, pub.tercero, 8, { ancho: 90 }), -Math.PI / 2);
+    sello_(v, xLogo, 0, () => logo(c, pub.principal, stock ? 24 : F.toma ? Math.min(13, (xc1 - F.toma[1]) * 42) : 12, { ancho: stock ? 150 : 104, borde: col.acento }), -Math.PI / 2);
+    if (stock) sello_(v, xc1 - 0.22, 0, () => logo(c, pub.tercero, 8, { ancho: 90 }), -Math.PI / 2);
     else if (F.toma && F.toma[0] - xc0 > 0.3) {
-      sello(c, v, (F.toma[0] + xc0) / 2, 0.32, () => dorsal(c, numero, Math.min(30, (F.toma[0] - xc0) * 72), { clase: 'GT3', colorClase: col.acento }), -Math.PI / 2);
-      sello(c, v, (F.toma[0] + xc0) / 2, -0.26, () => logo(c, pub.tercero, 6, { ancho: 50 }), -Math.PI / 2);
+      sello_(v, (F.toma[0] + xc0) / 2, 0.32, () => dorsal(c, numero, Math.min(30, (F.toma[0] - xc0) * 72), { clase: 'GT3', colorClase: col.acento }), -Math.PI / 2);
+      sello_(v, (F.toma[0] + xc0) / 2, -0.26, () => logo(c, pub.tercero, 6, { ancho: 50 }), -Math.PI / 2);
     } else if (!F.toma) {
-      sello(c, v, xc0 + 0.40, 0, () => dorsal(c, numero, 26, { clase: 'GT3', colorClase: col.acento }), -Math.PI / 2);
+      sello_(v, xc0 + 0.40, 0, () => dorsal(c, numero, 26, { clase: 'GT3', colorClase: col.acento }), -Math.PI / 2);
     }
     // maletero o tapa del motor
-    if (xDeck - F.xC > 0.34) sello(c, v, (xDeck + F.xC) / 2 + 0.03, 0, () => logo(c, stock ? pub.principal : pub.cuarto, Math.min(stock ? 20 : 8, (xDeck - F.xC) * 26), { ancho: 110 }), Math.PI / 2);
+    if (xDeck - F.xC > 0.34) sello_(v, (xDeck + F.xC) / 2 + 0.03, 0, () => logo(c, stock ? pub.principal : pub.cuarto, Math.min(stock ? 20 : 8, (xDeck - F.xC) * 26), { ancho: 110 }), Math.PI / 2);
     // aletas traseras: una pegatina sobre cada una
-    for (const s of [-1, 1]) sello(c, v, xr + 0.02, s * 0.80, () => logo(c, 'APEX', 3.6, { ancho: 34 }), s > 0 ? 0 : Math.PI);
+    for (const s of [-1, 1]) sello_(v, xr + 0.02, s * 0.80, () => logo(c, 'APEX', 3.6, { ancho: 34 }), s > 0 ? 0 : Math.PI);
   });
 
   // ── frente ──
@@ -652,14 +694,14 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
     relleno(c, [[-w, y0 + 0.035], [w, y0 + 0.035], [w, y0 + 0.05], [-w, y0 + 0.05]], col.acento);
     if (stock) {
       malla(c, [[-0.62, y0 + 0.07], [0.62, y0 + 0.07], [0.56, y0 + h * 0.46], [-0.56, y0 + h * 0.46]]);
-      sello(c, v, 0, y0 + h * 0.70, () => logo(c, pub.principal, 7, { ancho: 80 }));
+      sello_(v, 0, y0 + h * 0.70, () => logo(c, pub.principal, 7, { ancho: 80 }));
     } else {
       malla(c, [[-0.60, y0 + 0.065], [0.60, y0 + 0.065], [0.68, y0 + h * 0.60], [-0.68, y0 + h * 0.60]]);
       for (const s of [-1, 1]) relleno(c, [[s * 0.72, y0 + 0.07], [s * 0.84, y0 + 0.09], [s * 0.84, y0 + h * 0.5], [s * 0.72, y0 + h * 0.56]], NEGRO);
       relleno(c, [[-0.42, y0 + h * 0.70], [0.42, y0 + h * 0.70], [0.38, y0 + h * 0.84], [-0.38, y0 + h * 0.84]], NEGRO);
       c.fillStyle = col.acento; c.fillRect(-0.68, y0 + h * 0.60, 1.36, 0.012);
     }
-    sello(c, v, 0.40, y0 + h * 0.36, () => tecnica(c, 'remolque', 3.2));
+    sello_(v, 0.40, y0 + h * 0.36, () => tecnica(c, 'remolque', 3.2));
   });
 
   // ── trasera ──
@@ -670,10 +712,10 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
     // franja de los pilotos y rejillas
     relleno(c, [[-w + 0.03, y1 - 0.20], [w - 0.03, y1 - 0.20], [w - 0.01, y1 - 0.075], [-w + 0.01, y1 - 0.075]], '#0b0c10');
     if (!stock) for (const s of [-1, 1]) malla(c, [[s * 0.42, y0 + 0.13], [s * 0.80, y0 + 0.13], [s * 0.84, y1 - 0.23], [s * 0.46, y1 - 0.23]], 0.03);
-    sello(c, v, 0, y0 + (stock ? 0.33 : 0.25), () => logo(c, pub.principal, stock ? 9 : 7, { ancho: stock ? 120 : 70 }));
+    sello_(v, 0, y0 + (stock ? 0.33 : 0.25), () => logo(c, pub.principal, stock ? 9 : 7, { ancho: stock ? 120 : 70 }));
     c.fillStyle = '#ff2a1a'; c.fillRect(-0.05, y0 + 0.105, 0.10, 0.035);                                  // luz de lluvia
-    sello(c, v, -0.38, y0 + 0.16, () => tecnica(c, 'remolque', 3));
-    sello(c, v, 0.62, y1 - 0.035, () => { c.fillStyle = tinta; c.font = fuente(3.4); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('APEX GP', 0, 0); });
+    sello_(v, -0.38, y0 + 0.16, () => tecnica(c, 'remolque', 3));
+    sello_(v, 0.62, y1 - 0.035, () => { c.fillStyle = tinta; c.font = fuente(3.4); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('APEX GP', 0, 0); });
   });
   c.setTransform(1, 0, 0, 1, 0, 0);
   return cv;
@@ -702,6 +744,16 @@ const guardado = (clave, crear) => { if (!cache.has(clave)) cache.set(clave, cre
 const MAT = {
   carbono: () => guardado('m:carbono', () => new THREE.MeshPhysicalMaterial({ color: 0x121317, roughness: 0.36, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 })),
   negro: () => guardado('m:negro', () => new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.62 })),
+  jaula: () => guardado('m:jaula', () => new THREE.MeshStandardMaterial({ color: 0x9aa1aa, roughness: 0.5, metalness: 0.6 })),
+  rojo: () => guardado('m:rojo', () => new THREE.MeshStandardMaterial({ color: 0xd8201c, roughness: 0.6 })),
+  cristal: () => guardado('m:cristal', () => new THREE.MeshPhysicalMaterial({ color: 0x0c1218, transparent: true, opacity: 0.46, roughness: 0.03, metalness: 0, envMapIntensity: 2.2, depthWrite: false })),
+  charco: () => guardado('m:charco', () => {
+    const cv = lienzo(128, 64), c = cv.getContext('2d'), g = c.createRadialGradient(20, 32, 2, 50, 32, 78);
+    g.addColorStop(0, 'rgba(255,250,235,.9)'); g.addColorStop(0.5, 'rgba(255,246,225,.32)'); g.addColorStop(1, 'rgba(255,246,225,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 128, 64);
+    return new THREE.MeshBasicMaterial({ map: textura(cv), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  }),
+  llama: () => guardado('m:llama', () => new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })),
   cromo: () => guardado('m:cromo', () => new THREE.MeshStandardMaterial({ color: 0xc8ccd2, roughness: 0.2, metalness: 1 })),
   color: (hex) => guardado('m:color' + hex, () => new THREE.MeshPhysicalMaterial({ color: new THREE.Color(hex), roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.06 })),
 };
@@ -715,6 +767,7 @@ function texturaFaro(tipo) {
       almendra: [[0.97, 0.44], [0.86, 0.62], [0.60, 0.80], [0.26, 0.86], [0.10, 0.80], [0.22, 0.60], [0.52, 0.42], [0.80, 0.36]],
       cuchilla: [[0.97, 0.50], [0.84, 0.62], [0.50, 0.74], [0.08, 0.84], [0.05, 0.76], [0.40, 0.58], [0.78, 0.46]],
       barra: [[0.96, 0.40], [0.96, 0.66], [0.84, 0.72], [0.20, 0.72], [0.12, 0.62], [0.12, 0.46], [0.24, 0.40]],
+      redondos: [[0.96, 0.38], [0.96, 0.68], [0.20, 0.72], [0.14, 0.64], [0.14, 0.40]],
       pegatina: [[0.95, 0.40], [0.95, 0.66], [0.26, 0.70], [0.20, 0.62], [0.20, 0.42]],
     }[tipo];
     poli(c, contorno); c.fillStyle = '#0a0c10'; c.fill(); c.lineWidth = 0.02; c.lineJoin = 'round'; c.strokeStyle = '#2a2e36'; c.stroke();
@@ -723,6 +776,7 @@ function texturaFaro(tipo) {
     c.strokeStyle = '#f4f8ff'; c.lineCap = 'round'; c.lineJoin = 'round';
     if (tipo === 'almendra') { lente(0.66, 0.60, 0.085); lente(0.44, 0.70, 0.07); c.lineWidth = 0.035; c.beginPath(); c.moveTo(0.90, 0.44); c.lineTo(0.56, 0.47); c.lineTo(0.27, 0.63); c.lineTo(0.17, 0.78); c.stroke(); }
     else if (tipo === 'cuchilla') { lente(0.62, 0.585, 0.055); lente(0.48, 0.63, 0.05); lente(0.34, 0.68, 0.045); c.lineWidth = 0.032; c.beginPath(); c.moveTo(0.92, 0.52); c.lineTo(0.50, 0.70); c.lineTo(0.12, 0.80); c.stroke(); }
+    else if (tipo === 'redondos') { lente(0.78, 0.54, 0.105); lente(0.54, 0.545, 0.105); lente(0.31, 0.55, 0.085); }
     else if (tipo === 'barra') { lente(0.76, 0.56, 0.085); lente(0.52, 0.56, 0.085); c.lineWidth = 0.03; c.beginPath(); c.moveTo(0.92, 0.445); c.lineTo(0.26, 0.445); c.lineTo(0.17, 0.52); c.lineTo(0.17, 0.60); c.stroke(); }
     else { c.fillStyle = '#dfe8f4'; c.fillRect(0.60, 0.455, 0.30, 0.17); c.fillRect(0.26, 0.465, 0.30, 0.17); c.strokeStyle = 'rgba(40,48,60,.7)'; c.lineWidth = 0.008; c.beginPath(); for (let u = 0.30; u < 0.9; u += 0.05) { c.moveTo(u, 0.44); c.lineTo(u, 0.66); } c.stroke(); }
     c.restore();
@@ -800,6 +854,30 @@ function texturaDeriva(numero, col) {
   });
 }
 
+/** Mapa de normales con las juntas de las piezas, las rejillas y los huecos de cada carrocería. */
+function relieveDe(forma, tam = 1024) {
+  return guardado(`relieve:${forma}:${tam}`, () => {
+    const cv = lienzo(tam, tam); pintarLibreaCerrada(cv, { categoria: forma, relieve: true });
+    const c = cv.getContext('2d'), src = c.getImageData(0, 0, tam, tam).data, alt = new Float32Array(tam * tam);
+    for (let i = 0; i < tam * tam; i++) alt[i] = (src[i * 4] + src[i * 4 + 1] + src[i * 4 + 2]) / 765;
+    // un suavizado corto para que la junta sea una ranura y no un escalón de un píxel
+    const suave = new Float32Array(tam * tam);
+    for (let y = 0; y < tam; y++) for (let x = 0; x < tam; x++) {
+      const xm = Math.max(0, x - 1), xp = Math.min(tam - 1, x + 1), ym = Math.max(0, y - 1), yp = Math.min(tam - 1, y + 1);
+      suave[y * tam + x] = (alt[y * tam + x] * 4 + alt[y * tam + xm] * 2 + alt[y * tam + xp] * 2 + alt[ym * tam + x] * 2 + alt[yp * tam + x] * 2 + alt[ym * tam + xm] + alt[ym * tam + xp] + alt[yp * tam + xm] + alt[yp * tam + xp]) / 16;
+    }
+    const out = c.createImageData(tam, tam), f = 2.6;
+    for (let y = 0; y < tam; y++) for (let x = 0; x < tam; x++) {
+      const xm = Math.max(0, x - 1), xp = Math.min(tam - 1, x + 1), ym = Math.max(0, y - 1), yp = Math.min(tam - 1, y + 1);
+      const nx = (suave[y * tam + xm] - suave[y * tam + xp]) * f, ny = (suave[yp * tam + x] - suave[ym * tam + x]) * f, l = Math.hypot(nx, ny, 1), i = (y * tam + x) * 4;
+      out.data[i] = (nx / l * 0.5 + 0.5) * 255; out.data[i + 1] = (ny / l * 0.5 + 0.5) * 255; out.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; out.data[i + 3] = 255;
+    }
+    c.putImageData(out, 0, 0);
+    const t = new THREE.CanvasTexture(cv); t.anisotropy = 4;
+    return t;
+  });
+}
+
 const geos = new Map();
 /** Piel pintada (carrocería baja y cabina en una malla sin índices, con sus UV de la librea). */
 function geoCuerpo(forma, ruedas, calidad) {
@@ -808,10 +886,14 @@ function geoCuerpo(forma, ruedas, calidad) {
   const F = FORMAS[forma], q = nivel(calidad);
   const partes = [carroceriaBaja(F, ruedas, q), cabina(F, q)].map(g => g.toNonIndexed());
   const g = new THREE.BufferGeometry();
+  // (se quitan los triángulos de la carrocería baja que quedan bajo la cabina)
+  const Mb = partes[0].attributes.marca.array, quedan = [];
+  for (let t = 0; t < Mb.length; t += 3) if (!(Mb[t] === 4 && Mb[t + 1] === 4 && Mb[t + 2] === 4)) quedan.push(t);
   for (const k of ['position', 'normal', 'marca']) {
-    const a = partes[0].attributes[k], b = partes[1].attributes[k], arr = new Float32Array(a.array.length + b.array.length);
-    arr.set(a.array); arr.set(b.array, a.array.length);
-    g.setAttribute(k, new THREE.BufferAttribute(arr, a.itemSize));
+    const a = partes[0].attributes[k], b = partes[1].attributes[k], n = a.itemSize, arr = new Float32Array(quedan.length * 3 * n + b.array.length);
+    quedan.forEach((t, j) => arr.set(a.array.subarray(t * n, (t + 3) * n), j * 3 * n));
+    arr.set(b.array, quedan.length * 3 * n);
+    g.setAttribute(k, new THREE.BufferAttribute(arr, n));
   }
   normalesPorClase(g);
   asignarUV(g, F);
@@ -821,19 +903,36 @@ function geoCuerpo(forma, ruedas, calidad) {
   return g;
 }
 
+/** Cristales: la piel de la cabina, un pelo por dentro de la pintura (se ve por los huecos de la librea). */
+function geoCristal(forma, calidad) {
+  return guardado(`cristal:${forma}|${calidad}`, () => {
+    const g = cabina(FORMAS[forma], nivel(calidad)); g.deleteAttribute('marca');
+    const P = g.attributes.position.array, N = g.attributes.normal.array;
+    for (let i = 0; i < P.length; i++) P[i] -= N[i] * 0.006;
+    return g;
+  });
+}
+function tubo(a, b, r = 0.02) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A);
+  const g = new THREE.CylinderGeometry(r, r, d.length(), 6, 1, true);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()));
+  const m = A.add(B).multiplyScalar(0.5); g.translate(m.x, m.y, m.z);
+  return g;
+}
+
 /**
  * Crea la carrocería cerrada. ruedas: [{ x, z, r, w }]. Devuelve la piel pintada (cuerpo, una
  * malla sin índices para las abolladuras), un grupo con lo demás y los datos para colocar el
  * piloto, las cámaras y los espejos.
  */
-export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2, colores = {}, numero = 7, nombre = '' }) {
+export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2, colores = {}, numero = 7, nombre = '', transparente = false }) {
   const F = FORMAS[categoria] || FORMAS.gt, q = nivel(calidad), stock = categoria === 'stock';
   const col = { base: '#0d47ff', acento: '#00e5ff', tercero: '#ffffff', ...colores };
   ponerRuedas(F, ruedas);
   const cuerpo = new THREE.Mesh(geoCuerpo(categoria, ruedas, calidad), pintura); cuerpo.castShadow = true; cuerpo.receiveShadow = true;
 
   const extras = new THREE.Group();
-  const G = { carbono: [], negro: [], cromo: [], color: [] };
+  const G = { carbono: [], negro: [], cromo: [], color: [], jaula: [], rojo: [] };
   const D = (x) => datos(F, x), xN = F.xN, xC = F.xC, [xf, xr] = F.rx;
   const [xCowl, xDeck] = limitesCabina(F), techo = Math.max(...F.techo.map(p => p[1]));
   const pub = patrocinadores(nombre || col.base + col.acento);
@@ -871,14 +970,17 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2, color
     G.carbono.push(caja(0.16, 0.012, D(xC).w * 1.8, xC - 0.03, yb + 0.006, 0, 0, 0, -0.12));
     for (const z of [-0.72, -0.44, -0.15, 0.15, 0.44, 0.72]) G.carbono.push(lamina([[xC - 0.10, yb], [xC - 0.10, yb - 0.035], [xC + 0.42, 0.085], [xC + 0.50, 0.12], [xC + 0.12, yb - 0.06]], 0.010).translate(0, 0, z));
   }
-  // escapes
+  // escapes (y dónde salen sus llamaradas al levantar el pie)
+  const bocas = [];
   if (F.escape === 'tras') for (const s of [-1, 1]) {
     G.cromo.push(pon(new THREE.CylinderGeometry(0.052, 0.052, 0.12, 16, 1, true), xC + 0.02, D(xC).yb + 0.085, s * 0.20, 0, 0, Math.PI / 2));
     G.negro.push(pon(new THREE.CircleGeometry(0.05, 14), xC + 0.05, D(xC).yb + 0.085, s * 0.20, 0, -Math.PI / 2, 0));
+    bocas.push(pon(new THREE.ConeGeometry(0.045, 0.34, 8), xC - 0.20, D(xC).yb + 0.085, s * 0.20, 0, 0, Math.PI / 2));
   } else for (const s of stock ? [1] : [-1, 1]) {
     const x = xr + F.rr[1] + 0.26;
     G.cromo.push(pon(new THREE.CylinderGeometry(0.045, 0.045, 0.14, 14, 1, true), x, D(x).yb + 0.035, s * (D(x).w - 0.04), Math.PI / 2, 0, 0));
     G.negro.push(pon(new THREE.CircleGeometry(0.043, 12), x, D(x).yb + 0.035, s * (D(x).w - 0.03), 0, s > 0 ? 0 : Math.PI, 0));
+    bocas.push(pon(new THREE.ConeGeometry(0.04, 0.30, 8), x, D(x).yb + 0.035, s * (D(x).w + 0.17), s * Math.PI / 2, 0, 0));
   }
   // retrovisores sobre su brazo, al pie del pilar A
   const espejos = [];
@@ -889,12 +991,17 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2, color
     espejos.push({ x: xe - 0.064, y: ye, z: ze });
   }
   // limpiaparabrisas y antena
-  G.negro.push(caja(0.016, 0.014, 0.52, xCowl - 0.075, yTecho(F, xCowl - 0.075) + 0.012, 0.05, 0, 0.06, 0));
+  { const L = (x, z) => [x, yTecho(F, x, z) + 0.014, z];
+    G.negro.push(tubo(L(xCowl - 0.03, 0.03), L(xCowl - 0.27, -0.15), 0.006), tubo(L(xCowl - 0.40, -0.08), L(xCowl - 0.13, -0.25), 0.009));
+    const eje = new THREE.SphereGeometry(0.018, 8, 6); G.negro.push(pon(eje, ...L(xCowl - 0.03, 0.03))); }
+  // ganchos de remolque
+  { const aro = () => new THREE.TorusGeometry(0.034, 0.009, 6, 12).rotateY(Math.PI / 2);
+    G.rojo.push(pon(aro(), arco(F, xN, 0.42) + 0.012, D(xN).yb + 0.13, 0.42), pon(aro(), xC - 0.012, D(xC).yb + 0.13, -0.40)); }
   G.negro.push(pon(new THREE.CylinderGeometry(0.004, 0.006, 0.16, 5), F.xLun + 0.12, yTecho(F, F.xLun + 0.12) + 0.07, 0.22, 0, 0, 0.35));
 
   // alerón trasero (GT): cuellos de cisne, plano con reborde y derivas · spoiler (Stock)
   if (F.ala) {
-    const xA = xC + 0.20, yA = techo - 0.035, yD = ySup(D(xA + 0.45), 0.38) - 0.02, env = 1.86;
+    const xA = xC + 0.20, yA = F.alaY ?? techo - 0.035, yD = ySup(D(xA + 0.45), 0.38) - 0.02, env = 1.86;
     const ala = new THREE.Mesh(geoAla(env), guardado(`mAla:${pub.principal}:${col.base}:${col.acento}`, () => new THREE.MeshPhysicalMaterial({ map: texturaAla(pub.principal, col), roughness: 0.34, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.08 })));
     ala.position.set(xA, yA, 0); ala.rotation.z = -0.12; ala.castShadow = true; extras.add(ala);
     for (const s of [-1, 1]) {
@@ -911,24 +1018,53 @@ export function crearCarroceria(categoria, { pintura, ruedas, calidad = 2, color
   }
 
   // faros (siguen la piel del morro) y pilotos traseros LED
+  const luces = {};
   {
     const xb = xN - 0.045, xa = xN - (F.faro === 'cuchilla' ? 0.56 : 0.50);
     const g = parche(F, q, xa, xb, iCostado(q) + Math.round(q.nL * 0.45), iArriba(q) + Math.round(q.nT * 0.42));
     const m = guardado('mFaro:' + F.faro, () => new THREE.MeshStandardMaterial({ map: texturaFaro(F.faro), emissiveMap: texturaFaro(F.faro), emissive: 0xffffff, emissiveIntensity: stock ? 0.35 : 1.1, roughness: 0.12, metalness: 0.1, transparent: true, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
-    extras.add(new THREE.Mesh(g, m));
+    luces.faro = m.clone(); luces.faroBase = m.emissiveIntensity; extras.add(new THREE.Mesh(g, luces.faro));
     const d = D(xC), yP = d.ys - 0.137, mp = guardado('mPiloto:' + F.faro, () => new THREE.MeshStandardMaterial({ map: texturaPiloto(F.faro), emissiveMap: texturaPiloto(F.faro), emissive: 0xffffff, emissiveIntensity: stock ? 0.6 : 1.7, roughness: 0.25, transparent: true, alphaTest: 0.3, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
     const ancho = d.w - 0.06, zc = ancho / 2 + 0.01;
     const pl = [1, -1].map(s => { const p = new THREE.PlaneGeometry(ancho, 0.115); if (s < 0) { const u = p.attributes.uv; for (let i = 0; i < u.count; i++) u.setX(i, 1 - u.getX(i)); } return pon(p, arco(F, xC, zc) - 0.004, yP, s * zc, 0, -Math.PI / 2 - s * 0.14 * zc, 0); });
-    extras.add(unir(pl, mp, false));
+    luces.freno = mp.clone(); luces.frenoBase = mp.emissiveIntensity; extras.add(unir(pl, luces.freno, false));
+    // charco de luz de los faros sobre el asfalto (de noche) y llamaradas del escape
+    luces.charco = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.2), MAT.charco()); luces.charco.rotation.x = -Math.PI / 2; luces.charco.position.set(xN + 3.3, 0.03, 0); luces.charco.visible = false; luces.charco.renderOrder = 1; extras.add(luces.charco);
+    if (bocas.length && calidad >= 1) { luces.llamas = unir(bocas, MAT.llama(), false); luces.llamas.visible = false; extras.add(luces.llamas); }
+  }
+  // cristales tintados: la librea va recortada donde hay cristal y por los huecos se ve el interior
+  if (transparente) {
+    pintura.alphaTest = 0.5;
+    const forro = new THREE.Mesh(cuerpo.geometry, new THREE.MeshLambertMaterial({ map: pintura.map, color: 0x24262b, alphaTest: 0.5, side: THREE.BackSide }));
+    forro.name = 'forro'; extras.add(forro);
+    const cristal = new THREE.Mesh(geoCristal(categoria, calidad), MAT.cristal()); cristal.renderOrder = 3; cristal.name = 'cristal'; extras.add(cristal);
+    // jaula antivuelco: arco principal, barras del techo y del pilar A, cruces de las puertas y tirantes
+    const xH = (F.pilarB[0] + F.pilarB[1]) / 2, xT = F.xPar - 0.04, xA = xCowl - 0.17, r = 0.021;
+    const arriba = (x) => { const wr = anchoCab(F, x)[1] - 0.075; return [x, yTecho(F, x, wr) - 0.08, wr]; };
+    const abajo = (x, y) => [x, y, anchoCab(F, x)[0] - 0.085];
+    const xR = Math.max(xH - 0.85, xDeck + 0.16);
+    for (const sg of [-1, 1]) {
+      const e = (p) => [p[0], p[1], p[2] * sg];
+      const tH = arriba(xH), tA = arriba(xT), pA = abajo(xA, ySup(D(xA), anchoCab(F, xA)[0]) - 0.04);
+      G.jaula.push(tubo(e(abajo(xH, 0.15)), e(tH), r), tubo(e(tH), e(tA), r), tubo(e(tA), e(pA), r), tubo(e(pA), e(abajo(xA + 0.05, 0.15)), r));
+      G.jaula.push(tubo(e(abajo(xH, 0.27)), e(abajo(xA, 0.60)), r * 0.9), tubo(e(abajo(xH, 0.62)), e(abajo(xA, 0.28)), r * 0.9));
+      G.jaula.push(tubo(e(tH), [xR, ySup(D(xR), 0.42) - 0.05, sg * 0.42], r * 0.9));
+    }
+    { const tH = arriba(xH), tA = arriba(xT);
+      G.jaula.push(tubo(tH, [tH[0], tH[1], -tH[2]], r), tubo(tA, [tA[0], tA[1], -tA[2]], r), tubo(abajo(xH, 0.15), [tH[0], tH[1], -tH[2]], r * 0.9)); }
+    // asiento baquet del piloto (con sus orejas a la altura del casco) y suelo
+    const [dx, dy, dz] = F.piloto;
+    G.negro.push(caja(0.07, 0.64, 0.44, dx - 0.15, 0.50 + dy, dz, 0, 0, 0.22), caja(0.44, 0.07, 0.42, dx + 0.10, 0.30 + dy, dz, 0, 0, 0.10));
+    for (const sg of [-1, 1]) G.negro.push(caja(0.20, 0.20, 0.035, dx - 0.10, 0.80 + dy, dz + sg * 0.17, 0, 0, 0.22), caja(0.40, 0.20, 0.035, dx + 0.08, 0.40 + dy, dz + sg * 0.215));
   }
   // salpicadero (por si se mira a través de los pasos de rueda no se ve nada hueco)
   G.negro.push(caja(0.30, 0.10, 1.4, xCowl - 0.30, D(xCowl).yc - 0.06, 0));
 
-  for (const [k, mat] of [['carbono', MAT.carbono()], ['negro', MAT.negro()], ['cromo', MAT.cromo()], ['color', MAT.color(col.acento)]]) { const m = unir(G[k], mat); if (m) extras.add(m); }
+  for (const [k, mat] of [['carbono', MAT.carbono()], ['negro', MAT.negro()], ['cromo', MAT.cromo()], ['color', MAT.color(col.acento)], ['jaula', MAT.jaula()], ['rojo', MAT.rojo()]]) { const m = unir(G[k], mat); if (m) extras.add(m); }
 
   // datos para el resto del modelo (cámaras, piloto, calor del escape, espejos)
   const forma = { piloto: F.piloto, techo, cintura: D(xCowl).ys, cristal: [xCowl + 0.1, xDeck], secciones: [[xN], [xC]], espejos };
-  return { cuerpo, extras, forma };
+  return { cuerpo, extras, forma, luces, relieve: calidad >= 2 ? relieveDe(categoria) : null };
 }
 
 /** Apunta en la forma dónde van las ruedas (lo necesita la librea para colocar la publicidad). */
@@ -937,5 +1073,5 @@ function ponerRuedas(F, ruedas) {
   F.rx = [del.x, tras.x]; F.rr = [del.r, tras.r];
 }
 // posición de las ruedas por defecto (batalla de cada categoría), por si se pinta antes de crear
-FORMAS.gt.rx = FORMAS.gtb.rx = FORMAS.gtm.rx = [1.458, -1.242]; FORMAS.gt.rr = FORMAS.gtb.rr = FORMAS.gtm.rr = [0.345, 0.35];
+for (const k of ['gt', 'gtb', 'gtm', 'gtt', 'gth']) { FORMAS[k].rx = [1.458, -1.242]; FORMAS[k].rr = [0.345, 0.35]; }
 FORMAS.stock.rx = [1.339, -1.451]; FORMAS.stock.rr = [0.355, 0.355];
