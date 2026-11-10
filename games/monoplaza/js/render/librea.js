@@ -7,6 +7,7 @@
 //   └──────────── LADO IZQUIERDO (morro a la izquierda) ─────────┘  último cuarto
 
 import * as THREE from 'three';
+import { logo, fila, numeroGrande, tecnica, patrocinadores, contraste, fuente } from './pegatinas.js';
 
 export const ATLAS = { x0: -2.65, x1: 3.1, zMax: 1.02, yMax: 1.25 };
 const SPAN = ATLAS.x1 - ATLAS.x0;
@@ -118,15 +119,17 @@ const PATRONES = {
     p.poliArriba(z.map(([x, w]) => [x, -w]), col.acento);
     p.poliLados([[3.0, 0.3], [1.2, 0.5], [0.6, 0.28], [-0.6, 0.62], [-1.0, 0.38], [-2.6, 0.75], [-2.6, 0.85], [-0.9, 0.5], [-0.5, 0.75], [0.7, 0.4], [1.3, 0.62], [3.0, 0.4]], col.acento);
   },
-  geometrico(p, col, ctx, W, H) {
-    const r = aleatorio(17);
-    for (let k = 0; k < 140; k++) {
-      ctx.globalAlpha = 0.35 + r() * 0.5;
-      ctx.fillStyle = r() < 0.6 ? col.acento : col.tercero;
-      const x = r() * W, y = r() * H, s = 20 + r() * 70;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * (r() - 0.5)); ctx.lineTo(x + s * (r() - 0.5), y + s); ctx.closePath(); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
+  geometrico(p, col) {
+    // bandas inclinadas que se van estrechando hacia delante (en los costados) y cheurones (arriba)
+    const tonos = [col.acento, col.tercero, col.acento, col.tercero, col.acento, col.tercero, col.acento];
+    const anchos = [0.62, 0.07, 0.34, 0.05, 0.20, 0.04, 0.10];
+    let x0 = -2.75;
+    tonos.forEach((t, i) => {
+      const w = anchos[i];
+      p.poliLados([[x0, 0], [x0 + w, 0], [x0 + w + 0.8, 1.25], [x0 + 0.8, 1.25]], t);
+      const xa = x0 + 0.55; p.poliArriba([[xa, 1.02], [xa + w, 1.02], [xa + w - 0.5, 0], [xa + w, -1.02], [xa, -1.02], [xa - 0.5, 0]], t);
+      x0 += w + (i % 2 ? 0.12 : 0.07);
+    });
   },
   digital(p, col, ctx, W, H) {
     const r = aleatorio(29), t = Math.round(W / 64);
@@ -154,7 +157,7 @@ const PATRONES = {
 export const NOMBRES_PATRON = { lisa: 'Lisa', franjas: 'Franjas', flecha: 'Flecha', degradado: 'Degradado', rayo: 'Rayo', geometrico: 'Geométrico', digital: 'Camuflaje digital', llamas: 'Llamas' };
 
 // Dibuja la librea completa (colores, patrón, patrocinadores UPGAMES y número)
-export function dibujarLibrea(canvas, { patron = 'franjas', colores, numero = 7, imagen = null }) {
+export function dibujarLibrea(canvas, { patron = 'franjas', colores, numero = 7, imagen = null, nombre = '' }) {
   const W = canvas.width, H = canvas.height, ctx = canvas.getContext('2d');
   const col = { base: '#0d47ff', acento: '#00e5ff', tercero: '#ffffff', ...colores };
   if (imagen) {
@@ -164,28 +167,36 @@ export function dibujarLibrea(canvas, { patron = 'franjas', colores, numero = 7,
   ctx.fillStyle = col.base; ctx.fillRect(0, 0, W, H);
   const p = new Pincel(ctx, W, H);
   (PATRONES[patron] || PATRONES.lisa)(p, col, ctx, W, H);
-  // patrocinadores: la publicidad de la casa
-  const letra = contraste(col.base);
-  p.textoLados('UPGAMES', -0.45, 0.42, 0.17, letra, 1.25);
-  p.textoLados('upgames.games', -0.45, 0.27, 0.07, letra, 1.0, '700');
-  p.textoArriba('UPGAMES', -1.05, 0, 0.16, letra, 0);
-  p.textoArriba('UPCOINS', 1.55, 0, 0.12, letra, 0);
-  p.textoArriba('UPGAMES', -2.25, 0, 0.18, letra, Math.PI / 2);             // alerón trasero
-  p.textoArriba('NEXUS IA', 2.83, -0.55, 0.12, letra, Math.PI / 2);         // alerón delantero
-  p.textoArriba('UPGAMES', 2.83, 0.55, 0.12, letra, Math.PI / 2);
-  p.textoLados('UPGAMES', -2.2, 0.85, 0.16, letra, 0.55);                   // derivas del alerón trasero
-  p.textoLados('LIVE', 2.62, 0.17, 0.12, letra, 0.45);                      // derivas del delantero
-  p.textoLados('UPCOINS', 1.2, 0.42, 0.08, letra, 0.9, '800');
-  // número: morro y aleta
-  p.textoArriba(String(numero), 2.05, 0, 0.3, letra, Math.PI / 2);
-  p.textoLados(String(numero), -1.15, 0.66, 0.2, letra, 0.4);
+  // ── publicidad: patrocinador principal y secundarios del equipo, proveedores y dorsales ──
+  const letra = contraste(col.base), pub = patrocinadores(nombre || col.base + col.acento);
+  const ex = W / SPAN, ey = H / 4 / ATLAS.yMax, ez = H / (4 * ATLAS.zMax);
+  // dibuja «derecho» y en centímetros del coche en (x, y) de los dos costados o en (x, z) de arriba
+  const lados = (x, y, fn) => { for (const der of [true, false]) { const [px, py] = p.lado(x, y, der); ctx.save(); ctx.translate(px, py); ctx.scale(ex / 100, ey / 100); fn(der); ctx.restore(); } };
+  const arriba = (x, z, rot, fn) => { const [px, py] = p.arriba(x, z); ctx.save(); ctx.translate(px, py); ctx.scale(ex / 100, ez / 100); if (rot) ctx.rotate(rot); fn(); ctx.restore(); };
+  const texto = (t, alto, color = letra) => { ctx.fillStyle = color; ctx.font = fuente(alto); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 0, 0); };
+  // pontones y tapa del motor
+  lados(-0.45, 0.42, () => logo(ctx, pub.principal, 15, { placa: false, tinta: letra, ancho: 118 }));
+  lados(-0.45, 0.275, () => texto('UPGAMES.GAMES', 5.2));
+  lados(-0.78, 0.60, () => logo(ctx, pub.segundo, 5.6, { ancho: 46 }));
+  lados(-1.15, 0.66, () => numeroGrande(ctx, numero, 19, letra, contraste(letra)));
+  // costado del chasis y de la cabina
+  lados(1.2, 0.42, () => logo(ctx, pub.tercero, 7.2, { ancho: 78 }));
+  lados(0.62, 0.50, () => fila(ctx, pub.tecnicas.slice(0, 3), 2.9));
+  lados(0.30, 0.585, (der) => { ctx.translate(der ? -5 : 5, 0); tecnica(ctx, 'extintor', 2.4); ctx.translate(der ? 7 : -7, 0); tecnica(ctx, 'corriente', 2.6); });
+  // derivas de los alerones
+  lados(-2.2, 0.86, () => logo(ctx, pub.principal, 11, { placa: false, tinta: letra, ancho: 50 }));
+  lados(-2.2, 0.66, () => numeroGrande(ctx, numero, 13, letra, contraste(letra)));
+  lados(-2.2, 0.50, () => logo(ctx, 'APEX', 4, { ancho: 40 }));
+  lados(2.62, 0.17, () => logo(ctx, 'TV', 7, { placa: false, tinta: letra, ancho: 44 }));
+  // arriba: tapa del motor, morro, pontones y alerones
+  arriba(-1.05, 0, 0, () => logo(ctx, pub.principal, 13, { placa: false, tinta: letra, ancho: 105 }));
+  arriba(1.50, 0, 0, () => logo(ctx, pub.segundo, 8.5, { placa: false, tinta: letra, ancho: 78 }));
+  arriba(2.07, 0, Math.PI / 2, () => numeroGrande(ctx, numero, 22, letra, contraste(letra)));
+  arriba(-2.25, 0, Math.PI / 2, () => logo(ctx, pub.principal, 15, { placa: false, tinta: letra, ancho: 96 }));
+  arriba(2.83, -0.55, Math.PI / 2, () => logo(ctx, pub.tercero, 9.5, { placa: false, tinta: letra, ancho: 62 }));
+  arriba(2.83, 0.55, Math.PI / 2, () => logo(ctx, pub.cuarto, 9.5, { placa: false, tinta: letra, ancho: 62 }));
+  for (const s of [-1, 1]) arriba(-0.15, s * 0.57, 0, () => logo(ctx, pub.cuarto, 6.5, { ancho: 60 }));
   return canvas;
-}
-
-function contraste(hex) {
-  const n = parseInt(String(hex).slice(1), 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#111111' : '#ffffff';
 }
 
 // ─── Casco ─────────────────────────────────────────────────────────────────
