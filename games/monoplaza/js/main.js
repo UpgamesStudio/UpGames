@@ -169,7 +169,7 @@ let calidad = calidadInicial();
 // --- Estado global ----------------------------------------------------------
 let renderer, scene, composer, camara, efectos, escenario, circuito;
 const sonido = new Sonido();
-sonido.motorElegido = ajustes.motorSonido || 'v10';
+sonido.motorElegido = ajustes.motorSonido || 'verstappen';
 const entrada = new Entrada(ajustes);
 let sesion = null, modelos = [], modeloFantasma = null, lineaIdeal = null;
 // para pruebas automáticas (?depurar): acceso a la sesión desde la consola
@@ -439,7 +439,8 @@ function crearRenderer() {
 
 function pixelRatio() {
   const dpr = devicePixelRatio || 1;
-  return [Math.min(dpr, 1), Math.min(dpr, 1.3), Math.min(dpr, 1.6), Math.min(dpr, 2)][calidad] * escalaRes;
+  // (resolución interna contenida: en un móvil de pantalla muy densa apenas se nota y es lo que más calienta)
+  return [Math.min(dpr, 1), Math.min(dpr, 1.15), Math.min(dpr, 1.35), Math.min(dpr, 1.6)][calidad] * escalaRes;
 }
 // Resolución dinámica (como en las consolas): con la calidad elegida, si los FPS caen por debajo
 // de 50 la resolución interna baja un poco (hasta el 70 %) y sube sola cuando sobra margen. Se
@@ -466,13 +467,14 @@ function resolucionDinamica(fps) {
 function configurarPost() {
   composer = null; pasoCalor = null; pasoVelocidad = null; pasoEtalonado = null;
   if (calidad < 1) return;
-  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: calidad >= 3 ? 4 : 2 });
+  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 2 });
   composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(pixelRatio());
   composer.addPass(new RenderPass(scene, camara.cam));
-  if (calidad >= 2) composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.22, 0.45, 0.93));
+  // resplandor y desenfoque de velocidad: solo en la calidad máxima (son pasadas a pantalla completa)
+  if (calidad >= 3) composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 3, innerHeight / 3), 0.2, 0.4, 0.94));
   composer.addPass(pasoCalor = new ShaderPass(DISTORSION_CALOR));
-  if (calidad >= 2) composer.addPass(pasoVelocidad = new ShaderPass(DESENFOQUE_VELOCIDAD));
+  if (calidad >= 3) composer.addPass(pasoVelocidad = new ShaderPass(DESENFOQUE_VELOCIDAD));
   composer.addPass(new OutputPass());
   composer.addPass(pasoEtalonado = new ShaderPass(ETALONADO));
   ponerEtalonado(escenario?.hora || 'dia');
@@ -763,6 +765,9 @@ function crearModelos() {
     const imagen = p.jugador ? (eq.propia ? imagenLibrea : null) : (p.idRed && imagenesRed.get(p.idRed)) || null;
     const m = crearModelo({ equipo: p.equipo, equipado: eq, imagen, compuesto: p.coche.reglaje.compuesto, calidad, cabina: p.jugador, halo: ajustes.halo !== false });
     m.luzTrasera = () => escenario?.hora === 'noche' || (sesion?.clima?.lluvia || 0) > 0.05;
+    // cada coche suena con su motor: V6 turbo el monoplaza; los GT, V6 deportivo o V10 según su carrocería
+    // (salvo que el jugador haya elegido uno en Ajustes)
+    if (p.jugador && !ajustes.motorSonido) sonido.cambiarMotor(m.cerrado ? (MOTOR_FORMA[m.forma] || 'v6') : 'verstappen');
     m.aguaPista = () => sesion?.clima?.agua || 0;
     // piezas que se desprenden en los choques
     m.alDesprender = (tipo, obj) => {
@@ -797,7 +802,9 @@ function crearModelos() {
 const AYUDAS_RED = { tc: 0, abs: false, cambioAuto: true, direccion: false, estabilidad: false };
 function ayudasDe(red = enRed) {
   if (red) return { ...AYUDAS_RED };
-  return { tc: +ajustes.tc, abs: ajustes.abs, cambioAuto: ajustes.cambioAuto, direccion: ajustes.direccion, estabilidad: ajustes.estabilidad };
+  // los GT y los Stock Car llevan de serie ABS y control de tracción (como los de verdad)
+  const cerrado = CAT.id !== 'f1';
+  return { tc: cerrado ? Math.max(1, +ajustes.tc) : +ajustes.tc, abs: cerrado ? true : ajustes.abs, cambioAuto: ajustes.cambioAuto, direccion: ajustes.direccion, estabilidad: ajustes.estabilidad };
 }
 
 // --- Sesiones -----------------------------------------------------------------
@@ -1882,12 +1889,17 @@ function mostrarResultados() {
   mostrar('resultados');
 }
 
+const MOTOR_FORMA = { gt: 'v6', gtb: 'v10', gtm: 'v6', gtt: 'alonso', gth: 'v6', gtc: 'ferrari', gtp: 'v10', stock: 'v6' };
 // --- Bucle principal --------------------------------------------------------------
+// Tope de 60 fotogramas por segundo: en pantallas de 90, 120 o 144 Hz el juego dibujaba a ese
+// ritmo (el doble de trabajo para la gráfica: el móvil se calentaba y acababa bajando los FPS).
+let tSigFoto = 0;
 let tPrevio = performance.now();
 let fpsAcum = 0, fpsN = 0, fpsMostrar = 0, tLento = 0;
 
 function bucle(ahora) {
   requestAnimationFrame(bucle);
+  if (ajustes.fpsLibres !== true) { if (ahora < tSigFoto - 1.5) return; tSigFoto = Math.max(tSigFoto + 1000 / 60, ahora); }
   const dt = Math.min(0.1, (ahora - tPrevio) / 1000);
   tPrevio = ahora;
   // entrada

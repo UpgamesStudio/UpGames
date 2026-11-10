@@ -422,8 +422,10 @@ export class Monoplaza {
     if (this.ayudas.direccion && !this.esIA) {
       // limita el giro al ángulo útil para la velocidad (evita sobrevirar con el móvil)
       const kA = 0.5 * RHO_AIRE * CAT.perfil.clA / m;
-      const aLat = 1.7 * (G + kA * v * v);
-      const util = COCHE.wheelbase * aLat / Math.max(1, v * v) + 0.075;
+      // (según el agarre real de cada categoría: con el valor del monoplaza, un GT giraba las ruedas
+      // mucho más de lo que agarran sus neumáticos y se cruzaba al menor toque)
+      const aLat = 1.1 * CAT.perfil.mu * (G + kA * v * v);
+      const util = COCHE.wheelbase * aLat / Math.max(1, v * v) + (CAT.id === 'f1' ? 0.075 : 0.05);
       angMax = Math.min(angMax, Math.max(0.05, util));
     }
     let delta = dir * angMax;
