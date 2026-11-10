@@ -995,6 +995,10 @@ export function crearModelo(opc) {
     const [dx, dy, dz] = cc.forma.piloto;
     piloto.grupo.position.add(new THREE.Vector3(dx, dy, dz));
     columna.position.add(new THREE.Vector3(dx, dy, dz));
+    // los cristales son opacos: el piloto y el volante no se ven, así que no se dibujan (el grupo
+    // sigue existiendo para la animación, las cámaras y cuando el piloto sale del coche)
+    const interior = new THREE.Group(); interior.name = 'interior'; interior.visible = false;
+    carroceria.add(interior); interior.add(piloto.grupo); interior.add(columna);
     // retrovisores de verdad para el coche del jugador
     espejos.length = 0;
     for (const pe of cc.forma.espejos) {
