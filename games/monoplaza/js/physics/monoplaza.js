@@ -64,7 +64,7 @@ export class Monoplaza {
   constructor(circuito, opciones = {}) {
     this.circuito = circuito;
     this.reglaje = { ...REGLAJE_DEF, ...(opciones.reglaje || {}) };
-    this.ayudas = { tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, ...(opciones.ayudas || {}) };
+    this.ayudas = { tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, frenada: true, ...(opciones.ayudas || {}) };
     this.esIA = !!opciones.ia;
     const a = COCHE.wheelbase * (1 - COCHE.repartoDel);
     const b = COCHE.wheelbase * COCHE.repartoDel;
@@ -488,7 +488,9 @@ export class Monoplaza {
     if (relacion !== 0 && !cambiando && (embragado || acel > 0.02)) {
       const pT = parMotor(this.rpm) * this.ef.potencia * (1 - 0.35 * (this.dano.motor || 0)) * MEZCLA_POT[mand.mezcla ?? 1] * (0.8 + 0.2 * Math.min(1, this.turbo / Math.max(0.05, acel))) * (1 - 0.15 * sobrecal);
       // freno motor ajustable desde el volante (bajo, medio, alto)
-      const fm = (COCHE.frenoMotor[0] + COCHE.frenoMotor[1] * this.rpm) * FRENO_MOTOR[mand.fm ?? 1];
+      // (al pisar el freno la retención del motor se alivia: si no, se sumaba al freno trasero —sobre
+      // todo en los coches cerrados, de desarrollos cortos— y bloqueaba el eje de atrás: trompo)
+      const fm = (COCHE.frenoMotor[0] + COCHE.frenoMotor[1] * this.rpm) * FRENO_MOTOR[mand.fm ?? 1] * (CAT.id !== 'f1' || this.ayudas.frenada ? 1 - 0.75 * freno : 1);
       parCig = pT * acel - fm * (1 - acel) * (embragado ? 1 : 0);
       if (this.rpm > COCHE.rpmLimite) { parCig = Math.min(parCig, -fm); this.limitador = true; }
     }
@@ -536,7 +538,18 @@ export class Monoplaza {
 
     // --- Frenos -----------------------------------------------------------
     // reparto de frenada: el del reglaje más el ajuste que haga el piloto desde el volante
-    const reparto = Math.max(45, Math.min(70, rg.repartoFreno + (mand.bb || 0))) / 100;
+    // (cada categoría parte de su reparto: un GT o un Stock, sin carga aerodinámica y con el peso
+    // pasando delante al frenar, necesitan mucho más freno delante que un monoplaza)
+    let reparto = Math.max(45, Math.min(76, rg.repartoFreno + (mand.bb || 0) + (CAT.repartoFreno || 0))) / 100;
+    // asistencia de frenada: repartidor electrónico (el freno sigue a la carga real de cada eje) y,
+    // si el coche empieza a cruzarse frenando, suelta el freno de atrás
+    const asisteFreno = this.ayudas.frenada && !this.esIA && freno > 0.02;
+    let sueltaTras = 1;
+    if (asisteFreno) {
+      const fd = (this.ruedas[0].fz || 0) + (this.ruedas[1].fz || 0), ft = (this.ruedas[2].fz || 0) + (this.ruedas[3].fz || 0);
+      if (fd + ft > 100) reparto = Math.max(reparto, Math.min(0.86, fd / (fd + ft) + 0.04));
+      sueltaTras = 1 - clamp((Math.abs(Math.atan2(this.vy, Math.max(3, this.vx))) - 0.04) / 0.10, 0, 0.85);
+    }
     const parFreno = COCHE.parFrenoMax * this.ef.freno * freno;
 
     // --- Ruedas -----------------------------------------------------------
@@ -647,13 +660,14 @@ export class Monoplaza {
       let parMotriz = 0, parFr = 0;
       if (!w.delantera) {
         parMotriz = parEntrada / 2 + (k === 2 ? -parDif : parDif);
-        parFr = parFreno * (1 - reparto) / 2 + parRecuperacion / 2;
+        parFr = (parFreno * (1 - reparto) / 2 + parRecuperacion / 2) * sueltaTras;
       } else {
         parFr = parFreno * reparto / 2;
       }
       // ABS
       if (this.ayudas.abs && parFr > 0) {
-        const lim = -nm.picoKappa * 1.05;
+        // (detrás el ABS corta antes del pico: la rueda trasera conserva agarre lateral y el coche no se cruza)
+        const lim = -nm.picoKappa * (w.delantera ? 1.05 : asisteFreno ? 0.7 : 0.78);
         if (w.kappa < lim) w.factorAbs = Math.max(0.2, w.factorAbs - dt * 25);
         else w.factorAbs = Math.min(1, w.factorAbs + dt * 10);
         parFr *= w.factorAbs;

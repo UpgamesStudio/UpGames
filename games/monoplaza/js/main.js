@@ -75,7 +75,7 @@ addEventListener('gamepadconnected', () => ponerEntradaFisica(true));
 const CLAVE = 'apexgp.v1';
 const AJ_DEF = {
   control: esTactil ? 'inclinacion' : 'tactil', sensibilidad: 1, anguloInclinacion: 24, invertir: false, vibracion: true,
-  tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, trazada: true,
+  tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, frenada: true, trazada: true,
   calidad: 'auto', fps: false, volumen: 0.8, unidades: 'kmh', camara: 'persecucion', radio: true, ambiente: true, averias: true, repeAuto: true, halo: true, motorSonido: 'v10',
   categoria: 'f1', vozSintetica: false,
 };
@@ -799,12 +799,12 @@ function crearModelos() {
 
 // En línea todos corren igual: sin control de tracción, ABS, dirección asistida, estabilidad
 // ni trazada ideal (el cambio automático queda para todos, igual que en el resto de pilotos)
-const AYUDAS_RED = { tc: 0, abs: false, cambioAuto: true, direccion: false, estabilidad: false };
+const AYUDAS_RED = { tc: 0, abs: false, cambioAuto: true, direccion: false, estabilidad: false, frenada: false };
 function ayudasDe(red = enRed) {
   if (red) return { ...AYUDAS_RED };
   // los GT y los Stock Car llevan de serie ABS y control de tracción (como los de verdad)
   const cerrado = CAT.id !== 'f1';
-  return { tc: cerrado ? Math.max(1, +ajustes.tc) : +ajustes.tc, abs: cerrado ? true : ajustes.abs, cambioAuto: ajustes.cambioAuto, direccion: ajustes.direccion, estabilidad: ajustes.estabilidad };
+  return { tc: cerrado ? Math.max(1, +ajustes.tc) : +ajustes.tc, abs: cerrado ? true : ajustes.abs, cambioAuto: ajustes.cambioAuto, direccion: ajustes.direccion, estabilidad: ajustes.estabilidad, frenada: ajustes.frenada !== false };
 }
 
 // --- Sesiones -----------------------------------------------------------------
