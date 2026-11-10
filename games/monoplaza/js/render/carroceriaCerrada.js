@@ -91,6 +91,36 @@ const FORMAS = {
     ruedas: { del: 0.31, tras: 0.33 }, piloto: [-0.35, 0.22, -0.36],
     ala: true, toma: null, branquia: true, tomaLateral: false, faro: 'barra', escape: 'tras',
   },
+  // GT clásico: morro largo y redondeado, cabina muy retrasada, zaga corta que cae y faros redondos
+  gtc: {
+    baja: [
+      [2.40, 0.80, 0.11, 0.52, 0.52], [2.35, 0.88, 0.105, 0.58, 0.56], [2.20, 0.94, 0.11, 0.66, 0.60],
+      [1.95, 0.975, 0.12, 0.76, 0.64], [1.46, 0.985, 0.12, 0.81, 0.68], [1.00, 0.95, 0.12, 0.79, 0.72],
+      [0.45, 0.92, 0.12, 0.79, 0.77], [-0.10, 0.92, 0.12, 0.81, 0.80], [-0.70, 0.95, 0.12, 0.85, 0.84],
+      [-1.24, 1.00, 0.12, 0.90, 0.87], [-1.70, 0.97, 0.13, 0.88, 0.87], [-1.98, 0.92, 0.20, 0.84, 0.84],
+      [-2.08, 0.85, 0.30, 0.78, 0.79],
+    ],
+    techo: [[0.55, 0.70], [0.35, 0.82], [0.05, 1.02], [-0.22, 1.17], [-0.55, 1.225], [-0.90, 1.19], [-1.30, 1.06], [-1.68, 0.92], [-1.95, 0.80]],
+    ancho: [[0.55, 0.79, 0.73], [0.05, 0.81, 0.66], [-0.55, 0.82, 0.63], [-1.0, 0.83, 0.58], [-1.5, 0.84, 0.50], [-1.95, 0.82, 0.44]],
+    xPar: -0.22, xLun: -0.90, kF: 0.28, kR: 0.20, pilarB: [-0.70, -0.63], lat: [0.35, -1.45], puerta: [0.36, -0.66],
+    ruedas: { del: 0.31, tras: 0.33 }, piloto: [-0.78, 0.13, -0.36],
+    ala: true, toma: null, branquia: true, tomaLateral: false, faro: 'redondos', escape: 'lado',
+  },
+  // Hiperdeportivo de motor central: muy bajo, cabina adelantada en gota y cola larga
+  gtp: {
+    baja: [
+      [2.32, 0.86, 0.10, 0.40, 0.40], [2.27, 0.93, 0.10, 0.46, 0.43], [2.12, 0.98, 0.11, 0.57, 0.47],
+      [1.86, 1.01, 0.12, 0.73, 0.52], [1.46, 1.02, 0.12, 0.80, 0.58], [1.10, 0.97, 0.12, 0.76, 0.64],
+      [0.60, 0.92, 0.12, 0.74, 0.70], [0.00, 0.94, 0.12, 0.79, 0.77], [-0.60, 1.01, 0.12, 0.87, 0.84],
+      [-1.24, 1.05, 0.12, 0.93, 0.88], [-1.75, 1.03, 0.13, 0.92, 0.89], [-2.10, 0.99, 0.20, 0.89, 0.88],
+      [-2.20, 0.93, 0.30, 0.85, 0.85],
+    ],
+    techo: [[1.35, 0.55], [1.15, 0.67], [0.80, 0.90], [0.45, 1.06], [0.10, 1.11], [-0.35, 1.09], [-0.90, 1.00], [-1.45, 0.92], [-1.80, 0.84]],
+    ancho: [[1.35, 0.76, 0.70], [0.80, 0.78, 0.62], [0.10, 0.80, 0.57], [-0.50, 0.84, 0.52], [-1.2, 0.87, 0.45], [-1.80, 0.87, 0.40]],
+    xPar: 0.45, xLun: -0.35, kF: 0.34, kR: 0.20, pilarB: [-0.16, -0.09], lat: [1.05, -0.70], puerta: [1.02, -0.14],
+    ruedas: { del: 0.31, tras: 0.34 }, piloto: [-0.18, 0.06, -0.34],
+    ala: true, toma: null, branquia: false, tomaLateral: true, faro: 'cuchilla', escape: 'tras',
+  },
   // Stock Car: berlina de tres volúmenes para óvalos
   stock: {
     baja: [
@@ -107,11 +137,21 @@ const FORMAS = {
   },
 };
 for (const F of Object.values(FORMAS)) { F.xN = F.baja[0][0]; F.xC = F.baja[F.baja.length - 1][0]; }
+export const FORMAS_GT = ['gt', 'gtb', 'gtm', 'gtt', 'gth', 'gtc', 'gtp'];
+export const NOMBRES_FORMA = { gt: 'Coupé GT', gtb: 'Berlinetta', gtm: 'Muscle', gtt: 'Turismo', gth: 'Compacto', gtc: 'GT clásico', gtp: 'Hiperdeportivo' };
+export const DESC_FORMA = { gt: 'Motor delantero, capó largo', gtb: 'Motor central, morro corto', gtm: 'Capó alto y zaga cuadrada', gtt: 'Berlina de tres volúmenes', gth: 'Dos volúmenes con portón', gtc: 'Morro largo y faros redondos', gtp: 'Muy bajo, cabina en gota' };
+/** Silueta de perfil de una carrocería (SVG) para elegirla en el garaje. */
+export function siluetaSVG(forma, color = 'currentColor') {
+  const F = FORMAS[forma] || FORMAS.gt, X = (x) => ((F.xN - x) * 60 + 6).toFixed(1), Y = (y) => ((1.42 - y) * 60).toFixed(1), pts = [];
+  for (let x = F.xN; x >= F.xC - 0.001; x -= 0.06) pts.push(`${X(x)},${Y(Math.max(ySup(datos(F, x), 0.55), x < F.techo[0][0] && x > F.techo[F.techo.length - 1][0] ? yTecho(F, x) : 0))}`);
+  const d = datos(F, 0), ruedas = F.rx.map((x, k) => `<circle cx="${X(x)}" cy="${Y(F.rr[k])}" r="${(F.rr[k] * 60 + 2).toFixed(1)}" fill="#0b0c10"/><circle cx="${X(x)}" cy="${Y(F.rr[k])}" r="${(F.rr[k] * 36).toFixed(1)}" fill="#8a8f98"/>`).join('');
+  return `<svg viewBox="0 0 ${((F.xN - F.xC) * 60 + 12).toFixed(0)} 82" xmlns="http://www.w3.org/2000/svg"><polygon fill="${color}" points="${X(F.xN)},${Y(d.yb + 0.03)} ${pts.join(' ')} ${X(F.xC)},${Y(d.yb + 0.16)} ${X(F.xC + 0.2)},${Y(d.yb)}"/>${ruedas}</svg>`;
+}
 export const ANCHO_RUEDAS = { gt: FORMAS.gt.ruedas, stock: FORMAS.stock.ruedas };
 /** Carrocería de cada coche: en GT hay cinco (coupé, berlinetta, muscle, turismo y compacto). */
 export function formaDe(categoria, semilla = 0) {
   if (categoria !== 'gt') return categoria;
-  return ['gt', 'gtb', 'gtm', 'gtt', 'gth'][Math.abs(Math.floor(semilla)) % 5];
+  return FORMAS_GT[Math.abs(Math.floor(semilla)) % FORMAS_GT.length];
 }
 
 // ─── Superficie ──────────────────────────────────────────────────────────────────────────────
@@ -753,7 +793,7 @@ const MAT = {
     c.fillStyle = g; c.fillRect(0, 0, 128, 64);
     return new THREE.MeshBasicMaterial({ map: textura(cv), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   }),
-  llama: () => guardado('m:llama', () => new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })),
+  llama: () => guardado('m:llama', () => new THREE.MeshBasicMaterial({ color: 0xff9a3c, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })),
   cromo: () => guardado('m:cromo', () => new THREE.MeshStandardMaterial({ color: 0xc8ccd2, roughness: 0.2, metalness: 1 })),
   color: (hex) => guardado('m:color' + hex, () => new THREE.MeshPhysicalMaterial({ color: new THREE.Color(hex), roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.06 })),
 };
@@ -866,7 +906,7 @@ function relieveDe(forma, tam = 1024) {
       const xm = Math.max(0, x - 1), xp = Math.min(tam - 1, x + 1), ym = Math.max(0, y - 1), yp = Math.min(tam - 1, y + 1);
       suave[y * tam + x] = (alt[y * tam + x] * 4 + alt[y * tam + xm] * 2 + alt[y * tam + xp] * 2 + alt[ym * tam + x] * 2 + alt[yp * tam + x] * 2 + alt[ym * tam + xm] + alt[ym * tam + xp] + alt[yp * tam + xm] + alt[yp * tam + xp]) / 16;
     }
-    const out = c.createImageData(tam, tam), f = 2.6;
+    const out = c.createImageData(tam, tam), f = 1.7;
     for (let y = 0; y < tam; y++) for (let x = 0; x < tam; x++) {
       const xm = Math.max(0, x - 1), xp = Math.min(tam - 1, x + 1), ym = Math.max(0, y - 1), yp = Math.min(tam - 1, y + 1);
       const nx = (suave[y * tam + xm] - suave[y * tam + xp]) * f, ny = (suave[yp * tam + x] - suave[ym * tam + x]) * f, l = Math.hypot(nx, ny, 1), i = (y * tam + x) * 4;
@@ -1073,5 +1113,5 @@ function ponerRuedas(F, ruedas) {
   F.rx = [del.x, tras.x]; F.rr = [del.r, tras.r];
 }
 // posición de las ruedas por defecto (batalla de cada categoría), por si se pinta antes de crear
-for (const k of ['gt', 'gtb', 'gtm', 'gtt', 'gth']) { FORMAS[k].rx = [1.458, -1.242]; FORMAS[k].rr = [0.345, 0.35]; }
+for (const k of ['gt', 'gtb', 'gtm', 'gtt', 'gth', 'gtc', 'gtp']) { FORMAS[k].rx = [1.458, -1.242]; FORMAS[k].rr = [0.345, 0.35]; }
 FORMAS.stock.rx = [1.339, -1.451]; FORMAS.stock.rr = [0.355, 0.355];

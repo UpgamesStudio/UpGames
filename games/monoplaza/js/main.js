@@ -28,6 +28,7 @@ import { cargarCuerpoEscaneado } from './render/cuerpoEscaneado.js';
 cargarCuerpoEscaneado();          // mecánicos y pilotos fuera del coche con el modelo escaneado
 import { construirEscenario, ponerHora, ponerAgua, tv } from './render/escenario.js';
 import { crearModelo, dibujarPlantilla } from './render/cocheModelo.js';
+import { FORMAS_GT, NOMBRES_FORMA, DESC_FORMA, siluetaSVG } from './render/carroceriaCerrada.js';
 import { GestorBoxes, Escombros } from './render/equipo.js';
 import { NOMBRES_PATRON, NOMBRES_CASCO, LLUVIA_CARROCERIA } from './render/librea.js';
 import { cuenta, Multijugador, empaquetar, aplicarEstado, fantasmaAServidor, fantasmaDeServidor, API } from './red.js';
@@ -2626,9 +2627,11 @@ function pintarGaraje() {
   $('#tabCasco').classList.toggle('oculto', tabGaraje !== 'casco');
   $('#tabMonoplaza').classList.toggle('oculto', tabGaraje !== 'monoplaza');
   const eqSel = equipado.equipo || 0;
-  $('#tabMonoplaza').innerHTML = '<p class="nota" style="text-align:left">Elige con qué monoplaza corres. Todos rinden igual; cambia la librea, el garaje y tu compañero de equipo. Con <b>UpGames Racing</b> llevas tu propio diseño.</p><div class="rejilla">' +
+  $('#tabMonoplaza').innerHTML = '<p class="nota" style="text-align:left">Elige tu equipo. Todos rinden igual; cambia la librea, el garaje y tu compañero. Con <b>UpGames Racing</b> llevas tu propio diseño.</p>' +
+    (CAT.id === 'gt' ? '<h3>Carrocería</h3><div class="rejilla carros">' + FORMAS_GT.map(f => `<div class="ficha carro ${(equipado.forma || '') === f ? 'sel' : ''}" data-forma="${f}">${siluetaSVG(f, EQUIPOS[eqSel].base)}<b>${NOMBRES_FORMA[f]}</b><small>${DESC_FORMA[f]}</small></div>`).join('') + `<div class="ficha carro ${equipado.forma ? '' : 'sel'}" data-forma=""><b>La del equipo</b><small>Cada equipo trae la suya</small></div></div><h3>Equipo</h3>` : '') + '<div class="rejilla">' +
     EQUIPOS.map((eq, k) => `<div class="ficha coche ${eqSel === k ? 'sel' : ''}" data-equipo="${k}"><i class="muestra" style="background:linear-gradient(135deg, ${eq.base} 0 55%, ${eq.acento} 55% 75%, ${eq.tercero || '#fff'} 75%)"></i>${eq.nombre}<span class="precio libre">${eqSel === k ? 'TU COCHE' : k === 0 ? 'TU DISEÑO' : 'GRATIS'}</span></div>`).join('') + '</div>';
   document.querySelectorAll('#garaje [data-equipo]').forEach(b => b.onclick = () => { equipado.equipo = +b.dataset.equipo; aplicarEquipado(); });
+  document.querySelectorAll('#garaje [data-forma]').forEach(b => b.onclick = () => { equipado.forma = b.dataset.forma || null; aplicarEquipado(); });
   $('#saldoUC').textContent = cuenta.conectado() ? `${perfilApex.upcoins ?? '…'} UpCoins` : 'Sin sesión';
   // mejoras de rendimiento
   const desc = { motor: '+1,2 % de potencia por nivel', aero: '+1 % de carga y −0,6 % de resistencia', frenos: '+3 % de frenada y mejor refrigeración', chasis: '−3 kg por nivel', neumaticos: '−6 % de desgaste y +0,4 % de agarre', ers: '+5 % de despliegue y +4 % de recuperación' };
@@ -3118,7 +3121,8 @@ function nivelDetalle() {
     // (las piezas pequeñas a más de ~35 m ocupan uno o dos píxeles en un móvil: no se notan y
     // cada una es una llamada de dibujo; tu coche siempre con todo)
     const yo = m === modelos[sesion?.participantes?.indexOf(sesion.jugador)];
-    const nivel = yo ? 0 : d > 110 ? 2 : d > 35 ? 1 : 0, sombra = d < dSombra;
+    // (con histéresis: un coche que va justo en el límite no cambia de nivel a cada fotograma, que se veía parpadear)
+    const n0 = m._nivel ?? 0, nivel = yo ? 0 : d > (n0 >= 2 ? 100 : 112) ? 2 : d > (n0 >= 1 ? 31 : 38) ? 1 : 0, sombra = m._sombra ? d < dSombra + 4 : d < dSombra - 4;
     if (nivel !== m._nivel) {
       m._nivel = nivel;
       for (const o of m._detalle) o.visible = nivel === 0 && !o.userData.oculto;
