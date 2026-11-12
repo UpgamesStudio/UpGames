@@ -40,6 +40,19 @@ function registrar(app, { verificarAdmin, Usuario, Juego, Limites, logger }) {
         busquedas().createIndex({ fecha: 1 }, { expireAfterSeconds: 120 * 86400 }).catch(() => {});
     }
 
+    // ── En vivo: últimos 60 minutos en memoria (por minuto y tipo) y los últimos eventos ──
+    // Solo para la tarjeta «En vivo» del panel: se pierde al reiniciar el servidor, y por eso el
+    // número de personas activas sale de la base de datos (visitantes.ultima), no de aquí.
+    const VIVO_MIN = 60, vivo = new Map(), recientes = [];
+    const minuto = (t = Date.now()) => Math.floor(t / 60000);
+    function anotarVivo(k, q) {
+        const m = minuto();
+        let c = vivo.get(m); if (!c) { vivo.set(m, c = { v: 0, b: 0, f: 0, d: 0, r: 0 }); for (const x of vivo.keys()) if (x < m - VIVO_MIN) vivo.delete(x); }
+        c[k]++;
+        recientes.unshift({ t: Date.now(), k, q: k === 'b' && q ? q : undefined });
+        if (recientes.length > 40) recientes.length = 40;
+    }
+
     // ── Recepción de eventos (anónimos) ──
     app.post('/m/e', express.text({ type: 'text/plain', limit: '2kb' }), async (req, res) => {
         res.status(204).end();   // responde al instante; el navegador no espera
@@ -50,6 +63,7 @@ function registrar(app, { verificarAdmin, Usuario, Juego, Limites, logger }) {
             if (!k || !vidOk(vid)) return;
             if (!(await Limites.permitir(`m:${req.ip}`, [[Limites.MIN, 60]]))) return;
             asegurarIndices();
+            anotarVivo(k, tipo === 'busqueda' ? limpiarQ(req.body.q) : '');
             const d = dia(), ahora = new Date();
             const r = await visitantes().findOneAndUpdate({ _id: vid }, { $setOnInsert: { primera: d }, $set: { ultima: ahora } }, { upsert: true, returnDocument: 'after' });
             const primera = (r?.value || r)?.primera || d;
@@ -62,6 +76,27 @@ function registrar(app, { verificarAdmin, Usuario, Juego, Limites, logger }) {
                 }
             }
         } catch (e) { logger?.debug?.(`[metricas] ${e.message}`); }
+    });
+
+    // ── Panel: en vivo (se pide cada pocos segundos; consultas ligeras e indexadas) ──
+    app.get('/admin/metricas/vivo', verificarAdmin, async (req, res) => {
+        try {
+            asegurarIndices();
+            const ahora = Date.now(), hoy = dia(ahora);
+            const [activos5, activos30, visitantesHoy, nuevosHoy, cuentas] = await Promise.all([
+                visitantes().countDocuments({ ultima: { $gte: new Date(ahora - 5 * 60e3) } }),
+                visitantes().countDocuments({ ultima: { $gte: new Date(ahora - 30 * 60e3) } }),
+                visitas().countDocuments({ dia: hoy }),
+                visitas().countDocuments({ dia: hoy, nuevo: true }),
+                Usuario.find({ createdAt: { $gte: new Date(ahora - 24 * 3600e3) } }).sort({ createdAt: -1 }).limit(8).select('usuario createdAt').lean(),
+            ]);
+            const cuentasHora = await Usuario.countDocuments({ createdAt: { $gte: new Date(ahora - 3600e3) } });
+            const m0 = minuto(ahora);
+            const porMinuto = Array.from({ length: VIVO_MIN }, (_, i) => { const c = vivo.get(m0 - (VIVO_MIN - 1 - i)); return c ? [c.v, c.b, c.f, c.d, c.r] : [0, 0, 0, 0, 0]; });
+            res.json({ success: true, ahora, activos5, activos30, visitantesHoy, nuevosHoy, cuentasHora,
+                porMinuto, actividad: recientes.slice(0, 25),
+                cuentas: cuentas.map(u => ({ usuario: u.usuario, t: new Date(u.createdAt).getTime() })) });
+        } catch (e) { logger?.warn?.(`[metricas/vivo] ${e.message}`); res.status(500).json({ success: false, error: 'No se pudo leer la actividad en vivo' }); }
     });
 
     // ── Panel ──

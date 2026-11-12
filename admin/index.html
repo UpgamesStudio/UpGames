@@ -155,6 +155,35 @@ select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%
 .alert .a-n{font-size:1.3rem;font-weight:800}.alert .a-l{font-size:.78rem;color:var(--tx2)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .ct{font-size:.86rem;font-weight:700;margin:0 0 2px}.cs{font-size:.74rem;color:var(--tx3);margin:0 0 12px}
+/* En vivo */
+@media(min-width:1000px){#dKpis{grid-template-columns:repeat(4,1fr)}}
+.vivo{display:grid;grid-template-columns:minmax(170px,230px) 1fr;gap:18px;align-items:stretch;margin-bottom:14px}
+.vivo-n{display:flex;flex-direction:column;justify-content:center;gap:2px}
+.vivo-n b{font-size:3rem;font-weight:800;letter-spacing:-1.5px;line-height:1;color:var(--g1)}
+.vivo-n span{font-size:.8rem;color:var(--tx2);font-weight:600}
+.vivo-n small{font-size:.74rem;color:var(--tx3);margin-top:6px;line-height:1.5}
+.vivo-n small b{font-size:inherit;color:var(--tx2);letter-spacing:0}
+.vivo-g{min-width:0}
+.vivo-bars{display:flex;align-items:flex-end;gap:1px;height:74px;border-bottom:1px solid var(--line)}
+.vivo-bars i{flex:1;background:var(--g1);opacity:.85;border-radius:2px 2px 0 0;min-height:1px}
+.vivo-bars i.c{background:#ff7a9c;opacity:1}
+.vivo-ley{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--tx3);margin-top:6px}
+.vivo-ley b{color:var(--tx2)}
+.vivo-act{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:10px;font-size:.76rem;color:var(--tx2);max-height:92px;overflow:hidden}
+.vivo-act div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vivo-act em{font-style:normal;color:var(--tx3);font-variant-numeric:tabular-nums;margin-right:6px}
+@media(max-width:760px){.vivo{grid-template-columns:1fr;gap:12px}.vivo-n b{font-size:2.4rem}.vivo-act{grid-template-columns:1fr}}
+/* secciones plegables: lo secundario no compite con lo de todos los días */
+details.mas{margin-top:14px}
+details.mas>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:10px 4px;font-size:.84rem;font-weight:700;color:var(--tx2);user-select:none}
+details.mas>summary::-webkit-details-marker{display:none}
+details.mas>summary::before{content:'▸';color:var(--tx3);transition:transform .15s}
+details.mas[open]>summary::before{transform:rotate(90deg)}
+details.mas>summary small{font-weight:500;color:var(--tx3)}
+.nav-g{cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.nav-g::after{content:'▾';font-size:.7rem;opacity:.6}
+.nav-g.cer::after{content:'▸'}
+.nav-g.cer~.nav-i[data-g]{display:none}
 .bars{display:flex;align-items:flex-end;gap:2px;height:120px;border-bottom:1px solid var(--line);position:relative}
 .bar{flex:1;background:var(--g1);border-radius:4px 4px 0 0;min-height:2px;position:relative;transition:opacity .15s}
 .bar.alt{background:var(--g2)}
@@ -609,11 +638,18 @@ a{color:var(--g2)}
 
     <!-- INICIO -->
     <section class="view" id="v-dash">
-      <div class="vh"><div><h2 id="hola">Hola 👋</h2><p>Resumen de UpGames en tiempo real</p></div></div>
+      <div class="vh"><div><h2 id="hola">Hola 👋</h2><p>Lo pendiente, quién está en la página ahora y las cifras del día</p></div></div>
       <div class="card dash-nx" id="dashNx"><div class="nx-av">✦</div><div class="grow"><div class="small" style="color:#c4b5fd;font-weight:700">Briefing de Nexus</div><p id="dashNxTxt">Nexus está revisando el panel…</p><div id="dashNxAct"></div>
         <button class="btn sm" style="margin-top:8px;border-color:rgba(167,139,250,.45);color:#d4c8ff" onclick="nxAbrir()">✦ Hablar con Nexus</button></div></div>
+      <p class="ct" style="margin:2px 0 8px">Por hacer</p>
       <div class="alerts" id="dAlerts"></div>
+      <div class="card vivo" id="dVivo">
+        <div class="vivo-n"><span>🟢 En la página ahora</span><b id="vvN">—</b><small id="vvSub">Cargando la actividad en vivo…</small></div>
+        <div class="vivo-g"><p class="ct" style="margin:0">Actividad en vivo</p><p class="cs" style="margin:0 0 8px">Últimos 60 minutos, minuto a minuto · se actualiza cada 15 s</p>
+          <div class="vivo-bars" id="vvBars"></div><div class="vivo-ley" id="vvLey"></div><div class="vivo-act" id="vvAct"></div></div>
+      </div>
       <div class="kpis" id="dKpis"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+      <details class="mas" style="margin-top:0"><summary>Más cifras <small>ventas, UpCoins, comentarios y lista negra</small></summary><div class="kpis" id="dKpis2"></div></details>
       <div class="grid2" style="margin-bottom:14px">
         <div class="card"><p class="ct">Usuarios nuevos</p><p class="cs">Últimos 14 días</p><div id="chU"></div></div>
         <div class="card"><p class="ct">Publicaciones nuevas</p><p class="cs">Últimos 14 días</p><div id="chI"></div></div>
@@ -622,6 +658,7 @@ a{color:var(--g2)}
         <div class="card"><p class="ct">🏆 Top creadores</p><p class="cs">Por visualizaciones de publicidad</p><div id="dTop"></div></div>
         <div class="card"><p class="ct">🔥 Más rentables</p><p class="cs">Publicaciones con más anuncios vistos</p><div id="dMas"></div></div>
       </div>
+      <details class="mas"><summary>Análisis de la bienvenida <small>guía de inicio y prueba A/B</small></summary>
       <div class="card" style="margin-top:14px">
         <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><div><p class="ct">🚀 Guía de inicio · dónde se atascan</p><p class="cs" style="margin:0">Qué % de quienes vieron la guía completó cada paso (últimos 30 días, anónimo). "Llévame" = cuántos pidieron ayuda en ese paso</p></div>
           <div class="chips" id="gF"><button class="chip on" data-f="usr">Con cuenta</button><button class="chip" data-f="inv">Invitados</button></div></div>
@@ -629,6 +666,7 @@ a{color:var(--g2)}
       </div>
       <div class="card" style="margin-top:14px"><p class="ct">🧪 Prueba A/B de la bienvenida</p><p class="cs" style="margin:0">Cada dispositivo ve siempre una versión. <b>A</b>: "un ecosistema que no existe en ningún otro lugar" · <b>B</b>: "lo que creas te genera dinero real". Últimos 30 días, anónimo.</p>
         <div id="dAB" style="margin-top:10px"><div class="skel"></div></div></div>
+      </details>
     </section>
 
     <!-- MÉTRICAS DE PRODUCTO -->
@@ -1125,6 +1163,7 @@ async function entrar() {
   nxHist = []; nxBrief = null; $('nxMsgs').innerHTML = ''; setTimeout(() => nxBriefing(), 1200);
   clearInterval(timers.nx); timers.nx = setInterval(() => { if (!document.hidden) nxBriefing(); }, 10 * 60e3);
   clearInterval(timers.sync); timers.sync = setInterval(() => { if (!document.hidden) sync(); }, 30000);
+  clearInterval(timers.vivo); timers.vivo = setInterval(loadVivo, 15000);
   clearInterval(timers.exp); timers.exp = setInterval(tickExp, 30000); tickExp();
 }
 function tickExp() { const r = S.exp - Date.now(); if (r <= 0) return logout('Tu sesión expiró. Vuelve a entrar.'); $('meExp').textContent = `Sesión: ${Math.floor(r / 3600e3)} h ${Math.floor(r % 3600e3 / 60e3)} min`; }
@@ -1158,13 +1197,23 @@ const NAV = [
 function navOk(n) { return can(n.perm); }
 // Primera pantalla según el rol: su área principal, no una vista de apoyo
 function inicioDeRol() { return ['dash', 'revn', 'pays', 'comt', 'anun', 'api', 'apro', 'usrs'].find(id => navOk(NAV.find(n => n.id === id))) || 'dash'; }
+// grupos del menú plegables (se recuerda): por defecto abiertos solo General y Contenido
+let navCerr = new Set((() => { try { return JSON.parse(localStorage.getItem('ug_admin_nav') || 'null') || ['Comunidad', 'Finanzas', 'Sistema']; } catch (_) { return []; } })());
+function navPlegar(el) {
+  const g = el.dataset.g, cer = !navCerr.has(g);
+  cer ? navCerr.add(g) : navCerr.delete(g);
+  try { localStorage.setItem('ug_admin_nav', JSON.stringify([...navCerr])); } catch (_) {}
+  el.classList.toggle('cer', cer);
+  document.querySelectorAll(`#nav .nav-i[data-g="${g}"]`).forEach(b => { b.style.display = cer ? 'none' : ''; });
+}
 function buildNav() {
-  let html = '', pend = null;
+  let html = '', pend = null, grupo = '';
   for (const n of NAV) {
     if (n.g) { pend = n.g; continue; }
     if (!navOk(n)) continue;
-    if (pend) { html += `<div class="nav-g">${pend}</div>`; pend = null; }
-    html += `<button class="nav-i" data-v="${n.id}" onclick="go('${n.id}')"><ion-icon name="${n.ic}"></ion-icon>${n.t}${n.b ? `<span class="nbadge" id="nb-${n.id}">0</span>` : ''}</button>`;
+    if (pend) { grupo = pend; html += `<div class="nav-g${navCerr.has(grupo) ? ' cer' : ''}" data-g="${grupo}" onclick="navPlegar(this)">${pend}</div>`; pend = null; }
+    // (el número solo donde hay trabajo esperando: los totales de entradas o usuarios eran ruido)
+    html += `<button class="nav-i" data-g="${grupo}" data-v="${n.id}" onclick="go('${n.id}')"${navCerr.has(grupo) ? ' style="display:none"' : ''}><ion-icon name="${n.ic}"></ion-icon>${n.t}${n.b && n.hot ? `<span class="nbadge" id="nb-${n.id}">0</span>` : ''}</button>`;
   }
   $('nav').innerHTML = html;
   const prim = ['dash', 'revn', 'usrs', 'pays', 'econ', 'apro', 'reportes', 'comt', 'anun', 'tarj', 'api', 'equipo'].map(id => NAV.find(n => n.id === id)).filter(n => n && navOk(n)).slice(0, 4);
@@ -1244,7 +1293,7 @@ async function sync(manual) {
     $('liveT').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
     if (fallos.length) toast('⚠ No cargó: ' + fallos.join(', '), 'err');
     else if (manual) toast(`✓ Sincronizado · ${num(D.items.length)} entradas · ${num(D.users.length)} usuarios`);
-    if (view === 'dash') loadCharts();
+    if (view === 'dash') { loadCharts(); loadVivo(); }
     loadEcon(view === 'econ');
   } finally { syncing = false; $('syncIco').style.animation = ''; }
 }
@@ -1275,6 +1324,8 @@ function rDash() {
     k('game-controller', 'var(--info)', num(d.items?.total), 'Publicaciones', `Aprobadas <b>${num(d.items?.aprobados)}</b> · Hoy <b>+${num(d.items?.hoy)}</b>`) +
     k('megaphone', 'var(--vio)', num(d.descargas?.total), 'Anuncios vistos', `Hoy <b>+${num(d.descargas?.hoy)}</b>`) +
     k('trending-up', 'var(--g1)', money((d.descargas?.hoy || 0) * cpmCreador() / 1000), 'Pago a creadores hoy', `Tarifa <b>${money(cpmCreador())}</b> por 1.000 visualizaciones de publicidad`, 'k-hero') +
+    '';
+  $('dKpis2').innerHTML =
     k('diamond', 'var(--warn)', ucFmt(ucDe(d.finanzas?.saldoEnCirculacion)), 'UC ganados por creadores', `≈ ${money(d.finanzas?.saldoEnCirculacion)} · por pagar <b>${money(d.finanzas?.pendienteDePago)}</b>`) +
     (econ ? k('cash', 'var(--ok)', money(econ.periodos.mes.ingresosUsd), 'Ventas 30 días', `<b>${num(econ.premium.activos)}</b> Premium activos · <a href="#econ" onclick="go('econ');return false" style="color:var(--g1)">Economía →</a>`) : '') +
     k('chatbubbles', 'var(--g2)', num(d.comentarios?.total), 'Comentarios', `Hoy <b>+${num(d.comentarios?.hoy)}</b>`) +
@@ -1318,6 +1369,24 @@ function rGuia() {
     + (peor ? `<p class="small" style="margin:10px 0 0;color:var(--warn)">⚠️ Donde más se atascan: <b>${peor.t.replace(/^\S+\s/, '')}</b> (${peor.pct} %). Conviene explicarlo mejor o hacerlo más visible.</p>` : '<p class="small muted" style="margin:10px 0 0">Con 5 o más personas se señala el paso donde más se atascan.</p>');
 }
 
+// ── En vivo: personas en la página ahora y actividad minuto a minuto (/admin/metricas/vivo) ──
+const VV_TXT = { v: '👀 Entró a la página', b: '🔎 Buscó', f: '📄 Abrió una publicación', d: '⬇️ Fue a descargar', r: '🎉 Creó su cuenta' };
+let vvT = 0, vvBusy = false;
+async function loadVivo() {
+  if (vvBusy || view !== 'dash' || document.hidden || !$('dVivo')) return; vvBusy = true;
+  try {
+    const { ok, d } = await api('/admin/metricas/vivo'); if (!ok || !d.success) throw new Error();
+    const hace = t => { const m = Math.max(0, Math.round((d.ahora - t) / 60000)); return m < 1 ? 'ahora' : m < 60 ? m + ' min' : Math.round(m / 60) + ' h'; };
+    $('vvN').textContent = num(d.activos5);
+    $('vvSub').innerHTML = `<b>${num(d.activos30)}</b> en la última media hora<br>Hoy: <b>${num(d.visitantesHoy)}</b> visitantes · <b>${num(d.nuevosHoy)}</b> nuevos<br><b>${num(d.cuentasHora)}</b> ${d.cuentasHora === 1 ? 'cuenta nueva' : 'cuentas nuevas'} en la última hora`;
+    const tot = d.porMinuto.map(m => m[0] + m[1] + m[2] + m[3] + m[4]), max = Math.max(1, ...tot), sum = k => d.porMinuto.reduce((a, m) => a + m[k], 0);
+    $('vvBars').innerHTML = d.porMinuto.map((m, i) => `<i class="${m[4] ? 'c' : ''}" style="height:${Math.max(1, tot[i] / max * 100)}%" data-tip="Hace ${59 - i} min · ${tot[i]} ${tot[i] === 1 ? 'acción' : 'acciones'}${m[4] ? ' · ' + m[4] + ' cuenta nueva' : ''}"></i>`).join('');
+    $('vvLey').innerHTML = `<span>Visitas <b>${num(sum(0))}</b></span><span>Búsquedas <b>${num(sum(1))}</b></span><span>Publicaciones abiertas <b>${num(sum(2))}</b></span><span>Idas a descargar <b>${num(sum(3))}</b></span><span style="color:#ff7a9c">■ Cuentas nuevas <b>${num(sum(4))}</b></span>`;
+    const act = [...d.actividad.map(a => ({ t: a.t, x: VV_TXT[a.k] + (a.q ? ` «${esc(a.q)}»` : '') })), ...d.cuentas.map(c => ({ t: c.t, x: `🎉 Cuenta nueva: <b>@${esc(c.usuario)}</b>` }))].sort((a, b) => b.t - a.t).slice(0, 8);
+    $('vvAct').innerHTML = act.length ? act.map(a => `<div><em>${hace(a.t)}</em>${a.x}</div>`).join('') : '<div class="muted">Sin actividad en la última hora</div>';
+  } catch (_) { $('vvSub').textContent = 'No se pudo leer la actividad en vivo (se reintenta solo)'; }
+  vvBusy = false;
+}
 let chartsAt = 0;
 async function loadCharts() {
   if (Date.now() - chartsAt < 5 * 60e3 && $('chU').innerHTML) return; chartsAt = Date.now();
