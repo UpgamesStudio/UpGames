@@ -77,7 +77,7 @@ const AJ_DEF = {
   control: esTactil ? 'inclinacion' : 'tactil', sensibilidad: 1, anguloInclinacion: 24, invertir: false, vibracion: true,
   tc: 2, abs: true, cambioAuto: true, direccion: true, estabilidad: false, frenada: true, trazada: true,
   calidad: 'auto', fps: false, volumen: 0.8, unidades: 'kmh', camara: 'persecucion', radio: true, ambiente: true, averias: true, repeAuto: true, halo: true, motorSonido: 'v10',
-  categoria: 'f1', vozSintetica: false,
+  categoria: 'f1', vozSintetica: false, fpsMax: 'auto',
 };
 const OPC_CARRERA_DEF = { vueltas: 5, rivales: 7, dificultad: 'normal', posSalida: 0, compuesto: 'medio', clima: 'seco', hora: 'dia', formacion: 0, duracion: 0 };
 function cargar() {
@@ -429,6 +429,9 @@ $('#bPistaSig').addEventListener('click', async () => {
 
 function crearRenderer() {
   renderer = new THREE.WebGLRenderer({ canvas: $('#lienzo'), antialias: calidad <= 1, powerPreference: 'high-performance', stencil: false });
+  // (sin leer el registro de cada sombreador al compilarlo: es síncrono y daba tirones al aparecer
+  // algo nuevo en pantalla; con ?depurar se vuelve a comprobar)
+  renderer.debug.checkShaderErrors = new URLSearchParams(location.search).has('depurar');
   renderer.setPixelRatio(pixelRatio());
   renderer.setSize(innerWidth, innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -445,7 +448,9 @@ function pixelRatio() {
   const dpr = devicePixelRatio || 1;
   // resolución interna nítida desde la calidad media: lo que se recorta cuando el móvil no llega
   // es antes la distancia de dibujo, las sombras y los efectos (ver ahorro) que los píxeles
-  return [Math.min(dpr, 1.1), Math.min(dpr, 1.5), Math.min(dpr, 1.75), Math.min(dpr, 2)][calidad] * escalaRes;
+  // (en el móvil algo menos: la pantalla es pequeña y densa, y los píxeles son lo que más calienta)
+  const tope = esMovil ? [1, 1.25, 1.6, 2] : [1.1, 1.5, 1.75, 2];
+  return Math.min(dpr, tope[calidad]) * escalaRes;
 }
 // Rendimiento adaptable: si los FPS caen por debajo de 50, primero sube el nivel de ahorro
 // (distancia de dibujo y bruma más cerca, sombras refrescadas cada 2 o 3 fotogramas, sin distorsión
@@ -492,7 +497,8 @@ function resolucionDinamica(fps) {
 
 function configurarPost() {
   composer = null; pasoCalor = null; pasoVelocidad = null; pasoEtalonado = null;
-  if (calidad < 1) return;
+  // en el móvil el posproceso (un destino de coma flotante a pantalla completa) empieza en calidad alta
+  if (calidad < (esMovil ? 2 : 1)) return;
   const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 2 });
   composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(pixelRatio());
@@ -1935,12 +1941,14 @@ const MOTOR_FORMA = { gt: 'v6', gtb: 'v10', gtm: 'v6', gtt: 'alonso', gth: 'v6',
 // Tope de 60 fotogramas por segundo: en pantallas de 90, 120 o 144 Hz el juego dibujaba a ese
 // ritmo (el doble de trabajo para la gráfica: el móvil se calentaba y acababa bajando los FPS).
 let tSigFoto = 0;
+const fpsMaximo = () => { const v = +ajustes.fpsMax; return v >= 20 && v <= 60 ? v : 60; };
 let tPrevio = performance.now();
 let fpsAcum = 0, fpsN = 0, fpsMostrar = 0, tLento = 0;
 
 function bucle(ahora) {
   requestAnimationFrame(bucle);
-  if (ajustes.fpsLibres !== true) { if (ahora < tSigFoto - 1.5) return; tSigFoto = Math.max(tSigFoto + 1000 / 60, ahora); }
+  // límite de FPS (Ajustes): menos fotogramas = menos calor y batería. 40 va fino en pantallas de 120 Hz
+  if (ajustes.fpsLibres !== true) { if (ahora < tSigFoto - 1.5) return; tSigFoto = Math.max(tSigFoto + 1000 / fpsMaximo(), ahora); }
   const dt = Math.min(0.1, (ahora - tPrevio) / 1000);
   tPrevio = ahora;
   // entrada

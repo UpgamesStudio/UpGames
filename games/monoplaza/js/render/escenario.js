@@ -496,7 +496,7 @@ export function construirEscenario(scene, renderer, c, calidad) {
   // con calidad media o alta el público es 3D (asientos de colores); en baja, la textura de siempre
   const publico = calidad >= 1 ? new Publico(calidad) : null;
   const matAsientos = new THREE.MeshStandardMaterial({ color: 0x1f4fd6, roughness: 0.6 });
-  const gradaOpc = { publico, matAsientos };
+  const gradaOpc = { publico, matAsientos, terreno };
   const matEdif = new THREE.MeshStandardMaterial({ map: TX.texturaEdificio(), roughness: 0.6 });
   for (const [s0, largo] of [[-260, 150], [-90, 160], [120, 170], [330, 140]]) grada(scene, c, s0, largo, -1, matGrada, matTecho, matHormigon, gradaOpc);
   res.garajes = calleBoxes(scene, c, { matAsfalto: matEscape, matLinea, matMuro, matTecho, matHormigon, calidad }, res);
@@ -512,7 +512,7 @@ export function construirEscenario(scene, renderer, c, calidad) {
   // puente publicitario sobre una recta larga de cada circuito
   const recta = { valle: 'Recta del Río', veloz: 'Recta del Serraglio', puerto: 'Subida del Casino' }[c.id];
   const rr = recta && c._sDeSegmento(recta);
-  if (rr) puente(scene, c, (rr.s0 + rr.s1) / 2, matHormigon);
+  if (rr) puente(scene, c, (rr.s0 + rr.s1) / 2, matHormigon, terreno);
   res.ayudaFrenada = carteles(scene, c);
   Object.assign(res, equipoTV(scene, c));
 
@@ -806,20 +806,52 @@ function portico(scene, c, m0, ang, hw) {
   };
 }
 
+// ¿Cabe una pieza del decorado sin pisar el asfalto? La huella es un rectángulo junto al tramo s:
+// de -medioLargo a +medioLargo a lo largo de la pista y de d a d + lado·fondo hacia fuera. Los
+// trazados reales se doblan sobre sí mismos: una grada o una valla puesta junto a un tramo caía
+// encima de otro que pasa cerca (o del mismo, en el interior de una curva).
+// Distancia exacta de un punto al eje del trazado (la rejilla del terreno es de 10-16 m: demasiado
+// gruesa para decidir si algo pisa el asfalto). Rejilla de 32 m con los puntos del trazado.
+function distanciaPista(c, x, z) {
+  let r = c._rejDist;
+  if (!r) {
+    r = c._rejDist = new Map();
+    for (let i = 0; i < c.n; i++) { const k = Math.floor(c.x[i] / 32) * 100003 + Math.floor(c.z[i] / 32); let l = r.get(k); if (!l) r.set(k, l = []); l.push(i); }
+  }
+  const cx = Math.floor(x / 32), cz = Math.floor(z / 32);
+  let d2 = Infinity;
+  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gz = cz - 1; gz <= cz + 1; gz++) {
+    const l = r.get(gx * 100003 + gz); if (!l) continue;
+    for (const i of l) { const q = (c.x[i] - x) ** 2 + (c.z[i] - z) ** 2; if (q < d2) d2 = q; }
+  }
+  return Math.sqrt(d2);
+}
+function huellaLibre(terreno, c, s, d, lado, medioLargo, fondo, margen = 13) {
+  const m = c.muestra(s);
+  for (const a of [-medioLargo, -medioLargo / 2, 0, medioLargo / 2, medioLargo]) for (const t of [0, fondo / 2, fondo]) {
+    const dd = d + lado * t;
+    const x = m.x + m.tx * a - m.tz * dd, z = m.z + m.tz * a + m.tx * dd;
+    if (distanciaPista(c, x, z) < margen) return false;
+  }
+  return true;
+}
+
 function colocarEnPista(c, obj, s, d, rotExtra = 0) {
   const m = c.muestra(s);
   obj.position.set(m.x - m.tz * d, m.y, m.z + m.tx * d);
   obj.rotation.y = -Math.atan2(m.tz, m.tx) + rotExtra;
 }
 
-function grada(scene, c, s0, largo, lado, matGrada, matTecho, matBase, { publico = null, matAsientos = null } = {}) {
+function grada(scene, c, s0, largo, lado, matGrada, matTecho, matBase, { publico = null, matAsientos = null, terreno = null } = {}) {
   const tramos = Math.max(1, Math.round(largo / 30));
   for (let k = 0; k < tramos; k++) {
     const s = s0 + (k + 0.5) * largo / tramos;
     const i = Math.floor(c.envolver(s) / c.paso) % c.n;
     const d = lado * (c.muro[lado > 0 ? 1 : 0][i] + 9);
-    const g = new THREE.Group();
     const L = largo / tramos - 1;
+    // sin sitio (otro tramo pasa por detrás, o la curva se cierra sobre la grada): no se pone
+    if (!huellaLibre(terreno, c, s, d - lado * 1.5, lado, L / 2, 8 * 1.6 + 5)) continue;
+    const g = new THREE.Group();
     const filas = 8;
     for (let f = 0; f < filas; f++) {
       const esc = new THREE.Mesh(new THREE.BoxGeometry(L, 0.9 + f * 0.9, 1.6), f % 2 ? matBase : publico ? matAsientos : matGrada);
@@ -877,9 +909,11 @@ function grada(scene, c, s0, largo, lado, matGrada, matTecho, matBase, { publico
   }
 }
 
-function puente(scene, c, s, matBase) {
+function puente(scene, c, s, matBase, terreno = null) {
   const i = Math.floor(c.envolver(s) / c.paso) % c.n;
   const ancho = c.muro[0][i] + c.muro[1][i] + 6;
+  // los pilares van fuera de los muros: si ahí pasa otro tramo, no hay puente
+  for (const sg of [-1, 1]) if (!huellaLibre(terreno, c, s, sg * (c.muro[sg > 0 ? 1 : 0][i] + 2), sg, 1.5, 2, 9)) return;
   const g = new THREE.Group();
   const tablero = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.0, ancho), matBase);
   tablero.position.y = 8; g.add(tablero);
@@ -1075,7 +1109,8 @@ function ciudad(scene, c, terreno, calidad, matHormigon) {
         const d = sg * (c.muro[lado][i] + 5 + fondo / 2 + fila * (fondo + 6));
         const mm = c.muestra(s);
         const x = mm.x - mm.tz * d, z = mm.z + mm.tx * d;
-        if (terreno.distancia(x, z) < fondo / 2 + 8) continue;     // no invadir otra parte de la pista
+        // no invadir otra parte de la pista (ni con las esquinas: el edificio va girado)
+        if (distanciaPista(c, x, z) < Math.hypot(frente, fondo) / 2 + 12) continue;
         const k = Math.floor(rnd() * 4);
         if (cuenta[k] >= max) continue;
         const alto = (enTunel(s) ? 30 : 12) + rnd() * (fila ? 40 : 24);
@@ -1327,6 +1362,7 @@ function publicidad(scene, c, terreno, calidad) {
     const lado = c.curvSuave[i] > 0 ? -1 : c.curvSuave[i] < 0 ? 1 : (c.muro[0][i] > c.muro[1][i] ? -1 : 1);
     if (lado > 0 && c.enZonaPit[i]) continue;
     const d = lado * (c.muro[lado > 0 ? 1 : 0][i] + 7);
+    if (!huellaLibre(terreno, c, s, d - lado * 9, lado, 4, 18, 11)) continue;      // la valla (16 m, girada) no cabe
     const g = new THREE.Group();
     // panel con estructura (no una lámina): la cara impresa mira a los coches que llegan
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(16, 5), mats[k++ % mats.length]);

@@ -606,8 +606,9 @@ export function crearModelo(opc) {
   const cat = opc.categoria || CAT.id, cerrado = cat === 'gt' || cat === 'stock';
   const eq = opc.equipado || {};
   const fisico = calidad >= 2;
-  // pintura con barniz (clearcoat) desde la calidad media, y siempre en el coche del jugador
-  const barniz = calidad >= 1 || !!cabina;
+  // pintura con barniz (clearcoat) en alta y ultra, y siempre en el coche del jugador (en media, los
+  // rivales llevan la pintura sencilla: el barniz en toda la parrilla calentaba el móvil)
+  const barniz = calidad >= 2 || !!cabina;
   const colores = { base: equipo.base, acento: equipo.acento, tercero: equipo.tercero || '#ffffff', ...(eq.colores || {}) };
   const numero = eq.numero ?? opc.numero ?? 7;
   // textura de la librea (compartida entre los dos coches de un equipo de la IA)
