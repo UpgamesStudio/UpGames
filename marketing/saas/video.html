@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>UpGames · Video SaaS para creadores independientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+:root { --g: #39FF88; --cy: #5CE1FF; --vi: #8F7BFF; --bg: #04060B; --tx: #F4F7FA; --tx2: #AEB7C4; --tx3: #6C7686;
+  --au: linear-gradient(120deg, #39FF88 0%, #4BF0C4 50%, #5CE1FF 100%); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--tx); font-family: 'Space Grotesk', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+#lienzo { position: absolute; inset: 0; overflow: hidden; }
+.abs { position: absolute; }
+.disp { font-family: 'Orbitron', sans-serif; font-weight: 900; text-transform: uppercase; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.au { background: var(--au); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+
+/* Fondo */
+.blob { position: absolute; border-radius: 50%; filter: blur(110px); will-change: transform; }
+#rejilla { position: absolute; left: -50%; right: -50%; bottom: -160px; height: 760px;
+  background-image: linear-gradient(rgba(92,225,255,.3) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(143,123,255,.2) 1.5px, transparent 1.5px);
+  background-size: 90px 90px; transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.5) 45%, transparent 88%); mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,.5) 45%, transparent 88%); }
+#vin { position: absolute; inset: 0; background: radial-gradient(75% 75% at 50% 50%, transparent 55%, rgba(0,0,0,.6) 100%); pointer-events: none; }
+#destello { position: absolute; inset: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,.95), rgba(92,225,255,.5) 45%, transparent 75%); opacity: 0; }
+.pt { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #fff; }
+
+/* Escenas */
+.esc { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+.w { display: inline-block; white-space: pre; will-change: transform, opacity; }
+.tit { font-weight: 700; letter-spacing: -.035em; line-height: 1.04; }
+.kick { font-family: 'JetBrains Mono', monospace; font-size: 22px; letter-spacing: .28em; text-transform: uppercase; color: var(--g); }
+.kick::before { content: ''; display: inline-block; width: 44px; height: 2px; background: var(--au); vertical-align: middle; margin-right: 18px; }
+
+.cristal { background: linear-gradient(165deg, rgba(22,31,50,.86), rgba(9,13,22,.92)); border: 1.5px solid rgba(255,255,255,.1); border-radius: 30px;
+  box-shadow: 0 50px 110px -50px rgba(0,0,0,.95), inset 0 1.5px 0 rgba(255,255,255,.08); }
+.filo::before { content: ''; position: absolute; left: 40px; right: 40px; top: -1px; height: 2px; background: linear-gradient(90deg, transparent, #39FF88 30%, #5CE1FF 70%, transparent); }
+.pill { display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); font-weight: 600; font-size: 24px; color: var(--tx2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 20px; background: var(--au); color: #031109; font-family: 'Orbitron', sans-serif; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  box-shadow: 0 24px 50px -16px rgba(57,255,136,.85), inset 0 2px 0 rgba(255,255,255,.5); }
+#cursor { position: absolute; width: 44px; height: 44px; z-index: 50; opacity: 0; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+.onda { position: absolute; border-radius: 50%; border: 3px solid var(--g); opacity: 0; }
+
+/* Navegador (escena 3) */
+.nav-top { height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 26px; border-bottom: 1.5px solid rgba(255,255,255,.08); }
+.nav-top i { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.16); }
+.nav-url { margin-left: 22px; flex: 1; height: 38px; border-radius: 12px; background: rgba(255,255,255,.05); display: flex; align-items: center; padding: 0 18px; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: var(--tx2); }
+.tar { position: absolute; border-radius: 22px; overflow: hidden; background: linear-gradient(165deg, rgba(26,36,58,.95), rgba(10,15,26,.98)); border: 1.5px solid rgba(255,255,255,.09); box-shadow: 0 26px 50px -30px rgba(0,0,0,.9); }
+.tar .im { height: 62%; margin: 8px 8px 0; border-radius: 15px; position: relative; overflow: hidden; }
+.tar .ct { font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: .16em; color: var(--g); margin: 14px 16px 4px; }
+.tar .tt { font-weight: 600; font-size: 21px; margin: 0 16px; white-space: nowrap; }
+.tar .on { position: absolute; right: 10px; top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .1em; padding: 5px 10px; border-radius: 999px; background: rgba(4,6,11,.7); color: var(--g); border: 1px solid rgba(57,255,136,.45); }
+.chipx { padding: 9px 20px; border-radius: 999px; font-size: 15px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; border: 1.5px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: var(--tx2); }
+.chipx.a { background: var(--au); color: #031109; border-color: transparent; }
+
+/* Bento (escena 5) */
+.bento { position: absolute; padding: 34px; overflow: hidden; }
+.bento h4 { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin: 22px 0 8px; }
+.bento p { font-size: 23px; line-height: 1.35; color: var(--tx2); }
+.ico { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1.5px 0 rgba(255,255,255,.14); }
+.ico svg { width: 36px; height: 36px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.kpi { position: absolute; padding: 26px 28px; border-radius: 24px; background: rgba(255,255,255,.045); border: 1.5px solid rgba(255,255,255,.09); }
+.kpi small { display: block; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .16em; text-transform: uppercase; color: var(--tx3); }
+.kpi b { display: block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 50px; letter-spacing: -.03em; margin-top: 8px; }
+#nota { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: .12em; color: rgba(255,255,255,.3); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="lienzo">
+  <div class="blob" id="b1" style="width:900px;height:900px;background:rgba(57,255,136,.22);left:1200px;top:-420px"></div>
+  <div class="blob" id="b2" style="width:800px;height:800px;background:rgba(92,225,255,.16);left:-300px;top:-200px"></div>
+  <div class="blob" id="b3" style="width:1100px;height:900px;background:rgba(143,123,255,.2);left:420px;top:640px"></div>
+  <div id="rejilla"></div>
+  <div id="pts"></div>
+  <div id="escenas"></div>
+  <div id="vin"></div>
+  <div id="destello"></div>
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-7 2-3 7z" fill="#fff" stroke="#04060B" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  <div id="nota">Cifras ilustrativas · upgames.games</div>
+</div>
+<script>
+'use strict';
+/* ═══ Motor: todo se calcula en render(t) para grabar cuadro a cuadro ═══ */
+const DUR = 40;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = { out: k => 1 - Math.pow(1 - k, 3), out5: k => 1 - Math.pow(1 - k, 5), in: k => k * k * k,
+  io: k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2,
+  back: k => { const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); },
+  spr: k => k >= 1 ? 1 : 1 - Math.exp(-6.5 * k) * Math.cos(k * 13) };
+const en = (t, a, d, e = E.out) => e(clamp((t - a) / d));
+const win = (t, a, b, fi = .4, fo = .4) => Math.min(clamp((t - a) / fi), clamp((b - t) / fo));
+const R = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const fmt = n => Math.round(n).toLocaleString('es-CO');
+const $ = (tag, cls, html, padre, css) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (css) e.style.cssText = css; if (padre) padre.appendChild(e); return e; };
+const S = (el, p) => { if (p.o != null) el.style.opacity = p.o;
+  el.style.transform = `translate(${p.x || 0}px, ${p.y || 0}px) rotateX(${p.rx || 0}deg) rotateY(${p.ry || 0}deg) rotate(${p.r || 0}deg) scale(${p.s ?? 1})`;
+  if (p.b != null) el.style.filter = p.b > .05 ? `blur(${p.b}px)` : 'none'; };
+// Texto cinético: cada palabra sube, se enfoca y aparece
+const pal = (padre, str, cls, css) => { const e = $('div', cls, null, padre, css); str.split(' ').forEach((p, i, a) => $('span', 'w', p.replace(/\[(.+?)\]/, '<span class="au">$1</span>') + (i < a.length - 1 ? ' ' : ''), e)); return e; };
+const kin = (el, t, a, gap = .075, d = .6, dy = 46) => [...el.children].forEach((w, i) => { const k = en(t, a + i * gap, d, E.out5); w.style.opacity = k; w.style.transform = `translateY(${(1 - k) * dy}px)`; w.style.filter = k < .98 ? `blur(${(1 - k) * 12}px)` : 'none'; });
+const SFX = []; const sfx = (t, n, g = 1) => SFX.push({ t, n, g });
+const GOLPES = []; const golpe = (t, f = 1) => GOLPES.push([t, f]);
+const ESC = [];
+const escena = (a, b, crear, act) => { const r = $('div', 'esc', null, document.getElementById('escenas')); const ctx = crear(r) || {}; ESC.push({ a, b, r, act, ctx }); };
+const cursor = document.getElementById('cursor');
+const ICO = {
+  chispa: '<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>',
+  vivo: '<circle cx="12" cy="12" r="3.2"/><path d="M6.3 6.3a8 8 0 000 11.4M17.7 6.3a8 8 0 010 11.4"/>',
+  grafica: '<path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-7"/>',
+  gente: '<circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.2 6.2 0 0112.4 0M16 4.8a3.4 3.4 0 010 6.4M21.2 20a6.2 6.2 0 00-4-5.8"/>',
+  estrella: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9 6.6 19.8l1.1-6.1L3.2 9.4l6.1-.8z"/>',
+  cartera: '<path d="M3 7.5A2.5 2.5 0 015.5 5H18v4M3 7.5V17a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2H5.5A2.5 2.5 0 013 7.5z"/><circle cx="16.5" cy="14" r="1.2"/>',
+  subir: '<path d="M12 16V5M7 10l5-5 5 5M5 19h14"/>' };
+const ico = (n, c) => `<div class="ico" style="color:${c};background:color-mix(in srgb, ${c} 16%, transparent)"><svg viewBox="0 0 24 24">${ICO[n]}</svg></div>`;
+const arte = (i) => ['linear-gradient(135deg,#0B2B4A,#1E7BFF 60%,#5CE1FF)', 'linear-gradient(135deg,#2A0B4A,#8F7BFF 55%,#FF7BD5)', 'linear-gradient(135deg,#06301E,#12B76A 55%,#39FF88)', 'linear-gradient(135deg,#3A1606,#FF8A3D 55%,#FFD23F)', 'linear-gradient(135deg,#0A1B3A,#3D5AFE 50%,#39FF88)'][i % 5];
+const forma = i => ['<circle cx="50" cy="52" r="26" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="5"/><path d="M50 20v64M18 52h64" stroke="rgba(255,255,255,.4)" stroke-width="3"/>', '<path d="M20 78l30-56 30 56z" fill="rgba(255,255,255,.85)"/><path d="M36 78l14-26 14 26z" fill="rgba(4,6,11,.5)"/>', '<rect x="24" y="30" width="52" height="44" rx="12" fill="rgba(255,255,255,.88)"/><circle cx="40" cy="52" r="6" fill="#06301E"/><circle cx="62" cy="52" r="6" fill="#06301E"/>', '<path d="M50 18l9 22 24 2-18 15 6 24-21-13-21 13 6-24-18-15 24-2z" fill="rgba(255,255,255,.88)"/>', '<path d="M22 60c10-30 46-30 56 0M30 70h40" stroke="rgba(255,255,255,.88)" stroke-width="7" fill="none" stroke-linecap="round"/>'][i % 5];
+const tarjeta = (padre, i, cat, tit, x, y, w, hh) => $('div', 'tar', `<div class="im" style="background:${arte(i)}"><svg viewBox="0 0 100 100" style="position:absolute;left:50%;top:50%;width:62%;transform:translate(-50%,-50%)">${forma(i)}</svg><span class="on">● ONLINE</span></div><div class="ct">${cat}</div><div class="tt">${tit}</div>`, padre, `left:${x}px;top:${y}px;width:${w}px;height:${hh}px`);
+
+/* ═══ 1 · Gancho (0 – 4,7) ═══ */
+escena(0, 4.75, r => {
+  const a = pal(r, 'Creaste algo increíble.', 'abs tit', 'left:0;right:0;top:350px;text-align:center;font-size:132px');
+  const b = pal(r, 'Pero nadie lo ve.', 'abs tit', 'left:0;right:0;top:520px;text-align:center;font-size:132px;color:#5B6676');
+  const c = $('div', 'abs mono', '0 vistas &nbsp;·&nbsp; 0 seguidores &nbsp;·&nbsp; $0', r, 'left:0;right:0;top:720px;text-align:center;font-size:30px;letter-spacing:.2em;color:#4A5361');
+  sfx(.25, 'whoosh', .7); sfx(1.85, 'grave', .8); sfx(3.55, 'riser', 1);
+  return { a, b, c };
+}, (t, r, c) => {
+  kin(c.a, t, .3); kin(c.b, t, 1.9, .09);
+  c.c.style.opacity = en(t, 2.7, .5) * (.6 + .4 * Math.sin(t * 40) * (t < 3.2 ? 1 : 0));
+  const k = en(t, 3.75, .95, E.in);   // todo se encoge hasta un punto de luz
+  S(r, { o: win(t, 0, 4.75, .3, .12), s: 1 - k * .93, b: k * 14 });
+});
+
+/* ═══ 2 · Logo (4,6 – 9) ═══ */
+escena(4.6, 9.1, r => {
+  const on = [0, 1, 2].map(() => $('div', 'onda', null, r, 'left:960px;top:440px;width:300px;height:300px;margin:-150px 0 0 -150px'));
+  const logo = $('img', 'abs', null, r, 'left:495px;top:262px;width:930px;filter:drop-shadow(0 0 60px rgba(57,255,136,.45))'); logo.src = 'logo.png';
+  const linea = $('div', 'abs', null, r, 'left:460px;top:590px;width:1000px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,#39FF88 25%,#5CE1FF 75%,transparent);box-shadow:0 0 24px rgba(57,255,136,.8)');
+  const t1 = pal(r, 'La mejor plataforma del mundo', 'abs tit', 'left:0;right:0;top:640px;text-align:center;font-size:76px');
+  const t2 = pal(r, 'para [desarrolladores] [independientes]', 'abs tit', 'left:0;right:0;top:736px;text-align:center;font-size:76px');
+  golpe(4.72, 1); sfx(4.7, 'impacto', 1); sfx(6.0, 'whoosh', .6);
+  return { on, logo, linea, t1, t2 };
+}, (t, r, c) => {
+  const k = en(t, 4.72, .9, E.spr);
+  S(c.logo, { o: en(t, 4.72, .25), s: lerp(1.9, 1, k), b: (1 - en(t, 4.72, .5)) * 22 });
+  c.on.forEach((o, i) => { const q = en(t, 4.74 + i * .16, 1.3); o.style.opacity = (1 - q) * .8; o.style.transform = `scale(${1 + q * 7})`; });
+  c.linea.style.transform = `scaleX(${en(t, 5.3, .8, E.out5)})`;
+  kin(c.t1, t, 5.75); kin(c.t2, t, 6.25);
+  S(r, { o: win(t, 4.6, 9.1, .08, .45), s: 1 + (t - 4.6) * .008, y: -en(t, 8.65, .45, E.in) * 60 });
+});
+
+/* ═══ 3 · Tu vitrina (9 – 15,6) ═══ */
+escena(8.9, 15.7, r => {
+  const k = $('div', 'abs kick', 'Publica gratis', r, 'left:150px;top:118px');
+  const t1 = pal(r, 'Tu vitrina, lista en [minutos.]', 'abs tit', 'left:150px;top:160px;font-size:88px');
+  const nav = $('div', 'abs cristal filo', null, r, 'left:150px;top:300px;width:1620px;height:690px;transform-origin:50% 100%');
+  $('div', 'nav-top', '<i></i><i></i><i></i><div class="nav-url">upgames.games</div>', nav);
+  const cuerpo = $('div', 'abs', null, nav, 'left:0;right:0;top:64px;bottom:0');
+  $('div', 'abs disp', '<span class="au">Up</span>Games', cuerpo, 'left:40px;top:30px;font-size:34px;letter-spacing:.06em');
+  $('div', 'abs', 'Busca o pregúntale a Nexus…', cuerpo, 'left:300px;top:24px;width:900px;height:54px;border-radius:16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);padding:13px 24px;font-size:20px;color:#6C7686');
+  const pub = $('div', 'abs btn', 'Publicar', cuerpo, 'left:1330px;top:22px;width:250px;height:58px;font-size:18px');
+  const chips = $('div', 'abs', ['Todos', 'Juegos', 'Mods', 'Apps', 'Videos', 'En vivo'].map((x, i) => `<span class="chipx${i ? '' : ' a'}">${x}</span>`).join(''), cuerpo, 'left:40px;top:108px;display:flex;gap:12px');
+  const datos = [['JUEGO INDIE', 'Neon Drift'], ['MOD', 'Skyline HD Pack'], ['APP', 'FrameBoost'], ['JUEGO INDIE', 'Solar Keepers'], ['VIDEO', 'Devlog #12']];
+  const ts = datos.map((d, i) => tarjeta(cuerpo, i, d[0], d[1], 40 + i * 310, 176, 290, 400));
+  const nueva = tarjeta(cuerpo, 4, 'TU JUEGO', 'Publicado ✓', 40, 176, 290, 400); nueva.style.borderColor = 'rgba(57,255,136,.8)'; nueva.style.boxShadow = '0 0 60px rgba(57,255,136,.45)';
+  nueva.querySelector('.im').style.background = 'linear-gradient(135deg,#052A1A,#39FF88 55%,#5CE1FF)';
+  const onda = $('div', 'onda', null, cuerpo, 'left:1455px;top:51px;width:80px;height:80px;margin:-40px 0 0 -40px');
+  const toast = $('div', 'abs', '<b style="color:#39FF88">✓</b>&nbsp; ¡Tu juego ya está en línea!', r, 'left:660px;top:910px;width:600px;text-align:center;padding:22px;border-radius:20px;background:rgba(9,13,22,.96);border:1.5px solid rgba(57,255,136,.5);font-size:28px;font-weight:600;box-shadow:0 30px 60px -20px rgba(0,0,0,.9),0 0 50px -10px rgba(57,255,136,.5)');
+  sfx(9.0, 'whoosh', .8); [0, 1, 2, 3, 4].forEach(i => sfx(10.25 + i * .12, 'pop', .35)); sfx(12.75, 'clic', 1); sfx(12.85, 'campana', .8); golpe(12.8, .35);
+  return { k, t1, nav, ts, nueva, pub, onda, toast };
+}, (t, r, c) => {
+  c.k.style.opacity = en(t, 9.1, .5); kin(c.t1, t, 9.25);
+  const k = en(t, 9.2, 1.2, E.out5);
+  c.nav.style.opacity = en(t, 9.2, .4);
+  c.nav.style.transform = `perspective(2400px) translateY(${(1 - k) * 220}px) rotateX(${lerp(26, 0, k)}deg) scale(${lerp(.86, 1, k)})`;
+  const pub = en(t, 12.8, .7, E.spr);   // al publicar, las tarjetas se corren y entra la nueva
+  c.ts.forEach((el, i) => { const q = en(t, 10.2 + i * .12, .7, E.out5); S(el, { o: q * (i === 4 ? 1 - en(t, 12.8, .3) : 1), y: (1 - q) * 70, x: pub * 310, s: lerp(.92, 1, q) }); });
+  S(c.nueva, { o: en(t, 12.8, .25), s: lerp(.5, 1, pub), y: (1 - pub) * -30 });
+  // cursor: entra, va al botón Publicar y hace clic
+  const m = en(t, 11.5, 1.15, E.io), cx = lerp(1000, 1620, m), cy = lerp(900, 425, m), clic = en(t, 12.7, .12) - en(t, 12.82, .2);
+  cursor.style.opacity = win(t, 11.4, 13.7, .25, .3); cursor.style.transform = `translate(${cx}px, ${cy}px) scale(${1 - clic * .25})`;
+  c.pub.style.transform = `scale(${1 - clic * .06})`; c.pub.style.filter = `brightness(${1 + en(t, 12.8, .1) * (1 - en(t, 12.9, .5)) * .5})`;
+  const o = en(t, 12.8, .7); c.onda.style.opacity = (1 - o) * (t > 12.8 ? 1 : 0); c.onda.style.transform = `scale(${1 + o * 5})`;
+  const tk = en(t, 13.0, .55, E.back); S(c.toast, { o: win(t, 13.0, 15.3, .25, .3), y: (1 - tk) * 60, s: lerp(.9, 1, tk) });
+  S(r, { o: win(t, 8.9, 15.7, .35, .4), s: 1 + (t - 9) * .004, x: -en(t, 15.25, .45, E.in) * 140 });
+});
+
+/* ═══ 4 · Cómo ganas (15,5 – 23,3) ═══ */
+escena(15.5, 23.4, r => {
+  const k = $('div', 'abs kick', 'Así ganas', r, 'left:150px;top:230px');
+  const a = pal(r, 'No pagamos por descargas.', 'abs tit', 'left:150px;top:290px;font-size:84px;color:#7C8797;width:820px');
+  const raya = $('div', 'abs', null, r, 'left:146px;top:434px;width:420px;height:7px;border-radius:7px;background:#FF5C7A;transform-origin:0 50%;box-shadow:0 0 22px rgba(255,92,122,.7)');
+  const b = pal(r, 'Pagamos por cada [anuncio] [visto.]', 'abs tit', 'left:150px;top:560px;font-size:98px;width:840px');
+  const s = $('div', 'abs', 'Cada visitante que ve la publicidad antes de abrir tu enlace suma a tus ganancias.', r, 'left:150px;top:810px;width:760px;font-size:30px;line-height:1.4;color:#AEB7C4');
+  const p = $('div', 'abs cristal filo', null, r, 'left:1040px;top:180px;width:730px;height:720px;padding:54px');
+  $('div', 'mono', 'TU TARIFA DE CREADOR', p, 'font-size:22px;letter-spacing:.24em;color:#39FF88');
+  const v = $('div', 'disp au', 'US$0,00', p, 'font-size:112px;line-height:1;margin-top:30px;letter-spacing:-.01em;white-space:nowrap');
+  $('div', '', 'por cada <b style="color:#fff">1.000 visualizaciones</b> de publicidad', p, 'font-size:32px;color:#AEB7C4;margin-top:22px;line-height:1.3');
+  const fila = $('div', '', '<span class="mono" style="font-size:20px;letter-spacing:.16em;color:#6C7686">ANUNCIOS VISTOS</span><b class="mono" style="font-size:44px">0</b>', p, 'display:flex;justify-content:space-between;align-items:baseline;margin-top:64px');
+  const n = fila.querySelector('b');
+  const bar = $('div', '', '<i style="display:block;height:100%;width:0;border-radius:12px;background:linear-gradient(90deg,#39FF88,#5CE1FF);box-shadow:0 0 26px rgba(57,255,136,.8)"></i>', p, 'height:20px;border-radius:12px;background:rgba(255,255,255,.08);margin-top:16px;overflow:hidden').firstChild;
+  const uc = $('div', 'abs', '<span style="font-size:54px">🪙</span><div><b class="mono" style="font-size:50px;color:#FFD56B">+75 UpCoins</b><div style="font-size:24px;color:#AEB7C4">la misma tarifa para todo el catálogo</div></div>', p, 'left:54px;right:54px;bottom:54px;display:flex;gap:22px;align-items:center;padding:24px 28px;border-radius:24px;background:rgba(255,213,107,.08);border:1.5px solid rgba(255,213,107,.4)');
+  const mon = Array.from({ length: 16 }, (_, i) => $('div', 'abs', '🪙', r, 'left:1400px;top:520px;font-size:46px;opacity:0'));
+  sfx(15.6, 'whoosh', .8); sfx(17.2, 'tachar', .9); sfx(17.9, 'grave', .7); sfx(19.0, 'contador', .9); sfx(21.0, 'campana', 1); sfx(21.0, 'impacto', .6); golpe(21.0, .7);
+  return { k, a, raya, b, s, p, v, n, bar, uc, mon };
+}, (t, r, c) => {
+  c.k.style.opacity = en(t, 15.7, .5); kin(c.a, t, 15.85);
+  c.raya.style.transform = `scaleX(${en(t, 17.15, .4, E.out5)})`;
+  kin(c.b, t, 17.75, .1); c.s.style.opacity = en(t, 19.2, .7); c.s.style.transform = `translateY(${(1 - en(t, 19.2, .7)) * 24}px)`;
+  const k = en(t, 16.3, 1.1, E.out5);
+  c.p.style.opacity = en(t, 16.3, .4); c.p.style.transform = `perspective(2200px) translateX(${(1 - k) * 200}px) rotateY(${lerp(-22, 0, k)}deg)`;
+  const q = en(t, 19.0, 2.0, E.io);
+  c.v.textContent = 'US$' + (1.5 * q).toFixed(2).replace('.', ','); c.n.textContent = fmt(1000 * q); c.bar.style.width = q * 100 + '%';
+  const u = en(t, 21.0, .7, E.spr); S(c.uc, { o: en(t, 21.0, .2), s: lerp(.6, 1, u) });
+  c.mon.forEach((m, i) => { const d = en(t, 21.0 + R(i) * .25, 1.3), a = R(i + 9) * 6.28, v = 200 + R(i + 5) * 420;
+    m.style.opacity = t > 21 ? (1 - d) : 0; m.style.transform = `translate(${Math.cos(a) * v * d}px, ${Math.sin(a) * v * d + 500 * d * d - 120 * d}px) rotate(${d * 360 * (R(i) - .5)}deg) scale(${1 - d * .5})`; });
+  S(r, { o: win(t, 15.5, 23.4, .35, .4), s: 1 + (t - 15.5) * .004, y: -en(t, 22.95, .45, E.in) * 80 });
+});
+
+/* ═══ 5 · Todo en un lugar (23,2 – 30) ═══ */
+escena(23.2, 30.1, r => {
+  const k = $('div', 'abs kick', 'Un ecosistema completo', r, 'left:150px;top:96px');
+  const t1 = pal(r, 'Todo lo que un creador indie [necesita.]', 'abs tit', 'left:150px;top:140px;font-size:82px');
+  const F = [['chispa', '#8F7BFF', 'Nexus IA', 'Tu copiloto: revisa, mejora y posiciona lo que publicas.'], ['vivo', '#FF5C7A', 'Lives con regalos', 'Transmite tu juego y recibe el 25 % de cada regalo.'], ['grafica', '#39FF88', 'Estadísticas reales', 'Vistas, anuncios y ganancias por publicación.'],
+    ['gente', '#5CE1FF', 'Comunidad', 'Seguidores, reseñas, chat y grupos alrededor de tu juego.'], ['estrella', '#FFD56B', 'UpCoins y Premium', 'Apoyos de tus fans y más visibilidad para tu trabajo.'], ['cartera', '#4BF0C4', 'Retiros simples', 'PayPal · Nequi · Daviplata · Banco · Mercado Pago.']];
+  const cs = F.map((f, i) => $('div', 'bento cristal', `${ico(f[0], f[1])}<h4>${f[2]}</h4><p>${f[3]}</p>`, r, `left:${150 + (i % 3) * 550}px;top:${296 + Math.floor(i / 3) * 340}px;width:520px;height:310px`));
+  sfx(23.3, 'whoosh', .8); F.forEach((_, i) => sfx(24.3 + i * .22, 'pop', .5));
+  return { k, t1, cs };
+}, (t, r, c) => {
+  c.k.style.opacity = en(t, 23.4, .5); kin(c.t1, t, 23.55);
+  c.cs.forEach((el, i) => { const q = en(t, 24.3 + i * .22, .8, E.spr), f = win(t, 26.2 + i * .5, 26.9 + i * .5, .2, .4);
+    S(el, { o: en(t, 24.3 + i * .22, .25), y: (1 - q) * 90, s: lerp(.86, 1, q) + f * .035 });
+    el.style.borderColor = `rgba(${f > 0 ? '57,255,136' : '255,255,255'},${.1 + f * .6})`; el.style.boxShadow = `0 50px 110px -50px rgba(0,0,0,.95), inset 0 1.5px 0 rgba(255,255,255,.08), 0 0 ${f * 70}px rgba(57,255,136,${f * .35})`; });
+  S(r, { o: win(t, 23.2, 30.1, .35, .4), s: lerp(1.03, 1, en(t, 23.2, 6.9, E.out)), x: en(t, 29.65, .45, E.in) * 140 });
+});
+
+/* ═══ 6 · Creator Studio (29,9 – 35) ═══ */
+escena(29.9, 35.1, r => {
+  const t1 = pal(r, 'Mira crecer tus ingresos, [en] [tiempo] [real.]', 'abs tit', 'left:0;right:0;top:92px;text-align:center;font-size:78px');
+  const p = $('div', 'abs cristal filo', null, r, 'left:210px;top:240px;width:1500px;height:740px');
+  $('div', 'abs', '<span style="font-size:34px;font-weight:700">Creator <span class="au">Studio</span></span>', p, 'left:50px;top:40px');
+  $('div', 'abs mono', '● EN VIVO', p, 'right:50px;top:46px;font-size:17px;letter-spacing:.14em;color:#39FF88;padding:9px 18px;border-radius:999px;border:1.5px solid rgba(57,255,136,.4);background:rgba(57,255,136,.08)');
+  const K = [['Anuncios vistos', 48200, '', '#39FF88'], ['UpCoins ganados', 3615, '', '#FFD56B'], ['Seguidores', 2840, '', '#5CE1FF'], ['Este mes', 72.3, 'US$', '#F4F7FA']];
+  const ks = K.map((x, i) => { const e = $('div', 'kpi', `<small>${x[0]}</small><b style="color:${x[3]}">0</b>`, p, `left:${50 + i * 356}px;top:120px;width:332px`); return [e, e.querySelector('b'), x]; });
+  const pts = Array.from({ length: 13 }, (_, i) => [50 + i * 80, 330 - (i * i * 1.55 + 36 * Math.sin(i * 1.15) + i * 5)]);
+  const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+  const g = $('div', 'abs', `<svg viewBox="0 0 1060 360" style="width:100%;height:100%;overflow:visible"><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#39FF88"/><stop offset="1" stop-color="#5CE1FF"/></linearGradient><linearGradient id="ar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(57,255,136,.32)"/><stop offset="1" stop-color="rgba(57,255,136,0)"/></linearGradient><clipPath id="cp"><rect id="cpr" x="0" y="-40" width="0" height="440"/></clipPath></defs>
+    ${[0, 1, 2, 3].map(i => `<line x1="40" x2="1040" y1="${60 + i * 90}" y2="${60 + i * 90}" stroke="rgba(255,255,255,.06)" stroke-width="1.5"/>`).join('')}
+    <g clip-path="url(#cp)"><path d="${d} L1010 345 L50 345 Z" fill="url(#ar)"/><path d="${d}" fill="none" stroke="url(#lg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 12px rgba(57,255,136,.8))"/></g><circle id="pun" r="11" fill="#04060B" stroke="#5CE1FF" stroke-width="5"/></svg>`, p, 'left:40px;top:330px;width:1000px;height:360px');
+  const an = $('div', 'abs', `<svg viewBox="0 0 200 200" style="width:260px;height:260px"><circle cx="100" cy="100" r="82" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16"/><circle id="ani" cx="100" cy="100" r="82" fill="none" stroke="url(#lg)" stroke-width="16" stroke-linecap="round" stroke-dasharray="515.2" stroke-dashoffset="515.2" transform="rotate(-90 100 100)" style="filter:drop-shadow(0 0 10px rgba(57,255,136,.8))"/></svg><b class="mono abs" style="left:0;right:0;top:92px;text-align:center;font-size:54px">0%</b><div class="mono" style="text-align:center;font-size:17px;letter-spacing:.16em;color:#6C7686;margin-top:10px">META DE RETIRO</div><div style="text-align:center;font-size:26px;font-weight:600;margin-top:10px">Retira desde <span class="au">US$10</span></div>`, p, 'left:1130px;top:330px;width:260px');
+  sfx(30.0, 'whoosh', .8); sfx(31.0, 'contador', .7); sfx(33.2, 'campana', .9);
+  return { t1, p, ks, pts, g, an };
+}, (t, r, c) => {
+  kin(c.t1, t, 30.1);
+  const k = en(t, 30.2, 1.1, E.out5); c.p.style.opacity = en(t, 30.2, .4); c.p.style.transform = `perspective(2400px) translateY(${(1 - k) * 160}px) rotateX(${lerp(20, 0, k)}deg)`;
+  c.ks.forEach(([e, b, x], i) => { const q = en(t, 30.9 + i * .12, 1.9, E.out5); S(e, { o: en(t, 30.8 + i * .12, .35), y: (1 - en(t, 30.8 + i * .12, .6, E.out5)) * 40 });
+    b.textContent = x[2] + (x[1] % 1 ? (x[1] * q).toFixed(2).replace('.', ',') : fmt(x[1] * q)); });
+  const q = en(t, 31.0, 2.3, E.io); c.g.querySelector('#cpr').setAttribute('width', 20 + q * 1010);
+  const f = q * (c.pts.length - 1), i = Math.min(c.pts.length - 2, Math.floor(f)), u = f - i, pu = c.g.querySelector('#pun');
+  pu.setAttribute('cx', lerp(c.pts[i][0], c.pts[i + 1][0], u)); pu.setAttribute('cy', lerp(c.pts[i][1], c.pts[i + 1][1], u)); pu.style.opacity = en(t, 31.0, .2);
+  const a = en(t, 31.2, 2.0, E.io); c.an.querySelector('#ani').setAttribute('stroke-dashoffset', 515.2 * (1 - a)); c.an.querySelector('b').textContent = Math.round(a * 100) + '%'; c.an.style.opacity = en(t, 30.9, .5);
+  S(r, { o: win(t, 29.9, 35.1, .35, .4), s: 1 + (t - 29.9) * .005, b: en(t, 34.7, .4, E.in) * 10 });
+});
+
+/* ═══ 7 · Llamada a la acción (34,9 – 40) ═══ */
+escena(34.9, DUR + 1, r => {
+  const on = [0, 1].map(() => $('div', 'onda', null, r, 'left:960px;top:806px;width:200px;height:200px;margin:-100px 0 0 -100px'));
+  const logo = $('img', 'abs', null, r, 'left:680px;top:120px;width:560px;filter:drop-shadow(0 0 50px rgba(57,255,136,.45))'); logo.src = 'logo.png';
+  const t1 = pal(r, 'Publica una vez.', 'abs tit', 'left:0;right:0;top:330px;text-align:center;font-size:128px');
+  const t2 = pal(r, '[Gana] [siempre.]', 'abs tit', 'left:0;right:0;top:476px;text-align:center;font-size:128px');
+  const url = $('div', 'abs pill mono', '<span style="color:#39FF88">●</span><span id="url" style="color:#fff"></span><span id="car" style="color:#39FF88">▍</span>', r, 'left:710px;top:660px;width:500px;justify-content:center;font-size:34px;padding:16px 30px');
+  const btn = $('div', 'abs btn', 'Empieza gratis', r, 'left:690px;top:762px;width:540px;height:90px;font-size:28px');
+  sfx(35.0, 'impacto', .9); golpe(35.02, .8); sfx(36.6, 'teclas', .7); sfx(38.25, 'clic', 1); sfx(38.3, 'campana', 1); golpe(38.3, .5);
+  return { on, logo, t1, t2, url, btn };
+}, (t, r, c) => {
+  const k = en(t, 35.0, .8, E.spr); S(c.logo, { o: en(t, 35.0, .25), s: lerp(1.5, 1, k), b: (1 - en(t, 35.0, .4)) * 16 });
+  kin(c.t1, t, 35.4, .1); kin(c.t2, t, 35.95, .12);
+  S(c.url, { o: en(t, 36.5, .4), y: (1 - en(t, 36.5, .5, E.out5)) * 30 });
+  const s = 'upgames.games'; c.url.querySelector('#url').textContent = s.slice(0, Math.round(en(t, 36.6, 1.0, x => x) * s.length)); c.url.querySelector('#car').style.opacity = Math.floor(t * 2.5) % 2 ? 1 : .15;
+  const b = en(t, 37.1, .7, E.spr), clic = en(t, 38.2, .1) - en(t, 38.32, .2);
+  S(c.btn, { o: en(t, 37.1, .25), s: lerp(.6, 1, b) * (1 - clic * .06) * (1 + Math.max(0, Math.sin((t - 38.5) * 3.2)) * .018 * (t > 38.5 ? 1 : 0)) });
+  const m = en(t, 37.4, .85, E.io); cursor.style.opacity = win(t, 37.3, 39.2, .25, .35) || (t < 20 ? cursor.style.opacity : 0);
+  if (t > 30) cursor.style.transform = `translate(${lerp(1500, 1010, m)}px, ${lerp(1000, 800, m)}px) scale(${1 - clic * .25})`;
+  c.on.forEach((o, i) => { const q = en(t, 38.3 + i * .18, 1.1); o.style.opacity = t > 38.3 ? (1 - q) * .9 : 0; o.style.transform = `scale(${1 + q * 6})`; });
+  S(r, { o: Math.min(clamp((t - 34.9) / .15), clamp((DUR - t) / .5)), s: 1 + (t - 35) * .006 });
+});
+
+/* ═══ Fondo, cámara y cuadro ═══ */
+const B = [document.getElementById('b1'), document.getElementById('b2'), document.getElementById('b3')];
+const rej = document.getElementById('rejilla'), des = document.getElementById('destello'), pts = document.getElementById('pts'), nota = document.getElementById('nota');
+const PT = Array.from({ length: 60 }, (_, i) => $('div', 'pt', null, pts));
+function render(t) {
+  t = clamp(t, 0, DUR);
+  const viva = en(t, 4.6, .5);   // antes del logo, todo apagado y gris
+  B.forEach((b, i) => { b.style.opacity = lerp(.12, 1, viva); b.style.transform = `translate(${Math.sin(t * .22 + i * 2.1) * 120}px, ${Math.cos(t * .18 + i * 1.3) * 80}px) scale(${1 + Math.sin(t * .3 + i) * .08})`; });
+  const vel = 60 + viva * 150, g = GOLPES.reduce((a, [gt, f]) => a + (t >= gt ? f * Math.exp(-(t - gt) * 5) : 0), 0);
+  rej.style.opacity = lerp(.12, .5, viva); rej.style.transform = `perspective(520px) rotateX(64deg) translateY(${(t * vel) % 90}px)`;
+  PT.forEach((p, i) => { const z = (R(i) + t * (.03 + R(i + 3) * .05) * (1 + viva * 2)) % 1, x = (R(i + 7) - .5) * 2400 * (.3 + z), y = (R(i + 11) - .5) * 1300 * (.3 + z);
+    p.style.transform = `translate(${960 + x}px, ${540 + y}px) scale(${.4 + z * 1.6})`; p.style.opacity = z * (1 - z) * 2.2 * lerp(.25, .7, viva);
+    p.style.background = i % 3 ? (i % 3 === 1 ? '#39FF88' : '#5CE1FF') : '#fff'; });
+  des.style.opacity = clamp(g * .55);
+  nota.style.opacity = win(t, 15.8, 34.6, .5, .5) * .9;
+  document.getElementById('escenas').style.transform = `translate(${Math.sin(t * 71) * g * 9}px, ${Math.cos(t * 83) * g * 9}px) scale(${1 + g * .012})`;
+  if (t < 11 || (t > 14 && t < 37)) cursor.style.opacity = 0;
+  for (const e of ESC) { const on = t >= e.a - .05 && t <= e.b + .05; e.r.style.display = on ? '' : 'none'; if (on) e.act(t, e.r, e.ctx); }
+}
+window.DURACION = DUR; window.SFX = SFX; window.render = render;
+window.listo = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => render(0));
+// Vista previa: video.html?play (tiempo real) · video.html?t=12.9 (un instante)
+const q = new URLSearchParams(location.search);
+if (q.has('t')) window.listo.then(() => render(+q.get('t')));
+if (q.has('play')) window.listo.then(() => { const t0 = performance.now(); (function f() { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(f); })(); });
+</script>
+</body>
+</html>
