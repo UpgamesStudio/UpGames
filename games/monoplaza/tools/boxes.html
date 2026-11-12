@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Visor de la parada en boxes</title>
+<style>html,body{margin:0;height:100%;background:#3a3a3a;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.min.js", "three/addons/": "../lib/addons/" } }</script>
+</head><body>
+<script type="module">
+// Visor de una parada en boxes: ?categoria=gt&calidad=1&ligero=1&t=1.2 (segundo de la parada que se ve)
+import * as THREE from 'three';
+import { crearModelo } from '../js/render/cocheModelo.js';
+import { crearEntorno } from '../js/render/entorno.js';
+import { GestorBoxes } from '../js/render/equipo.js';
+import { cargarCuerpoEscaneado } from '../js/render/cuerpoEscaneado.js';
+import { EQUIPOS, aplicarCategoria } from '../js/config.js';
+const q = new URLSearchParams(location.search);
+if (q.get('categoria')) aplicarCategoria(q.get('categoria'));
+await cargarCuerpoEscaneado();
+const calidad = +(q.get('calidad') ?? 1);
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setSize(innerWidth, innerHeight); r.setPixelRatio(1);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true;
+document.body.appendChild(r.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x6f7f92);
+scene.environment = crearEntorno(r, 'dia'); scene.environmentIntensity = 0.75;
+scene.add(new THREE.HemisphereLight(0xb8d4ff, 0x4f5c2e, 0.55));
+const sol = new THREE.DirectionalLight(0xffeccc, 4); sol.position.set(4, 8, 5); sol.castShadow = true;
+Object.assign(sol.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); scene.add(sol);
+const suelo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ color: 0x3c3e42, roughness: 0.9 }));
+suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; scene.add(suelo);
+const eq = EQUIPOS[+(q.get('equipo') || 0)];
+const m = crearModelo({ categoria: q.get('categoria') || undefined, equipo: eq, equipado: { patron: eq.patron, numero: 7, casco: 'rayas' }, calidad, compuesto: 'medio' });
+scene.add(m.raiz);
+const car = { x: 0, y: 0, z: 0, psi: 0 };
+const g = new GestorBoxes(scene, calidad);
+const t0 = performance.now();
+g.preparar(1, { color: eq.base, texto: 'UPGAMES', compuesto: 'blando', posicion: car, ligero: !!q.get('ligero') });
+window.msCrear = performance.now() - t0;
+const tVer = +(q.get('t') ?? 1.2), D = 2.6;
+if (tVer >= 0) g.empezar(1, car, m, { color: eq.base, texto: 'UPGAMES', compuesto: 'blando', duracion: D, morro: false, trabajo: {}, ligero: !!q.get('ligero') });
+else for (let k = 0; k < 120; k++) g.actualizar(1 / 30, null);        // t < 0: el equipo esperando al coche
+for (let t = 0; t < Math.max(0, tVer); t += 1 / 60) g.actualizar(1 / 60, null);
+const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 200);
+const v = { '3q': [[7, 4.2, 6.5], [0.3, 0.6, 0]], cerca: [[3.4, 1.5, 3.2], [1.2, 0.7, 0.9]], arriba: [[0.3, 13, 0.01], [0.3, 0, 0]] }[q.get('vista') || '3q'];
+cam.position.set(...v[0]); cam.lookAt(...v[1]);
+r.render(scene, cam);
+document.title = `creado en ${window.msCrear.toFixed(0)} ms · ${r.info.render.calls} llamadas · ${r.info.render.triangles} triángulos`;
+console.log('DBG', document.title);
+</script></body></html>

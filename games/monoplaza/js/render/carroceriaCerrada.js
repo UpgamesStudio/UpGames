@@ -755,7 +755,7 @@ export function pintarLibreaCerrada(cv, { categoria, patron = 'franjas', colores
     sello_(v, 0, y0 + (stock ? 0.33 : 0.25), () => logo(c, pub.principal, stock ? 9 : 7, { ancho: stock ? 120 : 70 }));
     c.fillStyle = '#ff2a1a'; c.fillRect(-0.05, y0 + 0.105, 0.10, 0.035);                                  // luz de lluvia
     sello_(v, -0.38, y0 + 0.16, () => tecnica(c, 'remolque', 3));
-    sello_(v, 0.62, y1 - 0.035, () => { c.fillStyle = tinta; c.font = fuente(3.4); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('APEX GP', 0, 0); });
+    sello_(v, 0.62, y1 - 0.035, () => { c.fillStyle = tinta; c.font = fuente(3.4); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('UPGAMES RACING', 0, 0); });
   });
   c.setTransform(1, 0, 0, 1, 0, 0);
   return cv;
@@ -782,7 +782,7 @@ function textura(cv) { const t = new THREE.CanvasTexture(cv); t.colorSpace = THR
 const cache = new Map();
 const guardado = (clave, crear) => { if (!cache.has(clave)) cache.set(clave, crear()); return cache.get(clave); };
 const MAT = {
-  carbono: () => guardado('m:carbono', () => new THREE.MeshPhysicalMaterial({ color: 0x121317, roughness: 0.36, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 })),
+  carbono: () => guardado('m:carbono', () => new THREE.MeshPhysicalMaterial({ color: 0x0b0c0e, roughness: 0.42, metalness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.2, envMapIntensity: 0.55 })),
   negro: () => guardado('m:negro', () => new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.62 })),
   jaula: () => guardado('m:jaula', () => new THREE.MeshStandardMaterial({ color: 0x9aa1aa, roughness: 0.5, metalness: 0.6 })),
   rojo: () => guardado('m:rojo', () => new THREE.MeshStandardMaterial({ color: 0xd8201c, roughness: 0.6 })),

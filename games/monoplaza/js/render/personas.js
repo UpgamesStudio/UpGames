@@ -106,7 +106,7 @@ function texturaMono(color, texto, numero) {
   x.fillText(texto, 0.75 * W, H * 0.7);
   x.font = '800 30px Arial, sans-serif';
   x.fillText('UPCOINS', 0.25 * W, H * 0.4);
-  x.fillText('APEX GP', 0.75 * W, H * 0.45);
+  x.fillText('RACING', 0.75 * W, H * 0.45);
   // número del mecánico en la espalda
   x.font = '900 120px Arial, sans-serif';
   x.globalAlpha = 0.9; x.fillText(String(numero), 0.75 * W, H * 0.25); x.globalAlpha = 1;
@@ -283,11 +283,17 @@ export class Persona {
     const normal = piloto && calidad >= 1 ? normalPliegues() : calidad >= 2 ? normalTela() : null;
     const escN = piloto ? 0.6 : 0.35;
     const tela = (map) => new THREE.MeshStandardMaterial({ map, roughness: 0.85, normalMap: normal, normalScale: new THREE.Vector2(escN, escN) });
-    const matTorso = tela(texturaMono(color, texto, numero));
-    const matManga = tela(texturaManga(color));
+    // el cuerpo escaneado (el mismo modelo del piloto, con casco) para mecánicos y pilotos, en todas
+    // las calidades; si no está, el cuerpo de UpGames Studio y, si tampoco, las piezas de siempre
+    const esc = this.escaneado = escaneado && !podio && (rol === 'mecanico' || piloto) && cuerpoEscaneadoListo();
+    const nuevo = esc || cuerpoListo();
+    // (las texturas del mono solo se pintan si de verdad se van a usar: eran un lienzo por mecánico
+    // y un tirón al entrar a boxes)
+    const matTorso = nuevo ? null : tela(texturaMono(color, texto, numero));
+    const matManga = nuevo ? null : tela(texturaManga(color));
     const matNegro = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.7 });
     const matBota = new THREE.MeshStandardMaterial({ color: 0x1b1b1b, roughness: 0.5, metalness: 0.05 });
-    const matPiel = new THREE.MeshStandardMaterial({ map: texturaPiel(piel), roughness: 0.6 });
+    const matPiel = esc ? null : new THREE.MeshStandardMaterial({ map: texturaPiel(piel), roughness: 0.6 });
 
     const R = this.raiz = new THREE.Group();
     // las piezas se cuelgan de los huesos mientras se construye; al final se funden en una
@@ -304,8 +310,6 @@ export class Persona {
     // cuerpo de UpGames Studio (una malla suave con mono, guantes y botas) si está cargado;
     // si no, las piezas de siempre
     // el cuerpo escaneado (el mismo modelo del piloto, con casco) para mecánicos y pilotos
-    const esc = this.escaneado = escaneado && calidad >= 1 && !podio && (rol === 'mecanico' || piloto) && cuerpoEscaneadoListo();
-    const nuevo = esc || cuerpoListo();
 
     // cadera (raíz animada) y pelvis
     const cadera = this.cadera = hueso(null, 0, 0.95, 0, 'cadera');
@@ -426,7 +430,8 @@ export class Persona {
       p.m.removeFromParent();
     }
     if (esc) {
-      porMat.set(materialCuerpo(color, casco || (piloto ? '#ffffff' : color)), [geometriaParaPersona(huesos.map((h) => h.name))]);
+      const ligera = !piloto && calidad < 3;
+      porMat.set(materialCuerpo(color, casco || (piloto ? '#ffffff' : color), ligera), [geometriaParaPersona(huesos.map((h) => h.name), ligera)]);
     } else if (nuevo) {
       // el cuerpo de Studio: cada parte con su material (el mono, del color del equipo)
       const partes = geometriasCuerpo(piloto && calidad >= 1 ? 2 : 1, huesos.map((h) => h.name));
@@ -443,7 +448,7 @@ export class Persona {
     const mats = [...porMat.keys()];
     const fusion = mergeGeometries(mats.map(m => mergeGeometries(porMat.get(m), false)), true);
     const cuerpo = this.malla = new THREE.SkinnedMesh(fusion, mats);
-    cuerpo.castShadow = calidad >= 1;
+    cuerpo.castShadow = calidad >= (esc && !piloto ? 2 : 1);     // (un mecánico escaneado son miles de triángulos más en la pasada de sombras)
     BASE.removeFromParent();
     cuerpo.add(cadera);
     if (esc) {

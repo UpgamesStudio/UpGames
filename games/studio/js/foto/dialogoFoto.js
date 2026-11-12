@@ -327,7 +327,7 @@ function desdePlanos(fotos, detalle, monoplaza, pintar) {
                      : new THREE.MeshStandardMaterial({ color: 0xc4c8cf, roughness: 0.45, metalness: 0.05 });
   const cuerpo = mallaFinal(geo, mat, monoplaza ? 'carroceria' : 'Planos');
   if (!monoplaza || !r.ruedas.length) return cuerpo;
-  // las ruedas, como piezas aparte con los nombres que entiende APEX GP
+  // las ruedas, como piezas aparte con los nombres que entiende UpGames RACING
   const piezas = [cuerpo];
   for (const w of r.ruedas) {
     const g = geometriaRueda(w.radio * ALTO_MODELO, w.ancho * ALTO_MODELO);

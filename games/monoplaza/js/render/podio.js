@@ -41,7 +41,7 @@ function texturaFondo() {
   x.textAlign = 'center'; x.textBaseline = 'middle';
   for (let k = 0; k < 4; k++) for (let j = 0; j < 3; j++) {
     x.fillStyle = (k + j) % 2 ? 'rgba(255,255,255,0.10)' : 'rgba(232,32,42,0.18)';
-    x.font = '900 italic 40px Arial'; x.fillText((k + j) % 2 ? 'UPGAMES' : 'APEX GP', 128 + k * 256, 70 + j * 120);
+    x.font = '900 italic 40px Arial'; x.fillText((k + j) % 2 ? 'UPGAMES' : 'RACING', 128 + k * 256, 70 + j * 120);
   }
   x.fillStyle = '#e8202a'; x.fillRect(0, 360, 1024, 24);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;

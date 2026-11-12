@@ -1,6 +1,6 @@
 {
-  "name": "APEX GP · Simulador de monoplazas",
-  "short_name": "APEX GP",
+  "name": "UpGames RACING · Simulador de carreras",
+  "short_name": "RACING",
   "description": "Simulador de monoplazas con físicas reales para el celular. UpGames.",
   "start_url": "./index.html",
   "scope": "./",

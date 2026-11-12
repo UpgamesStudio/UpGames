@@ -7,6 +7,7 @@
 // Visor del monoplaza para revisar el modelado: ?gris=1 (como en un editor 3D), ?vista=3q|lado|arriba|frente|cabina|cara
 import * as THREE from 'three';
 import { crearModelo } from '../js/render/cocheModelo.js';
+import { crearEntorno } from '../js/render/entorno.js';
 
 
 import { EQUIPOS, aplicarCategoria } from '../js/config.js';
@@ -18,9 +19,8 @@ r.shadowMap.enabled = true;
 document.body.appendChild(r.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x3a3a3a);
-const pm = new THREE.PMREMGenerator(r);
-const env = new THREE.Scene(); env.add(new THREE.HemisphereLight(0xffffff, 0x444444, 3));
-scene.environment = pm.fromScene(env).texture;
+scene.environment = crearEntorno(r, q.get('hora') || 'dia');
+if (q.get('fondo')) { scene.background = scene.environment; scene.backgroundBlurriness = 0.25; }
 scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
 const sol = new THREE.DirectionalLight(0xffffff, 2.5); sol.position.set(4, 8, 5); sol.castShadow = true; scene.add(sol);
 const suelo = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x404040 }));

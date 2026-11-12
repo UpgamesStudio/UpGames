@@ -3,7 +3,7 @@
 // vértices (dar forma por secciones, como un «loft» de Blender). Medidas en metros, tomadas de
 // planos de lado, frente, atrás y arriba: batalla 3,62 m, largo 5,58 m, ancho 2,00 m, ruedas de
 // 0,72 m. Ejes: x = ancho (x > 0 a la izquierda del piloto), y = alto, z = largo con el morro
-// hacia +z. Las piezas llevan los nombres que entiende APEX GP (rueda_del_izq, aleron_trasero…).
+// hacia +z. Las piezas llevan los nombres que entiende UpGames RACING (rueda_del_izq, aleron_trasero…).
 import * as THREE from 'three';
 import { D2R, material, centrar, pieza, caja, esfera, cilindroX, barra, loft } from './forma.js';
 

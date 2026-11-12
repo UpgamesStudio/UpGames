@@ -36,7 +36,7 @@ export const MARCAS = {
   UPGAMES: { t: 'UPGAMES', c: '#ffffff', f: '#0b0d14', i: 'cheuron', ic: '#00e5ff' },
   UPCOINS: { t: 'UPCOINS', c: '#ffc928', f: '#0b0d14', i: 'moneda', ic: '#ffc928' },
   NEXUS: { t: 'NEXUS IA', c: '#7fe7ff', f: '#0a1626', i: 'hex', ic: '#7fe7ff' },
-  APEX: { t: 'APEX GP', c: '#ffffff', f: '#e8202a', i: 'meta', ic: '#ffffff' },
+  APEX: { t: 'RACING', c: '#ffffff', f: '#e8202a', i: 'meta', ic: '#ffffff' },
   TV: { t: 'UPGAMES TV', c: '#ffffff', f: '#6a1bd8', i: 'play', ic: '#ffffff' },
   UPSTAR: { t: 'UPSTAR', c: '#14110a', f: '#ffd43b', i: 'estrella', ic: '#14110a' },
   TURBOLAR: { t: 'TURBOLAR', c: '#ffffff', f: '#d4380d', i: 'aro', ic: '#ffffff' },

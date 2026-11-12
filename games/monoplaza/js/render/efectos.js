@@ -199,18 +199,19 @@ export class Efectos {
         const desl = w.deslizamiento;
         const enAsfalto = w.sup === SUP_ASFALTO || w.sup === SUP_BORDILLO || w.sup === SUP_ESCAPE;
         // marcas: bloqueo o derrape fuerte sobre asfalto
-        const marca = enAsfalto && w.fz > 500 && desl > 4.5 && w.sigma > 1.25;
+        const marca = enAsfalto && w.fz > 500 && desl > 3.2 && w.sigma > 1.25;
         const tierra = !enAsfalto && v > 6;
         if (marca || tierra) {
           const dirx = cos * Math.cos(w.angulo) - sin * Math.sin(w.angulo), dirz = sin * Math.cos(w.angulo) + cos * Math.sin(w.angulo);
-          const inten = tierra ? 0.5 : Math.min(1, (desl - 4.5) / 10 + 0.35);
+          const inten = tierra ? 0.5 : Math.min(1, (desl - 3.2) / 10 + 0.35);
           // en la hierba el surco es más ancho y oscuro (tierra levantada) si va rápido o derrapando
           const surco = tierra ? Math.min(1, 0.5 + v / 60 + desl / 30) : inten;
           this.marcas.anadir(clave, w.wx, w.wy + 0.012, w.wz, dirx, dirz, (w.delantera ? 0.3 : 0.4) * (tierra ? 1.25 : 1), surco, tierra ? 0.07 : 0.02);
         } else this.marcas.cortar(clave);
         if (lejos) continue;
         // humo de goma
-        if (enAsfalto && desl > 6 && w.sigma > 1.3 && rnd() < Math.min(1, (desl - 6) / 12) * (this.calidad >= 2 ? 1 : 0.5)) {
+        // (también al salir patinando: la rueda motriz gira más deprisa que el coche)
+        if (enAsfalto && desl > 3.4 && w.sigma > 1.3 && this.agua < 0.3 && rnd() < Math.min(1, (desl - 2.6) / 7) * (this.calidad >= 2 ? 1 : 0.5)) {
           const l = 0.8 + rnd() * 0.15;
           this.humo.emitir(w.wx, w.wy + 0.2, w.wz, car.vx * cos * 0.15 + (rnd() - 0.5), 0.6 + rnd(), car.vx * sin * 0.15 + (rnd() - 0.5), 0.8, 0.45, 1.8 + rnd(), 2.2, l, l, l);
         }

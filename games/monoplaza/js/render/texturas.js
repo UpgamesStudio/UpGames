@@ -89,17 +89,17 @@ export function texturasAsfalto(tam = 512) {
     const r = rnd();
     let v = 0.30 + base[i] * 0.16;
     let a = base[i] * 0.4;
-    if (r < 0.06) { v += 0.18 * rnd(); a += 0.7; }
+    if (r < 0.06) { v += 0.09 * rnd(); a += 0.45; }
     else if (r < 0.14) { v -= 0.08; a -= 0.3; }
     alt[i] = a + rnd() * 0.35;
     const g = Math.max(0, Math.min(1, v));
     img.data[i * 4] = g * 255 * 0.98; img.data[i * 4 + 1] = g * 255; img.data[i * 4 + 2] = g * 255 * 1.03; img.data[i * 4 + 3] = 255;
-    const rough = 0.78 + (r < 0.06 ? -0.25 : 0) + base[i] * 0.15;
+    const rough = 0.8 + (r < 0.06 ? -0.07 : 0) + base[i] * 0.15;     // (sin granos espejo: de lejos chispeaban en blanco)
     imr.data[i * 4] = imr.data[i * 4 + 1] = imr.data[i * 4 + 2] = Math.min(255, rough * 255); imr.data[i * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   ctr.putImageData(imr, 0, 0);
-  return { mapa: aTextura(c), normal: normalDesdeAltura(alt, tam, 2.2), rugosidad: aTextura(cr, true, false) };
+  return { mapa: aTextura(c), normal: normalDesdeAltura(alt, tam, 1.4), rugosidad: aTextura(cr, true, false) };
 }
 
 // Goma depositada sobre la trazada: franja oscura con bordes difuminados
@@ -340,7 +340,7 @@ export function texturaMuro(texto = 'UPGAMES') {
     const [fondo, letra] = colores[k % colores.length];
     ctx.fillStyle = fondo; ctx.fillRect(k * 256, 0, 256, 128);
     ctx.fillStyle = letra; ctx.font = 'bold 54px Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const t = [texto, 'APEX GP', texto, 'MONOPLAZA'][k];
+    const t = [texto, 'RACING', texto, 'UPGAMES'][k];
     ctx.fillText(t, k * 256 + 128, 66);
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(k * 256, 0, 3, 128);
   }
@@ -453,6 +453,6 @@ export function texturaFlanco(colorCompuesto) {
   ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, 512, 64);
   ctx.fillStyle = colorCompuesto; ctx.fillRect(0, 26, 512, 6);
   ctx.fillStyle = '#e8e8e8'; ctx.font = 'bold 18px Arial, sans-serif';
-  for (let k = 0; k < 2; k++) ctx.fillText('APEX  ·  SLICK', 40 + k * 256, 54);
+  for (let k = 0; k < 2; k++) ctx.fillText('RACING · SLICK', 40 + k * 256, 54);
   return aTextura(c, true);
 }

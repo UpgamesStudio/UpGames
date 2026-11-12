@@ -2,7 +2,7 @@
   "name": "apex-gp-android",
   "version": "1.0.0",
   "private": true,
-  "description": "APEX GP empaquetado como app Android (Capacitor). El juego vive en games/monoplaza.",
+  "description": "UpGames RACING empaquetado como app Android (Capacitor). El juego vive en games/monoplaza.",
   "type": "module",
   "scripts": {
     "copiar": "node copiar-web.mjs",

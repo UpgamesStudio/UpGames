@@ -4,7 +4,7 @@ Modelador 3D táctil para el celular (y el PC), en `upgames.games/studio`. Plan 
 [`docs/upgames-studio.md`](../../docs/upgames-studio.md).
 
 ## Hecho: etapa 1, sprint 1 (esqueleto)
-- PWA con Three.js r170 (la misma versión que APEX GP), sin conexión con `sw.js`.
+- PWA con Three.js r170 (la misma versión que UpGames RACING), sin conexión con `sw.js`.
 - Cámara orbital táctil propia (`js/camara.js`, `js/ui/gestos.js`):
   1 dedo toca = seleccionar, arrastra en vacío = orbitar; 2 dedos = orbitar y pellizco para zoom;
   3 dedos = desplazar; doble toque = enfocar; pulsación larga = menú radial.

@@ -43,7 +43,7 @@ function texturaSuelo(color) {
   x.strokeStyle = '#f2f2f2'; x.lineWidth = 8; x.setLineDash([40, 24]);
   x.strokeRect(330, 150, 364, 212);
   x.setLineDash([]);
-  x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '900 italic 60px Arial'; x.textAlign = 'center'; x.fillText('APEX GP', 512, 270);
+  x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '900 italic 60px Arial'; x.textAlign = 'center'; x.fillText('UPGAMES RACING', 512, 270);
   return tex(cv);
 }
 

@@ -42,7 +42,7 @@ export class GrabadorVideo {
         const blob = new Blob(this.trozos, { type: this.tipo });
         this.rec = null; this.trozos = [];
         const ext = this.tipo.includes('mp4') ? 'mp4' : 'webm';
-        const nombre = `APEX-GP-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`;
+        const nombre = `UpGames-RACING-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`;
         try { await guardarArchivo(blob, nombre); ok(nombre); } catch (e) { mal(e); }
       };
       this.rec.stop();

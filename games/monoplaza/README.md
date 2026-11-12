@@ -1,9 +1,9 @@
-# APEX GP: simulador de monoplazas
+# UpGames RACING: simulador de monoplazas
 
 Juego de carreras de monoplazas en 3D que corre en el navegador (WebGL con Three.js) y como app Android (Capacitor). Está pensado primero para el celular: dirección inclinando el teléfono o táctil, pedales analógicos y también teclado y mando.
 
 - Web: `https://upgames.games/games/monoplaza/`
-- Android: el workflow `APK APEX GP` compila el APK (ver más abajo).
+- Android: el workflow `APK UpGames RACING` compila el APK (ver más abajo).
 
 ## HUD
 
@@ -55,7 +55,7 @@ Pensado primero para Android en horizontal: la información va en franjas finas 
 - Pista viva: goma en la trazada, **canicas** fuera de ella en las curvas (menos agarre en seco), parches de asfalto, bordillos gastados, bordillos altos, **charcos** en los puntos bajos con lluvia fuerte (aquaplaning según velocidad, profundidad y neumático), muros de hormigón, de neumáticos y TecPro, bidones de agua, restos que pinchan y comisarios que agitan banderas.
 - Efectos de cámara: gotas en la lente a bordo cuando llueve, destello del sol y viñeta de velocidad.
 - Radio del ingeniero y megafonía con la síntesis de voz del navegador, público y lluvia sintetizados. Sonidos grabados reales requerirían archivos de audio con licencia.
-- **Repetición y modo cine** (últimos 5 minutos): controles discretos que se ocultan solos (tocar la imagen los muestra; H los quita del todo) y 16 cámaras: director automático que corta entre planos, TV, helicóptero, dron, travelling lateral con teleobjetivo, a ras de suelo, persecución, cercana, cabina, cara del piloto, T-Cam, morro, rueda, alerón trasero, **órbita** (arrastrar y pellizcar) y **cámara libre** (arrastrar para mirar, WASD/QE para moverse, Mayús rápido, rueda para avanzar; en móvil, arrastrar y pellizcar). Cámara lenta hasta 0,1×, fotograma a fotograma, zoom, inclinación, profundidad de campo con enfoque automático al coche, filtros (cine, cálido, frío, blanco y negro, película antigua), grano, viñeta y formato panorámico 2.39. **Grabación de vídeo** con sonido (MP4/WebM) y fotos PNG; en la app de Android se guardan en Películas/Imágenes › APEX GP. Telemetría de velocidad por vuelta contra la mejor.
+- **Repetición y modo cine** (últimos 5 minutos): controles discretos que se ocultan solos (tocar la imagen los muestra; H los quita del todo) y 16 cámaras: director automático que corta entre planos, TV, helicóptero, dron, travelling lateral con teleobjetivo, a ras de suelo, persecución, cercana, cabina, cara del piloto, T-Cam, morro, rueda, alerón trasero, **órbita** (arrastrar y pellizcar) y **cámara libre** (arrastrar para mirar, WASD/QE para moverse, Mayús rápido, rueda para avanzar; en móvil, arrastrar y pellizcar). Cámara lenta hasta 0,1×, fotograma a fotograma, zoom, inclinación, profundidad de campo con enfoque automático al coche, filtros (cine, cálido, frío, blanco y negro, película antigua), grano, viñeta y formato panorámico 2.39. **Grabación de vídeo** con sonido (MP4/WebM) y fotos PNG; en la app de Android se guardan en Películas/Imágenes › UpGames RACING. Telemetría de velocidad por vuelta contra la mejor.
 - **Toda la carrera en la repetición** (hasta ~40 MB de memoria: una hora con pocos coches, ~25 min con 22) con **resumen automático** (⭐): salida, adelantamientos, golpes, abandonos, Safety Car, vuelta rápida y meta, con rótulos y cámaras alternas; las marcas se ven en la línea de tiempo. **Editor de tráiler** (📍): puntos de cámara por los que el recorrido pasa suavemente (Catmull-Rom), para verlo, grabarlo o **exportarlo a MP4 1080p 60 fps** fotograma a fotograma con WebCodecs (`lib/mp4-muxer`, MIT), sin depender de los FPS del móvil. Desenfoque de movimiento de cámara por reproyección.
 - **Cámaras a bordo vivas**: la cabeza del piloto se mueve con las fuerzas G y los golpes sacuden la imagen.
 - **Ingeniero que analiza la carrera**: ritmo del de delante y del de detrás, en cuántas vueltas lo alcanzas, paradas de los rivales (undercut), cuándo atacar o cuidar ruedas y la lluvia en vueltas.
@@ -75,9 +75,19 @@ Pensado primero para Android en horizontal: la información va en franjas finas 
 - **Frenos al rojo** solo en la pista del disco, entre los radios, sin que el resplandor tape la llanta.
 - **Acabado de cámara** (alta y ultra): nitidez adaptativa por contraste y una ligera aberración cromática en los bordes.
 
+## Novedades de UpGames RACING
+
+- **Nombre nuevo**: el juego pasa a llamarse **UpGames RACING** (logo, iconos, app, rótulos del circuito y de los coches, textos y traducciones). Los identificadores internos (`apexgp` en rutas, almacenamiento y paquete Android) no cambian, para no perder partidas ni cuentas.
+- **Coches que parecen de verdad**: pintura con barniz desde la calidad media (y siempre en tu coche), reflejos de un entorno de circuito en baja y media (`js/render/entorno.js`: cielo luminoso, horizonte con arboleda, muros y gradas, asfalto oscuro), sombra propia en los bajos y pasos de rueda, **llantas en 3D** en GT y Stock Car (radios con volumen, buje, disco y pinza de freno detrás), carbono más oscuro y librea del jugador al doble de resolución.
+- **Frenada estable en GT y Stock Car**: ABS que en curva suelta el freno trasero según lo apoyada que va la rueda, control del arrastre del motor al levantar el pie, neumáticos traseros más anchos y dirección asistida que contravolantea cuando el eje trasero empieza a irse. Frenar girando ya no acaba en trompo (`tools/prueba-frenada.mjs`).
+- **Salida con potencia**: al pisar a fondo desde parado el motor sube de vueltas, el embrague entra de golpe y las ruedas traseras patinan con humo y marcas mientras el coche gana velocidad; el control de tracción (ahora proporcional, sin tirones) va cerrando el patinaje hasta ~85 km/h.
+- **Lluvia en la GPU**: las gotas se mueven en el sombreador (cero trabajo de CPU por fotograma), caen en el mundo y se alargan con la velocidad y el viento; salpicaduras en el asfalto, película de agua que refleja el cielo y cortina que cierra la vista.
+- **Boxes sin tirones**: los mecánicos usan el mismo modelo del piloto en todas las calidades (una malla ligera compartida, sin texturas por mecánico), los equipos rivales salen con un equipo reducido, lejos de la cámara no se animan y la primera parada ya no compila nada (`tools/boxes.html` para verla).
+- **Rendimiento sin perder nitidez**: la resolución interna sube en media, alta y ultra y ya no baja del 85 % (75 % en baja). Cuando faltan FPS se recorta antes la distancia de dibujo y la bruma, las sombras se refrescan cada 2-3 fotogramas y se apagan la distorsión de calor y el desenfoque de velocidad (que además es más suave). En baja y media los paneles no llevan desenfoque de fondo.
+
 ## Rendimiento
 
-- **Resolución dinámica**: con la calidad elegida, si los FPS bajan de 50 la resolución interna baja poco a poco (hasta el 70 %) y vuelve a subir cuando sobra margen; sombras, efectos y detalle se mantienen.
+- **Rendimiento adaptable**: con la calidad elegida, si los FPS bajan de 50 se acerca la distancia de dibujo, se espacian las sombras y, al final, la resolución interna baja poco (hasta el 85 %; 75 % en baja); todo vuelve a subir cuando sobra margen.
 - **Nivel de detalle más fino**: las piezas pequeñas de los rivales (tornillos, cintas del arnés, retrovisores…) se dejan de dibujar a más de 35 m, donde ocupan un par de píxeles, y no proyectan sombra; el piloto tampoco (va dentro de la cabina). Un rival a media distancia pasa de ~240 a ~110 llamadas de dibujo.
 - El desenfoque de velocidad y la distorsión por calor solo se calculan cuando se ven.
 

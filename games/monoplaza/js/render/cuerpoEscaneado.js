@@ -90,8 +90,8 @@ function preparar(g) {
 }
 
 /** Geometría con los pesos en el orden de huesos de una Persona (se cachea por orden). */
-export function geometriaParaPersona(ordenHuesos) {
-  const clave = ordenHuesos.join(',');
+export function geometriaParaPersona(ordenHuesos, ligera = false) {
+  const clave = ordenHuesos.join(',') + (ligera ? '|L' : '');
   if (dat.cache.has(clave)) return dat.cache.get(clave);
   const g = dat.geo.clone(), n = g.attributes.position.count;
   const mapa = dat.nombres.map(k => Math.max(0, ordenHuesos.indexOf(k)));
@@ -99,8 +99,33 @@ export function geometriaParaPersona(ordenHuesos) {
   for (let i = 0; i < n * 4; i++) idx[i] = mapa[dat.huesoV[i]];
   g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
   g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(dat.peso, 4));
-  dat.cache.set(clave, g);
-  return g;
+  const out = ligera ? aligerar(g, 0.021) : g;
+  dat.cache.set(clave, out);
+  return out;
+}
+
+// Versión ligera del escaneo para los mecánicos (son muchos y se ven de lejos): los vértices se
+// agrupan en una rejilla y cada grupo queda en uno solo; los triángulos que se aplastan, fuera.
+// Queda menos de un tercio de los triángulos con la misma silueta.
+function aligerar(geo, celda) {
+  const P = geo.attributes.position, n = P.count, rep = new Int32Array(n), mapa = new Map(), usados = [];
+  for (let i = 0; i < n; i++) {
+    const k = Math.round(P.getX(i) / celda) + ',' + Math.round(P.getY(i) / celda) + ',' + Math.round(P.getZ(i) / celda);
+    let v = mapa.get(k); if (v === undefined) { v = usados.length; mapa.set(k, v); usados.push(i); }
+    rep[i] = v;
+  }
+  const indices = [];
+  for (let t = 0; t < n; t += 3) { const a = rep[t], b = rep[t + 1], c = rep[t + 2]; if (a !== b && b !== c && a !== c) indices.push(a, b, c); }
+  const out = new THREE.BufferGeometry();
+  for (const [nombre, at] of Object.entries(geo.attributes)) {
+    const arr = new at.array.constructor(usados.length * at.itemSize);
+    usados.forEach((i, k) => { for (let j = 0; j < at.itemSize; j++) arr[k * at.itemSize + j] = at.array[i * at.itemSize + j]; });
+    out.setAttribute(nombre, new THREE.BufferAttribute(arr, at.itemSize, at.normalized));
+  }
+  out.setIndex(indices);
+  out.computeVertexNormals();
+  out.computeBoundingSphere();
+  return out;
 }
 
 /**
@@ -141,8 +166,15 @@ export function colocarHuesos(per) {
 }
 
 /** Material del cuerpo escaneado: el gris del escaneo teñido por zonas (casco, mono, guantes, botas). */
-export function materialCuerpo(traje = '#0d47ff', casco = '#ffffff') {
+const _matsCuerpo = new Map();
+export function materialCuerpo(traje = '#0d47ff', casco = '#ffffff', ligera = false) {
+  // un material por combinación de colores, compartido por todo el equipo (menos cambios de estado)
+  const clave = traje + '|' + casco + (ligera ? '|L' : '');
+  if (_matsCuerpo.has(clave)) return _matsCuerpo.get(clave);
   const mat = dat.mat.clone();
+  // (la malla ligera va sin las texturas del escaneo: sus vértices ya no casan con ellas; color liso por zonas)
+  if (ligera) { mat.normalMap = null; mat.map = null; mat.color.setScalar(0.5); }
+  _matsCuerpo.set(clave, mat);
   mat.metalness = 0; mat.roughness = 0.75;
   const cT = new THREE.Color(traje).lerp(new THREE.Color(0xffffff), 0.12), cC = new THREE.Color(0xffffff).lerp(new THREE.Color(casco), 0.45);
   mat.onBeforeCompile = (sh) => {
@@ -153,7 +185,7 @@ export function materialCuerpo(traje = '#0d47ff', casco = '#ffffff') {
         vec3 tinte = vZona < 0.5 ? cCasco : vZona < 1.5 ? cTraje : vec3(0.13);
         diffuseColor.rgb *= tinte * 1.45;`);
   };
-  mat.customProgramCacheKey = () => 'cuerpoEscaneado';
+  mat.customProgramCacheKey = () => 'cuerpoEscaneado' + (ligera ? 'L' : '');
   return mat;
 }
 
