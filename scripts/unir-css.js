@@ -15,7 +15,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 
 const PUB = path.join(__dirname, '..', 'public');
-const FUENTES = ['biblioteca.css', 'upgames-glass.css', 'upgames-estilo.css', 'upgames-cyber.css', 'upgames-videos.css', 'upgames-ux.css'];
+const FUENTES = ['biblioteca.css', 'upgames-glass.css', 'upgames-estilo.css', 'upgames-cyber.css', 'upgames-videos.css', 'upgames-ux.css', 'upgames-neo.css'];
 const SALIDA = path.join(PUB, 'upgames-app.css');
 const HTML = path.join(PUB, 'biblioteca.html');
 

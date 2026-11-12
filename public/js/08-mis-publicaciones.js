@@ -114,7 +114,7 @@ function pfOpenPostSheet(i) {
         <div class="pf2-sheet-cat">${ugEsc(catLabel(item.category))} · <span class="${isRejected ? 'bad' : isPending ? 'warn' : 'ok'}">${isRejected ? 'Rechazado' : isPending ? 'Pendiente de revisión' : 'Aprobado'}</span></div>
         <h3>${ugEsc(item.title || 'Sin título')}</h3>
         <div class="pf2-sheet-stats">
-          <div><b>${isVideo ? vistasVideo(item) : item.descargasEfectivas || 0}</b><span>${isVideo ? 'Vistas' : 'Descargas efectivas'}</span></div>
+          <div><b>${isVideo ? vistasVideo(item) : item.descargasEfectivas || 0}</b><span>${isVideo ? 'Vistas' : 'Anuncios vistos'}</span></div>
           <div><b>${item.likesCount || 0}</b><span>Likes</span></div>
           <div><b style="color:${(item.reportes || 0) >= 3 ? '#ff4343' : 'inherit'}">${item.reportes || 0}</b><span>Reportes</span></div>
           <div><b style="font-size:.78rem">${lsTxt}</b><span>Enlace</span></div>

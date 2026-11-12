@@ -12,9 +12,9 @@
  *                             ya no se vende por publicación)
  *   Pases sin anuncios ...... fondo para creadores = 25 % del precio menos lo que
  *                             cuestan las monedas de regalo del pase; se reparte a
- *                             US$0,01 por la primera descarga efectiva del usuario en cada publicación
- *   Descargas (anuncios) .... CPM fijo por 1.000 descargas efectivas (CPM_VALUE); las vistas no se pagan;
- *                             debe ser ≤ 30 % de lo que pagan los anuncios por 1.000 visitas
+ *                             US$0,01 la primera vez que el usuario abre el enlace de cada publicación
+ *   Publicidad .............. CPM fijo por 1.000 visualizaciones de publicidad en la página puente
+ *                             (CPM_VALUE, US$1,50); no se paga por descargas ni por vistas de la publicación
  */
 'use strict';
 

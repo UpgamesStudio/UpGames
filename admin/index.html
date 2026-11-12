@@ -4,26 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0A0B0F">
+<meta name="theme-color" content="#04060B">
 <title>Panel Admin · UpGames</title>
 <link rel="icon" type="image/png" href="../public/icons/icon-192.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0A0B0F;--bg2:#0f1117;
-  --glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.085);--glass3:rgba(255,255,255,.12);
-  --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
-  --tx:#F2F4F8;--tx2:#A9B0BE;--tx3:#6B7280;
-  --g1:#32D583;--g2:#5AC8FA;--grad:linear-gradient(135deg,#32D583,#5AC8FA);
-  --ok:#32D583;--warn:#FFB020;--bad:#FF5A5F;--info:#5AC8FA;--vio:#A78BFA;--org:#FF8A3D;
+  --bg:#04060B;--bg2:#080C15;
+  --glass:rgba(255,255,255,.04);--glass2:rgba(255,255,255,.07);--glass3:rgba(255,255,255,.11);
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --tx:#F4F7FA;--tx2:#AEB7C4;--tx3:#6C7686;
+  --g1:#39FF88;--g2:#5CE1FF;--grad:linear-gradient(120deg,#39FF88 0%,#4BF0C4 55%,#5CE1FF 100%);
+  --ok:#39FF88;--warn:#FFB84D;--bad:#FF5C7A;--info:#5CE1FF;--vio:#8F7BFF;--org:#FF8A3D;
   --bronce:#d08a4a;--oro:#ffd23f;--elite:#c084fc;
   --r:18px;--r2:14px;--r3:10px;
   --blur:blur(22px) saturate(170%);
-  --sb:248px;--top:62px;
-  --ease:cubic-bezier(.2,.8,.2,1);
+  --sb:256px;--top:64px;
+  --ease:cubic-bezier(.22,1,.36,1);
   --safe-b:env(safe-area-inset-bottom,0px);
+  --ff:'Space Grotesk',Inter,'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+  --ff-disp:'Orbitron','Space Grotesk',sans-serif;
+  --ff-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;font-size:14px;line-height:1.45}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--ff);font-size:14px;line-height:1.45}
 body{min-height:100svh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:-20%;z-index:-1;pointer-events:none;
   background:radial-gradient(40% 35% at 15% 10%,rgba(50,213,131,.16),transparent 70%),
@@ -60,7 +65,7 @@ select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%
 .fg{margin-bottom:14px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grow{flex:1;min-width:0}
-.muted{color:var(--tx3)}.small{font-size:.78rem}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.muted{color:var(--tx3)}.small{font-size:.78rem}.mono{font-family:var(--ff-mono)}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--tx2);font-size:.78rem;font-weight:600;white-space:nowrap;transition:all .2s}
 .chip.on{border-color:rgba(50,213,131,.5);color:#7ff5b8;background:rgba(50,213,131,.1)}
 .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
@@ -411,6 +416,135 @@ body:not(.is-owner) .owner-only{display:none!important}
 .nb-rel{height:4px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
 .nb-rel i{display:block;height:100%;background:var(--grad)}
 .nb-load{display:flex;gap:12px;align-items:center;padding:18px}
+
+/* ═══════════ NEO · panel de control ═══════════
+   Misma identidad que la web: aurora verde → cian → violeta, cristal con
+   filos de luz, Orbitron en titulares y JetBrains Mono en las cifras. */
+body{-webkit-font-smoothing:antialiased}
+body::before{inset:0;background:
+  radial-gradient(46% 36% at 92% -6%,rgba(57,255,136,.14),transparent 70%),
+  radial-gradient(40% 32% at 18% 0%,rgba(92,225,255,.10),transparent 70%),
+  radial-gradient(50% 40% at 60% 112%,rgba(143,123,255,.16),transparent 70%)}
+body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:44px 44px;-webkit-mask-image:radial-gradient(80% 70% at 50% 0%,#000,transparent 85%);mask-image:radial-gradient(80% 70% at 50% 0%,#000,transparent 85%)}
+::selection{background:rgba(57,255,136,.3);color:#fff}
+::-webkit-scrollbar-thumb:hover{background:rgba(57,255,136,.4)}
+a{color:var(--g2)}
+:focus-visible{outline:2px solid var(--g1);outline-offset:2px}
+
+/* Superficies */
+.glass,.card{background:linear-gradient(165deg,rgba(20,28,44,.62),rgba(9,13,22,.72));border-color:var(--line);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 20px 44px -30px rgba(0,0,0,.9)}
+.card{position:relative;transition:border-color .25s,box-shadow .3s,transform .25s var(--ease)}
+.card:hover{border-color:rgba(255,255,255,.14)}
+.ct{font-size:.9rem;font-weight:600;letter-spacing:.01em}
+.cs{font-size:.74rem}
+
+/* Botones y campos */
+.btn{border-radius:12px;font-weight:600;letter-spacing:.01em;transition:transform .15s var(--ease),background .2s,border-color .2s,box-shadow .25s}
+.btn:hover{border-color:rgba(255,255,255,.24)}
+.btn.pri{background:var(--grad);color:#031109;font-weight:700;box-shadow:0 12px 28px -12px rgba(57,255,136,.8),inset 0 1px 0 rgba(255,255,255,.45)}
+.btn.pri:hover{box-shadow:0 16px 34px -12px rgba(57,255,136,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)}
+.btn.ok{background:rgba(57,255,136,.1);border-color:rgba(57,255,136,.38);color:#8CFFBC}
+.btn.bad{background:rgba(255,92,122,.1);border-color:rgba(255,92,122,.4);color:#FF98AC}
+.btn.info{background:rgba(92,225,255,.1);border-color:rgba(92,225,255,.38);color:#A6EEFF}
+.in{background:rgba(255,255,255,.04);border-color:var(--line2);border-radius:12px}
+.in:focus{border-color:rgba(57,255,136,.7);box-shadow:0 0 0 4px rgba(57,255,136,.12),0 10px 30px -16px rgba(57,255,136,.5);background:rgba(255,255,255,.06)}
+.lbl{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500;color:var(--tx3)}
+.chip{font-weight:600;background:rgba(255,255,255,.04);transition:background .2s,color .2s,border-color .2s,box-shadow .25s}
+.chip:hover{color:var(--tx);border-color:rgba(57,255,136,.4)}
+.chip.on{background:var(--grad);color:#031109;border-color:transparent;box-shadow:0 8px 20px -8px rgba(57,255,136,.7)}
+.tag{font-family:var(--ff-mono);font-weight:500;font-size:.64rem;letter-spacing:.03em}
+.t-ok{background:rgba(57,255,136,.1);color:#8CFFBC;border-color:rgba(57,255,136,.3)}
+.t-info{background:rgba(92,225,255,.1);color:#A6EEFF;border-color:rgba(92,225,255,.3)}
+.t-vio{background:rgba(143,123,255,.13);color:#C9BFFF;border-color:rgba(143,123,255,.32)}
+.t-bad{background:rgba(255,92,122,.12);color:#FF98AC;border-color:rgba(255,92,122,.32)}
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.08),rgba(255,255,255,.03));background-size:200% 100%}
+
+/* Acceso */
+.lg-box{position:relative;border-radius:30px;padding:34px 28px;max-width:410px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 40px 90px -40px rgba(0,0,0,.95),0 30px 80px -52px rgba(57,255,136,.6)}
+.lg-box::before{content:'';position:absolute;left:30px;right:30px;top:0;height:1px;background:linear-gradient(90deg,transparent,#39FF88 30%,#5CE1FF 70%,transparent)}
+.lg-logo{box-shadow:0 14px 34px -10px rgba(57,255,136,.55),0 0 0 1px rgba(255,255,255,.08)}
+.lg-t{font-family:var(--ff-disp);font-weight:800;font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;
+  background:linear-gradient(120deg,#fff 20%,#39FF88 70%,#5CE1FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#lgBtn{font-family:var(--ff-disp);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;border-radius:14px}
+
+/* Barra lateral */
+.side{background:rgba(6,9,16,.78);border-right-color:var(--line)}
+.side::after{content:'';position:absolute;top:0;bottom:0;right:-1px;width:1px;background:linear-gradient(180deg,rgba(57,255,136,.55),rgba(92,225,255,.25) 35%,transparent 70%);pointer-events:none}
+.side-hd{padding:20px 18px 16px}
+.side-hd img{box-shadow:0 8px 20px -8px rgba(57,255,136,.6),0 0 0 1px rgba(255,255,255,.08)}
+.brand{font-family:var(--ff-disp);font-weight:900;font-size:.92rem;letter-spacing:.1em;text-transform:uppercase;
+  background:linear-gradient(120deg,#39FF88,#5CE1FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.brand small{font-family:var(--ff-mono);font-weight:500;font-size:.58rem;letter-spacing:.22em;-webkit-text-fill-color:var(--tx3);margin-top:2px}
+.nav-g{font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.2em;font-weight:500;padding:16px 12px 7px}
+.nav-i{font-weight:500;font-size:.88rem;border-radius:12px;padding:9px 12px}
+.nav-i:hover{background:rgba(255,255,255,.045)}
+.nav-i.on{background:linear-gradient(100deg,rgba(57,255,136,.16),rgba(92,225,255,.06) 70%,transparent);border-color:rgba(57,255,136,.22);font-weight:600}
+.nav-i.on::before{content:'';position:absolute;left:-10px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--grad);box-shadow:0 0 12px rgba(57,255,136,.9)}
+.nav-i.on ion-icon{filter:drop-shadow(0 0 6px rgba(57,255,136,.7))}
+.nbadge{font-family:var(--ff-mono);font-weight:700;font-size:.64rem;background:rgba(255,255,255,.07)}
+.nbadge.hot{background:linear-gradient(120deg,#FF5C7A,#FF8A3D);box-shadow:0 0 12px rgba(255,92,122,.55)}
+.me{background:rgba(255,255,255,.045);border:1px solid var(--line)}
+.av{background:var(--grad);color:#031109}
+.me-r{font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase}
+
+/* Barra superior */
+.top{background:rgba(4,6,11,.62);border-bottom-color:var(--line)}
+.top::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,rgba(57,255,136,.5),rgba(92,225,255,.25) 30%,transparent 65%);pointer-events:none}
+.top-t{font-family:var(--ff-disp);font-weight:800;font-size:.86rem;letter-spacing:.12em;text-transform:uppercase}
+.search input{border-radius:14px;background:rgba(255,255,255,.04)}
+.live{font-family:var(--ff-mono);font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:999px;background:rgba(57,255,136,.06);border:1px solid rgba(57,255,136,.2);color:#B9F5D3}
+.live i{box-shadow:0 0 0 3px rgba(57,255,136,.18),0 0 10px rgba(57,255,136,.9)}
+.vh h2{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+.vh p{font-size:.86rem}
+
+/* Inicio */
+.kpis{gap:14px}
+.kpi{padding:18px;min-height:118px}
+.kpi::before{content:'';position:absolute;left:18px;right:18px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--kc,#39FF88),transparent);opacity:.7}
+.kpi::after{content:'';position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,var(--kc,#39FF88),transparent 70%);opacity:.09;pointer-events:none;transition:opacity .3s}
+.kpi:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 26px 50px -30px rgba(0,0,0,.95),0 18px 44px -30px var(--kc,#39FF88)}
+.kpi:hover::after{opacity:.18}
+.kpi .k-ic{width:38px;height:38px;border-radius:12px;right:16px;top:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.kpi .k-l{padding-right:46px;font-family:var(--ff-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--tx3)}
+.kpi .k-v{font-family:var(--ff-mono);font-size:1.7rem;font-weight:700;letter-spacing:-.03em;margin-top:8px;font-variant-numeric:tabular-nums}
+.kpi .k-d{font-size:.74rem;margin-top:8px}
+.kpi .k-d b{color:var(--tx);font-weight:600}
+@media (min-width:1101px){.kpis{grid-template-columns:repeat(4,1fr)}.kpi.k-hero{grid-column:span 2}}
+.kpi.k-hero{background:linear-gradient(150deg,rgba(57,255,136,.14),rgba(92,225,255,.06) 55%,rgba(9,13,22,.72));border-color:rgba(57,255,136,.28)}
+.kpi.k-hero .k-v{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.alert{padding:14px 16px}
+.alert:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 22px 44px -28px rgba(0,0,0,.95)}
+.alert .a-ic{box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.alert .a-n{font-family:var(--ff-mono);font-size:1.35rem;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.dash-nx{border-color:rgba(143,123,255,.35)!important;background:linear-gradient(120deg,rgba(143,123,255,.16),rgba(92,225,255,.05) 60%,rgba(9,13,22,.7))!important}
+.bars{height:130px;gap:4px;border-bottom-color:var(--line)}
+.bar{border-radius:5px 5px 1px 1px;background:linear-gradient(180deg,#39FF88,rgba(57,255,136,.25));box-shadow:0 0 14px -4px rgba(57,255,136,.6)}
+.bar.alt{background:linear-gradient(180deg,#5CE1FF,rgba(92,225,255,.22));box-shadow:0 0 14px -4px rgba(92,225,255,.6)}
+.bars-x{font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.04em}
+#tip{font-family:var(--ff-mono);font-size:.7rem;background:rgba(9,13,22,.96);border-color:rgba(57,255,136,.35);border-radius:10px;box-shadow:0 14px 30px -12px rgba(0,0,0,.9)}
+.tbl th{font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.12em;font-weight:500}
+.tbl td{padding:10px 6px}
+.tbl tr:hover td{background:rgba(255,255,255,.025)}
+.tbl .num{font-family:var(--ff-mono);font-weight:500}
+
+/* Listas y fichas */
+.it{border-radius:18px}
+.it:hover{transform:translateY(-4px);border-color:rgba(57,255,136,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 26px 50px -30px rgba(0,0,0,.95),0 18px 44px -32px rgba(57,255,136,.7)}
+.it.sel{border-color:var(--g1);box-shadow:0 0 0 2px rgba(57,255,136,.35),0 18px 44px -28px rgba(57,255,136,.7)}
+
+/* Modales, avisos y barra móvil */
+.modal{background:rgba(2,4,8,.66);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.mc{position:relative;background:linear-gradient(180deg,rgba(13,19,32,.97),rgba(5,8,14,.99));border-color:rgba(255,255,255,.1);border-radius:26px;box-shadow:0 40px 100px -30px rgba(0,0,0,.95),0 0 0 1px rgba(57,255,136,.06)}
+.mh h3{font-weight:700;letter-spacing:-.01em}
+.seg button.on{border-color:var(--g1);background:rgba(57,255,136,.1);color:#8CFFBC}
+#toast{font-weight:500;border-radius:14px!important;background:rgba(9,13,22,.95)!important;border:1px solid rgba(57,255,136,.4)!important;box-shadow:0 18px 44px -16px rgba(0,0,0,.9)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#toast.err{border-color:rgba(255,92,122,.55)!important}
+.bnav{background:rgba(6,9,16,.86)!important;border-top-color:var(--line)!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script src="../public/upgames-errores.js?v=20261029i"></script>
 </head>
@@ -485,8 +619,8 @@ body:not(.is-owner) .owner-only{display:none!important}
         <div class="card"><p class="ct">Publicaciones nuevas</p><p class="cs">Últimos 14 días</p><div id="chI"></div></div>
       </div>
       <div class="grid2">
-        <div class="card"><p class="ct">🏆 Top creadores</p><p class="cs">Por descargas efectivas</p><div id="dTop"></div></div>
-        <div class="card"><p class="ct">🔥 Más descargados</p><p class="cs">Publicaciones con más descargas</p><div id="dMas"></div></div>
+        <div class="card"><p class="ct">🏆 Top creadores</p><p class="cs">Por visualizaciones de publicidad</p><div id="dTop"></div></div>
+        <div class="card"><p class="ct">🔥 Más rentables</p><p class="cs">Publicaciones con más anuncios vistos</p><div id="dMas"></div></div>
       </div>
       <div class="card" style="margin-top:14px">
         <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><div><p class="ct">🚀 Guía de inicio · dónde se atascan</p><p class="cs" style="margin:0">Qué % de quienes vieron la guía completó cada paso (últimos 30 días, anónimo). "Llévame" = cuántos pidieron ayuda en ese paso</p></div>
@@ -502,7 +636,7 @@ body:not(.is-owner) .owner-only{display:none!important}
       <div class="vh"><div><h2>Métricas</h2><p>Cuánta gente llega, busca, abre fichas, va a descargar, vuelve y crea cuenta. Eventos anónimos de la web (sin IP ni datos personales) + descargas y cuentas reales.</p></div>
         <div class="chips" id="mtF"><button class="chip" data-d="7">7 días</button><button class="chip on" data-d="30">30 días</button><button class="chip" data-d="90">90 días</button></div></div>
       <div class="kpis" id="mtKpis"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-      <div class="card" style="margin-bottom:14px"><p class="ct">📈 Día a día</p><p class="cs" id="mtLeyenda">Visitantes, descargas efectivas y cuentas nuevas</p><div id="mtSerie"></div></div>
+      <div class="card" style="margin-bottom:14px"><p class="ct">📈 Día a día</p><p class="cs" id="mtLeyenda">Visitantes, anuncios vistos y cuentas nuevas</p><div id="mtSerie"></div></div>
       <div class="grid2" style="margin-bottom:14px">
         <div class="card"><p class="ct">🔻 Embudo (últimos 7 días)</p><p class="cs">Visitantes únicos que llegaron a cada paso</p><div id="mtEmb"></div></div>
         <div class="card"><p class="ct">🔁 Vuelven</p><p class="cs" id="mtRetSub">Quienes llegaron por primera vez hace 8–21 días</p><div id="mtRet"></div></div>
@@ -1123,6 +1257,8 @@ function render() {
 }
 
 // ─────────── Inicio ───────────
+// Lo que gana el creador por 1.000 visualizaciones de publicidad (lo dice el servidor; por defecto US$1,50)
+function cpmCreador() { const v = Number(econ?.catalogo?.cpmUsd); return v > 0 ? v : 1.5; }
 function rDash() {
   const al = [];
   const rev = D.items.filter(enRev).length, rep = D.items.filter(i => i.reportes > 0).length;
@@ -1133,18 +1269,19 @@ function rDash() {
   $('dAlerts').innerHTML = al.map(([v, ic, n, l, c]) => `<div class="card alert" onclick="go('${v}')"><div class="a-ic" style="background:color-mix(in srgb,${c} 16%,transparent);color:${c}"><ion-icon name="${ic}"></ion-icon></div><div><div class="a-n">${num(n)}</div><div class="a-l">${l}</div></div><ion-icon name="chevron-forward" style="margin-left:auto;color:var(--tx3)"></ion-icon></div>`).join('');
   if (!dash) { $('dKpis').innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>'; return; }
   const d = dash;
-  const k = (ic, c, v, l, det) => `<div class="card kpi"><div class="k-ic" style="background:color-mix(in srgb,${c} 15%,transparent);color:${c}"><ion-icon name="${ic}"></ion-icon></div><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-d">${det}</div></div>`;
+  const k = (ic, c, v, l, det, cls = '') => `<div class="card kpi ${cls}" style="--kc:${c}"><div class="k-ic" style="background:color-mix(in srgb,${c} 15%,transparent);color:${c}"><ion-icon name="${ic}"></ion-icon></div><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-d">${det}</div></div>`;
   $('dKpis').innerHTML =
     k('people', 'var(--g1)', num(d.usuarios?.total), 'Usuarios', `Hoy <b>+${num(d.usuarios?.hoy)}</b> · Semana <b>+${num(d.usuarios?.semana)}</b>`) +
     k('game-controller', 'var(--info)', num(d.items?.total), 'Publicaciones', `Aprobadas <b>${num(d.items?.aprobados)}</b> · Hoy <b>+${num(d.items?.hoy)}</b>`) +
-    k('download', 'var(--vio)', num(d.descargas?.total), 'Descargas efectivas', `Hoy <b>+${num(d.descargas?.hoy)}</b>`) +
+    k('megaphone', 'var(--vio)', num(d.descargas?.total), 'Anuncios vistos', `Hoy <b>+${num(d.descargas?.hoy)}</b>`) +
+    k('trending-up', 'var(--g1)', money((d.descargas?.hoy || 0) * cpmCreador() / 1000), 'Pago a creadores hoy', `Tarifa <b>${money(cpmCreador())}</b> por 1.000 visualizaciones de publicidad`, 'k-hero') +
     k('diamond', 'var(--warn)', ucFmt(ucDe(d.finanzas?.saldoEnCirculacion)), 'UC ganados por creadores', `≈ ${money(d.finanzas?.saldoEnCirculacion)} · por pagar <b>${money(d.finanzas?.pendienteDePago)}</b>`) +
     (econ ? k('cash', 'var(--ok)', money(econ.periodos.mes.ingresosUsd), 'Ventas 30 días', `<b>${num(econ.premium.activos)}</b> Premium activos · <a href="#econ" onclick="go('econ');return false" style="color:var(--g1)">Economía →</a>`) : '') +
     k('chatbubbles', 'var(--g2)', num(d.comentarios?.total), 'Comentarios', `Hoy <b>+${num(d.comentarios?.hoy)}</b>`) +
     k('ban', 'var(--org)', num(d.usuarios?.listaNegra), 'Lista negra', 'Cuentas vigiladas');
   const tbl = (rows, head) => rows?.length ? `<table class="tbl"><tr>${head}</tr>${rows}</table>` : '<div class="empty" style="padding:20px">Sin datos todavía</div>';
-  $('dTop').innerHTML = tbl((d.topUploaders || []).map((u, i) => `<tr><td class="muted">${i + 1}</td><td style="color:var(--g1);font-weight:700">@${esc(u._id)}</td><td class="num">${num(u.totalDescargas)}</td><td class="num muted">${num(u.totalItems)}</td></tr>`).join(''), '<th>#</th><th>Creador</th><th class="num">Descargas</th><th class="num">Items</th>');
-  $('dMas').innerHTML = tbl((d.itemsMasDescargados || []).map((j, i) => `<tr><td class="muted">${i + 1}</td><td class="ell">${esc(j.title)}</td><td class="muted">@${esc(j.usuario)}</td><td class="num">${num(j.descargasEfectivas)}</td></tr>`).join(''), '<th>#</th><th>Título</th><th>Por</th><th class="num">Descargas</th>');
+  $('dTop').innerHTML = tbl((d.topUploaders || []).map((u, i) => `<tr><td class="muted">${i + 1}</td><td style="color:var(--g1);font-weight:700">@${esc(u._id)}</td><td class="num">${num(u.totalDescargas)}</td><td class="num muted">${num(u.totalItems)}</td></tr>`).join(''), '<th>#</th><th>Creador</th><th class="num">Anuncios vistos</th><th class="num">Items</th>');
+  $('dMas').innerHTML = tbl((d.itemsMasDescargados || []).map((j, i) => `<tr><td class="muted">${i + 1}</td><td class="ell">${esc(j.title)}</td><td class="muted">@${esc(j.usuario)}</td><td class="num">${num(j.descargasEfectivas)}</td></tr>`).join(''), '<th>#</th><th>Título</th><th>Por</th><th class="num">Anuncios vistos</th>');
 }
 
 // ── Guía de inicio: embudo anónimo (rutas/extrasUC.js → /admin/stats/guia) ──
@@ -1248,7 +1385,7 @@ async function rMetr(forzar) {
   const d = _mt, f = n => Number(n || 0).toLocaleString('es-CO');
   const delta = ({ ahora, antes }) => { if (!antes) return ahora ? '<b style="color:var(--ok)">nuevo</b>' : '—'; const p = Math.round((ahora - antes) / antes * 100); return `<b style="color:${p >= 0 ? 'var(--ok)' : 'var(--bad)'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)} %</b> vs. 7 días antes`; };
   const K = [['visitantes', 'Visitantes (7 días)', 'people', '#5AC8FA'], ['busquedas', 'Búsquedas', 'search', '#a78bfa'], ['fichas', 'Fichas abiertas', 'document-text', '#ffcc4d'],
-    ['clicsDescarga', 'Clics en "Obtener link"', 'cloud-download', '#32D583'], ['descargas', 'Descargas efectivas', 'checkmark-done', '#32D583'], ['cuentas', 'Cuentas nuevas', 'person-add', '#ff7a9c']];
+    ['clicsDescarga', 'Clics en "Obtener link"', 'cloud-download', '#32D583'], ['descargas', 'Anuncios vistos', 'checkmark-done', '#32D583'], ['cuentas', 'Cuentas nuevas', 'person-add', '#ff7a9c']];
   $('mtKpis').innerHTML = K.map(([k, t, ic, c]) => `<div class="card kpi"><div class="k-ic" style="background:${c}22;color:${c}"><ion-icon name="${ic}"></ion-icon></div><div class="k-l">${t}</div><div class="k-v">${f(d.kpis[k].ahora)}</div><div class="k-d">${delta(d.kpis[k])}</div></div>`).join('');
   // Serie: barras de visitantes con líneas de descargas y cuentas
   const S = d.serie, W = 640, H = 170, P = 22, n = S.length, bw = (W - P * 2) / n;
@@ -1259,7 +1396,7 @@ async function rMetr(forzar) {
     ${S.map((x, i) => `<rect x="${(P + i * bw + 1).toFixed(1)}" y="${y(x.visitantes, maxV).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${(H - P - y(x.visitantes, maxV)).toFixed(1)}" rx="2" fill="#5AC8FA" opacity=".35"><title>${x.dia}: ${x.visitantes} visitantes (${x.nuevos} nuevos), ${x.busquedas} búsquedas, ${x.descargas} descargas, ${x.cuentas} cuentas</title></rect>`).join('')}
     ${linea('descargas', maxD, '#32D583')}${linea('cuentas', maxC, '#ff7a9c')}
     <text x="${P}" y="${H - 4}" fill="#8a90a0" font-size="10">${S[0].dia}</text><text x="${W - P}" y="${H - 4}" fill="#8a90a0" font-size="10" text-anchor="end">${S[n - 1].dia}</text></svg>
-    <div class="small muted" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"><span><span style="color:#5AC8FA">■</span> Visitantes (máx. ${f(maxV)})</span><span><span style="color:#32D583">━</span> Descargas efectivas (máx. ${f(maxD)})</span><span><span style="color:#ff7a9c">━</span> Cuentas nuevas (máx. ${f(maxC)})</span></div>`;
+    <div class="small muted" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"><span><span style="color:#5AC8FA">■</span> Visitantes (máx. ${f(maxV)})</span><span><span style="color:#32D583">━</span> Anuncios vistos (máx. ${f(maxD)})</span><span><span style="color:#ff7a9c">━</span> Cuentas nuevas (máx. ${f(maxC)})</span></div>`;
   // Embudo
   const E = d.embudo, base = Math.max(1, E.visitaron);
   const pasos = [['Visitaron', E.visitaron], ['Buscaron', E.buscaron], ['Abrieron una ficha', E.fichas], ['Fueron a descargar', E.descargar], ['Crearon cuenta', E.cuentas]];
@@ -1688,7 +1825,7 @@ function rEcon() {
     <tr><td>🎁 Regalos en lives</td><td class="num">${pct(e.reparto.regalos)}</td></tr>
     <tr><td>⚡ Acceso directo</td><td class="num">${pct(e.reparto.accesoDirecto)}</td></tr>
     <tr><td>⭐ Premium (fondo por aperturas, ${money(e.reparto.paseApertura)} c/u)</td><td class="num">${pct(e.reparto.pases)}</td></tr>
-    <tr><td>⬇️ Descargas (CPM)</td><td class="num">${ucFmt(ucDe(ct.cpmUsd))} (${money(ct.cpmUsd)}) / 1.000</td></tr>
+    <tr><td>📺 Visualizaciones de publicidad (CPM)</td><td class="num">${ucFmt(ucDe(ct.cpmUsd))} (${money(ct.cpmUsd)}) / 1.000</td></tr>
     <tr><td><b>Tope del creador</b></td><td class="num"><b>${pct(e.reparto.tope)}</b></td></tr></table>
     <p class="small muted" style="margin:10px 0 0">Fondo Premium acumulado sin repartir: <b>${money(c.fondoPremiumUsd)}</b>. Los UC comprados nunca se retiran; los ganados sí (retiro mínimo y retención según términos).</p>
     ${Object.keys(e.retiros || {}).length ? `<p class="small muted" style="margin:6px 0 0">Retiros: ${Object.entries(e.retiros).map(([st, v]) => `${esc(st)} <b>${money(v.usd)}</b> (${num(v.n)})`).join(' · ')}</p>` : ''}`;

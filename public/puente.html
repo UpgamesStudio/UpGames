@@ -16,28 +16,33 @@
     </script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <style>
-        :root { --neon-green: #39FF14; --dark-bg: #0a0a0a; --card-bg: #1a1a1a; }
-        body { background-color: var(--dark-bg); color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
-        .container { box-sizing: border-box; background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid rgba(57, 255, 20, 0.2); box-shadow: 0 0 20px rgba(0,0,0,0.5); width: min(450px, calc(100% - 24px)); text-align: center; margin: 12px 0; }
+        :root { --neon-green: #39FF88; --dark-bg: #04060B; --card-bg: rgba(13,19,32,.72); }
+        body { color: #F4F7FA; font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
+        .container { position: relative; box-sizing: border-box; background: var(--card-bg); padding: 30px 26px; border-radius: 26px; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 40px 90px -40px rgba(0,0,0,.95), 0 30px 80px -50px rgba(57,255,136,.55), inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); width: min(460px, calc(100% - 24px)); text-align: center; margin: 14px 0; }
+        .container::before { content: ''; position: absolute; left: 26px; right: 26px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #39FF88 30%, #5CE1FF 70%, transparent); }
+        .container > ion-icon:first-child { filter: drop-shadow(0 0 16px rgba(57,255,136,.55)); }
         .container iframe, .container img, .container video { max-width: 100%; }
-        @media (max-width: 420px) { .container { padding: 22px 14px; } h1 { font-size: 1.2rem; } .ad-pass { padding: 13px; } .ad-pass-price { font-size: 1.15rem; } }
-        .ug-patro { display: flex; align-items: center; gap: 10px; margin: 6px 0 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: #ddd; text-decoration: none; font-size: .88rem; text-align: left; }
-        .ug-patro:hover { border-color: rgba(57,255,20,.45); }
+        @media (max-width: 420px) { .container { padding: 24px 14px; border-radius: 22px; } h1 { font-size: 1.05rem; } .ad-pass { padding: 13px; } .ad-pass-price { font-size: 1.15rem; } }
+        .ug-patro { display: flex; align-items: center; gap: 10px; margin: 6px 0 16px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.045); color: #dfe5ee; text-decoration: none; font-size: .88rem; text-align: left; transition: border-color .2s, background .2s; }
+        .ug-patro:hover { border-color: rgba(57,255,136,.5); background: rgba(57,255,136,.07); }
         .ug-patro > span:nth-child(2) { flex: 1; }
-        .ug-patro-tag { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #999; border: 1px solid #444; border-radius: 6px; padding: 2px 6px; }
-        h1 { color: var(--neon-green); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
-        p { color: #aaa; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; }
-        .ad-space { background: #000; border: 1px dashed var(--neon-green); padding: 40px 10px; margin: 20px 0; border-radius: 10px; color: #555; }
-        #timer { font-size: 1.2rem; font-weight: bold; color: var(--neon-green); margin: 20px 0; }
-        .btn-neon { background: var(--neon-green); color: #000; padding: 15px 40px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 0 15px rgba(57, 255, 20, 0.4); display: none; margin: 0 auto; }
-        .btn-neon:hover { transform: scale(1.05); box-shadow: 0 0 25px var(--neon-green); }
+        .ug-patro-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #9AA5B4; border: 1px solid rgba(255,255,255,.16); border-radius: 6px; padding: 2px 6px; }
+        h1 { font-family: 'Orbitron', 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.25rem; text-transform: uppercase; letter-spacing: .08em; margin: 12px 0 10px; background: linear-gradient(120deg, #39FF88, #5CE1FF); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #39FF88; }
+        p { color: #AEB7C4; font-size: 0.9rem; line-height: 1.55; margin-bottom: 20px; }
+        .ug-apoyo { display: flex; align-items: center; gap: 10px; text-align: left; margin: 0 0 16px; padding: 11px 13px; border-radius: 14px; background: linear-gradient(135deg, rgba(57,255,136,.1), rgba(92,225,255,.06)); border: 1px solid rgba(57,255,136,.28); color: #DFFBEA; font-size: .8rem; line-height: 1.4; }
+        .ug-apoyo b { color: #fff; }
+        .ug-apoyo span:first-child { font-size: 1.2rem; }
+        .ad-space { background: rgba(0,0,0,.4); border: 1px dashed rgba(57,255,136,.5); padding: 40px 10px; margin: 20px 0; border-radius: 14px; color: #6C7686; }
+        #timer { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 700; letter-spacing: .02em; color: var(--neon-green); margin: 20px 0; }
+        .btn-neon { background: linear-gradient(120deg, #39FF88 0%, #4BF0C4 55%, #5CE1FF 100%); color: #031109; padding: 16px 42px; border: none; border-radius: 16px; font-family: 'Orbitron', 'Space Grotesk', sans-serif; font-weight: 800; font-size: .86rem; letter-spacing: .1em; cursor: pointer; text-transform: uppercase; transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .25s; box-shadow: 0 16px 36px -12px rgba(57,255,136,.85), inset 0 1px 0 rgba(255,255,255,.5); display: none; margin: 0 auto; }
+        .btn-neon:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 22px 44px -12px rgba(57,255,136,1), inset 0 1px 0 rgba(255,255,255,.5); }
         .btn-neon:disabled { opacity: 0.5; cursor: not-allowed; }
-        .footer-note { font-size: 0.7rem; color: #444; margin-top: 30px; }
+        .footer-note { font-size: 0.7rem; color: #6C7686; margin-top: 30px; }
 
         /* ── VIDEO DEL JUEGO ── */
         #game-media-wrap {
             width: 100%; margin: 12px 0;
-            border-radius: 12px; overflow: hidden;
+            border-radius: 16px; overflow: hidden;
             background: #000; display: none;
             position: relative; aspect-ratio: 16/9;
         }
@@ -50,17 +55,17 @@
             text-align: center; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis;
         }
-        .error-box { background: rgba(255, 67, 67, 0.1); border: 1px solid #ff4343; padding: 15px; border-radius: 10px; color: #ff4343; margin: 15px 0; }
-        .success-box { background: rgba(57, 255, 20, 0.1); border: 1px solid var(--neon-green); padding: 15px; border-radius: 10px; color: var(--neon-green); margin: 15px 0; }
-.serie-box { margin: 18px 0 6px; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(90,200,250,.12), rgba(57,255,20,.06)); border: 1px solid rgba(90,200,250,.35); text-align: left; }
+        .error-box { background: rgba(255,92,122,.1); border: 1px solid rgba(255,92,122,.55); padding: 15px; border-radius: 14px; color: #FF8AA0; margin: 15px 0; }
+        .success-box { background: rgba(57,255,136,.1); border: 1px solid rgba(57,255,136,.5); padding: 15px; border-radius: 14px; color: var(--neon-green); margin: 15px 0; }
+.serie-box { margin: 18px 0 6px; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(90,200,250,.12), rgba(57,255,136,.06)); border: 1px solid rgba(90,200,250,.35); text-align: left; }
         .serie-h { font-size: .95rem; color: #fff; } .serie-sub { font-size: .78rem; color: #8fdcff; margin-top: 3px; }
         .serie-bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,.08); margin: 10px 0; overflow: hidden; }
-        .serie-bar i { display: block; height: 100%; background: linear-gradient(90deg, #39FF14, #5AC8FA); }
+        .serie-bar i { display: block; height: 100%; background: linear-gradient(90deg, #39FF88, #5AC8FA); }
         .serie-next { display: block; text-align: center; background: #5AC8FA; color: #001018; font-weight: 800; padding: 12px; border-radius: 12px; text-decoration: none; }
         .serie-hint { font-size: .72rem; color: #777; margin-top: 8px; text-align: center; }
-        .serie-done { font-size: .85rem; color: #39FF14; text-align: center; }
+        .serie-done { font-size: .85rem; color: #39FF88; text-align: center; }
         /* ── ACCESO DIRECTO (US$1 / 50 UpCoins) ── */
-        .ad-pass { margin: 16px 0 6px; padding: 16px; border-radius: 16px; text-align: left; background: linear-gradient(135deg, rgba(255,204,77,.14), rgba(57,255,20,.07)); border: 1.5px solid rgba(255,204,77,.55); box-shadow: 0 10px 30px -14px rgba(255,204,77,.55); }
+        .ad-pass { margin: 16px 0 6px; padding: 16px; border-radius: 16px; text-align: left; background: linear-gradient(135deg, rgba(255,204,77,.14), rgba(57,255,136,.07)); border: 1.5px solid rgba(255,204,77,.55); box-shadow: 0 10px 30px -14px rgba(255,204,77,.55); }
         .ad-pass-h { display: flex; align-items: center; gap: 12px; }
         .ad-pass-ic { width: 44px; height: 44px; border-radius: 12px; background: #ffcc4d; color: #241a00; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
         .ad-pass-h b { display: block; font-size: 1rem; color: #fff; }
@@ -73,11 +78,14 @@
         .ad-pass-btn.coins { background: rgba(255,255,255,.07); color: #fff; border: 1px solid rgba(255,255,255,.18); }
         .ad-pass-btn:disabled { opacity: .55; cursor: wait; }
         .ad-pass-note { font-size: .7rem; color: #8a8a8a; margin-top: 8px; text-align: center; }
-        .ad-pass-note a { color: #39FF14; }
-        .ad-pass.done { border-color: var(--neon-green); background: rgba(57,255,20,.08); box-shadow: none; }
+        .ad-pass-note a { color: #39FF88; }
+        .ad-pass.done { border-color: var(--neon-green); background: rgba(57,255,136,.08); box-shadow: none; }
         .debug-info { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 5px; font-size: 0.7rem; color: #666; margin-top: 15px; text-align: left; max-height: 200px; overflow-y: auto; }
     </style>
 <script src="./upgames-errores.js?v=20261029i"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./upgames-neo-paginas.css?v=20261112a">
 </head>
 <body>
     
@@ -85,6 +93,7 @@
         <ion-icon name="shield-checkmark-outline" style="font-size: 48px; color: var(--neon-green);"></ion-icon>
         <h1>Saliendo de UpGames</h1>
         <p>Estás siendo redirigido a un servidor externo. Recuerda que UpGames es un directorio neutral y no almacena archivos.</p>
+        <div class="ug-apoyo"><span aria-hidden="true">💚</span><span><b>Tu visita apoya al creador.</b> La publicidad de esta página es lo que le paga: no se paga por descargar.</span></div>
 
         <!-- ⭐ MEDIA DEL JUEGO — se carga dinámicamente desde los parámetros de URL -->
         <div id="game-title-bar"></div>
@@ -427,7 +436,7 @@
                         showWarning("⚠️ " + (data.mensaje || "Ya descargaste este juego 2 veces hoy. Aún puedes acceder al enlace."));
                         log("Límite alcanzado pero enlace permitido", 'info');
                     } else {
-                        showSuccess(`✅ Descarga validada (${data.descargasEfectivas || 'N/A'} descargas efectivas)`);
+                        showSuccess('✅ Enlace listo: tu visita apoyó al creador');
                         log(`Descarga contada - Total: ${data.descargasEfectivas}`, 'success');
                     }
                     
@@ -594,7 +603,7 @@
             api(`/acceso-directo/${encodeURIComponent(juegoId)}`).then(async est => {
                 try { est.pase ? localStorage.setItem('ug_pase_hasta', localStorage.getItem('user_admin') + '|' + (+new Date(est.pase.hasta))) : localStorage.removeItem('ug_pase_hasta'); } catch (_) {}
                 if (est.desbloqueado && est.link) return listo(est.link, '✅ Ya tienes acceso directo a esta publicación');
-                // Premium activo: enlace sin esperas (la descarga cuenta igual para el creador)
+                // Premium activo: enlace sin esperas ni anuncios (el creador cobra del fondo Premium)
                 if (est.pase) {
                     box.innerHTML = cabecera() + '<div class="ad-pass-btns"><button class="ad-pass-btn card" disabled>Abriendo con tu Premium…</button></div>';
                     try { const d = await api(`/acceso-directo/${encodeURIComponent(juegoId)}/pase`, { method: 'POST' }); return listo(d.link, `✅ Tu Premium está activo hasta el ${new Date(est.pase.hasta).toLocaleDateString()}: enlace directo`); }
@@ -617,14 +626,14 @@
      Abierta solo la primera vez; nunca tapa nada.
 ══════════════════════════════════════════════ -->
 <style>
-.bt-mini { margin: 4px 0 14px; text-align: left; border: 1px solid rgba(57,255,20,.22); border-radius: 12px; background: rgba(57,255,20,.04); }
+.bt-mini { margin: 4px 0 14px; text-align: left; border: 1px solid rgba(57,255,136,.22); border-radius: 12px; background: rgba(57,255,136,.04); }
 .bt-mini summary { cursor: pointer; padding: 10px 12px; font-size: .8rem; font-weight: 700; color: #b8f5a8; list-style: none; }
 .bt-mini summary::-webkit-details-marker { display: none; }
 .bt-mini summary::after { content: "▾"; float: right; color: #6a6; transition: transform .2s; }
 .bt-mini[open] summary::after { transform: rotate(180deg); }
 .bt-mini ol { margin: 0; padding: 0 14px 12px 30px; color: #aaa; font-size: .78rem; line-height: 1.55; }
 .bt-mini li { margin-bottom: 4px; }
-.bt-mini b { color: #39FF14; }
+.bt-mini b { color: #39FF88; }
 </style>
 <script>
 (function () {
@@ -634,10 +643,10 @@
     var d = document.createElement('details');
     d.className = 'bt-mini'; d.open = !visto;
     d.innerHTML = '<summary>ⓘ ¿Cómo funciona esta página?</summary><ol>'
-        + '<li>Es el <b>puente de seguridad</b>: verifica el enlace y registra la <b>descarga efectiva</b>. Al creador se le paga por descargas efectivas, no por ver la publicación.</li>'
+        + '<li>Es el <b>puente de seguridad</b>: verifica el enlace y muestra la <b>publicidad que sostiene al creador</b>. Al creador se le paga por visualizaciones de publicidad, no por descargas.</li>'
         + '<li>Espera el contador (30 s) y toca <b>Obtener enlace</b>: se abre en una pestaña nueva.</li>'
         + '<li>¿Prisa? Con <b>Premium</b> te saltas la espera y los anuncios en todas las publicaciones.</li>'
-        + '<li><b>Verde</b> = descarga validada · <b>amarillo</b> = límite diario (igual funciona) · <b>rojo</b> = recarga e inténtalo de nuevo.</li></ol>';
+        + '<li><b>Verde</b> = enlace listo y anuncio contado · <b>amarillo</b> = límite diario (igual funciona) · <b>rojo</b> = recarga e inténtalo de nuevo.</li></ol>';
     var btn = document.getElementById('btn');
     var ancla = btn && btn.nextElementSibling && btn.nextElementSibling.tagName === 'BR' ? btn.nextElementSibling : btn;
     if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(d, ancla.nextSibling);

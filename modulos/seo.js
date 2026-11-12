@@ -104,7 +104,7 @@ ${esImg(it.image) ? `<img src="${esc(it.image.replace('/upload/', '/upload/w_960
 <div class="c"><span class="cat">${esc(cat)}</span>
 <h1>${esc(it.title)}</h1>
 <div class="meta">Publicado por <a href="../perfil-publico.html?usuario=${encodeURIComponent(it.usuario)}">@${esc(it.usuario)}</a> · ${esc(new Date(it.fecha).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }))}</div>
-<div class="st"><span>${esVideo ? `👁️ ${vistas.toLocaleString('es-CO')} vistas` : `⬇️ ${Number(it.descargas || 0).toLocaleString('es-CO')} descargas efectivas`}</span><span>❤️ ${Number(it.likes || 0).toLocaleString('es-CO')}</span></div>
+<div class="st"><span>${esVideo ? `👁️ ${vistas.toLocaleString('es-CO')} vistas` : `⬇️ ${Number(it.descargas || 0).toLocaleString('es-CO')} descargas`}</span><span>❤️ ${Number(it.likes || 0).toLocaleString('es-CO')}</span></div>
 <a class="btn" href="${esc(app)}">${esVideo ? '▶ Ver el video en UpGames' : 'Ver la ficha completa en UpGames'}</a>
 <p class="desc">${esc(desc.slice(0, 3000))}</p>
 ${grupo ? `<p><a href="../j/${esc(grupo.slug)}.html">Ver más: ${esc(grupo.titulo)} →</a></p>` : ''}

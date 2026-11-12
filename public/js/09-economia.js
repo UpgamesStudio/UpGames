@@ -128,11 +128,11 @@ function ecoUpdateDashboard(d) {
 
   // ── Trend badge ──
   const trendTxt = document.getElementById('eco-trend-txt');
-  if (trendTxt) trendTxt.textContent = totalDl > 0 ? `${pfFmt(totalDl)} descargas totales` : 'Sin descargas aún';
+  if (trendTxt) trendTxt.textContent = totalDl > 0 ? `${pfFmt(totalDl)} anuncios vistos en total` : 'Aún sin anuncios vistos';
 
   // ── RPM (revenue per download) ──
   const rpmEl = document.getElementById('eco-kpi-rpm');
-  if (rpmEl) rpmEl.textContent = totalDl > 0 ? (saldo / totalDl / 0.02).toFixed(3) + ' UC' : '0 UC';   // UpCoins por descarga
+  if (rpmEl) rpmEl.textContent = totalDl > 0 ? (saldo / totalDl / 0.02).toFixed(3) + ' UC' : '0 UC';   // UpCoins por anuncio visto
 
   // ── Content subtitle ──
   const ctEl = document.getElementById('eco-kpi-content-total');
@@ -158,7 +158,7 @@ function ecoUpdateDashboard(d) {
 
   // ── Chart badge ──
   const chartBadge = document.getElementById('eco-chart-badge');
-  if (chartBadge) chartBadge.textContent = pfFmt(totalDl) + ' descargas';
+  if (chartBadge) chartBadge.textContent = pfFmt(totalDl) + ' anuncios vistos';
 
   // ── Render sub-sections ──
   ecoDrawChart(totalDl, _ecoPeriodDays);
@@ -282,7 +282,7 @@ function ecoRenderLeaderboard(items) {
       </div>
       <div class="eco-lb-stats">
         <div class="eco-lb-dl">${pfFmt(dl)}</div>
-        <div class="eco-lb-dl-lbl">descargas</div>
+        <div class="eco-lb-dl-lbl">anuncios vistos</div>
       </div>
     </div>`;
   }).join('');
@@ -380,15 +380,15 @@ function ecoRenderGoals(saldo, totalDl, totalContent, elegibles) {
 
   const goals = [
     { icon: '💰', label: 'Primer UpCoin ganado',    target: 0.02,  curr: saldo,        fmt: v => '🪙 ' + (v / 0.02).toFixed(1) },
-    { icon: '📥', label: '50 descargas',             target: 50,    curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '📥', label: '50 anuncios vistos',            target: 50,    curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '📦', label: '5 publicaciones',          target: 5,     curr: totalContent, fmt: v => v },
-    { icon: '🚀', label: '100 descargas',            target: 100,   curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '🚀', label: '100 anuncios vistos',           target: 100,   curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '💸', label: 'Retiro disponible (500 UC)', target: 10,  curr: saldo,        fmt: v => '🪙 ' + Math.floor(v / 0.02) },
     { icon: '🏆', label: '10 publicaciones',         target: 10,    curr: totalContent, fmt: v => v },
-    { icon: '⭐', label: '500 descargas',            target: 500,   curr: totalDl,      fmt: v => pfFmt(v) },
-    { icon: '🔥', label: '1 000 descargas',          target: 1000,  curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '⭐', label: '500 anuncios vistos',           target: 500,   curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '🔥', label: '1 000 anuncios vistos',         target: 1000,  curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '👑', label: '10 contenidos monetizados',target: 10,    curr: elegibles,    fmt: v => v },
-    { icon: '💎', label: '5 000 descargas',          target: 5000,  curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '💎', label: '5 000 anuncios vistos',         target: 5000,  curr: totalDl,      fmt: v => pfFmt(v) },
   ];
 
   el.innerHTML = goals.map(g => {

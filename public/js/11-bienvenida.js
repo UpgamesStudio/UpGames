@@ -110,7 +110,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
       f.querySelector('.oba-brillo').style.transform = `translateX(${lerp(-120, 520, ((t - a - 2.9) % 2.6) / 2.6)}%) skewX(-20deg)`;
       f.querySelector('.obh-medalla').style.transform = reducido ? '' : `rotateY(${Math.max(0, 1 - en(t, a + 2.5, 1.2)) * 360}deg)`;
     }
-    // 3 · Publica una vez, gana UpCoins: contador de descargas → +50 UC, regalos y retiros
+    // 3 · Publica una vez, gana UpCoins: contador de anuncios vistos → +75 UC, regalos y retiros
     if (t > CAPS[3] - .5 && t < CAPS[4] + .5) {
       const a = CAPS[3];
       entra(caps[3].querySelector('.oba-kicker'), en(t, a + .1, .5));
@@ -171,7 +171,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
 
 // ── BIENVENIDA — animación + términos ───────────────────
 (function initOnboarding() {
-  const TERMINOS_VERSION = '7.3';   // súbela al cambiar los Términos o la Privacidad
+  const TERMINOS_VERSION = '7.4';   // súbela al cambiar los Términos o la Privacidad
   // La bienvenida animada (con la aceptación de términos y privacidad) es OBLIGATORIA:
   //  · sin cuenta: una vez al día (día de Colombia);
   //  · con cuenta: cada vez que inicia sesión (cada inicio trae un token nuevo; se guarda
@@ -189,7 +189,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
   }
   function avisoTerminosNuevos() {
     const a = document.createElement('div'); a.className = 'ug-terminos-aviso'; a.setAttribute('role', 'status');
-    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: ahora bajo la ley colombiana, a los creadores se les paga solo por descargas efectivas (no por vistas) y saltar la espera es solo con Premium.</span><button type="button">Entendido</button>`;
+    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: UpGames ya no paga por descargas. A los creadores se les paga por visualizaciones de publicidad, y la tarifa sube a US$1,50 por cada 1.000.</span><button type="button">Entendido</button>`;
     a.querySelector('button').onclick = () => { LS.set('upgames_terms_v', TERMINOS_VERSION); a.remove(); };
     setTimeout(() => document.body.appendChild(a), 2500);
   }

@@ -1,0 +1,296 @@
+/* ═══════════════════════════════════════════════════════════════
+   UpGames · NEO — acabado premium del tema Cyber
+   ───────────────────────────────────────────────────────────────
+   Última capa del paquete (después de upgames-ux.css). El tema Cyber
+   pone la identidad (verde neón, Orbitron, hexágonos); esta capa la
+   refresca: superficies de cristal con bordes finos, esquinas
+   redondeadas, aurora verde → cian → violeta, tipografía más legible
+   y sombras con profundidad. Sin líneas de escaneo sobre el contenido.
+
+     1. Fondo y atmósfera           5. Tarjetas del catálogo
+     2. Cabecera y búsqueda         6. Botones
+     3. Chips                       7. Ficha, modales y formularios
+     4. Portada y secciones         8. Navegación inferior
+                                    9. Economía · 10. Detalles
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. FONDO Y ATMÓSFERA ─────────────────────────────────── */
+html[data-tema="cyber"] body { font-weight: 400; letter-spacing: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+html[data-tema="cyber"] body::before {
+  background:
+    radial-gradient(48% 38% at 88% -4%, rgba(57,255,136,.16), transparent 70%),
+    radial-gradient(42% 34% at 4% 8%, rgba(92,225,255,.11), transparent 70%),
+    radial-gradient(50% 40% at 50% 112%, rgba(143,123,255,.16), transparent 70%),
+    linear-gradient(180deg, #05080F 0%, #04060B 60%, #03050A 100%);
+}
+/* Rejilla del suelo: más fina y tranquila */
+html[data-tema="cyber"] body::after {
+  background-image:
+    linear-gradient(rgba(92,225,255,.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143,123,255,.14) 1px, transparent 1px);
+  opacity: .32; animation-duration: 5s;
+}
+/* Fuera las líneas de escaneo sobre toda la pantalla: solo queda un barrido de luz muy leve */
+html[data-tema="cyber"] .cb-scan { background: none; }
+html[data-tema="cyber"] .cb-scan::after { background: linear-gradient(transparent, rgba(92,225,255,.028), transparent); animation-duration: 11s; }
+html[data-tema="cyber"] ::selection { background: rgba(57,255,136,.32); color: #fff; }
+html[data-tema="cyber"] ::-webkit-scrollbar { width: 10px; height: 10px; }
+html[data-tema="cyber"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+html[data-tema="cyber"] ::-webkit-scrollbar-thumb:hover { background: rgba(57,255,136,.45); background-clip: padding-box; }
+
+/* ── 2. CABECERA Y BÚSQUEDA ───────────────────────────────── */
+html[data-tema="cyber"] #app-header {
+  background: linear-gradient(180deg, rgba(4,6,11,.86), rgba(4,6,11,.62)) !important;
+  backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 14px 40px -22px rgba(0,0,0,.95) !important;
+}
+html[data-tema="cyber"] #app-header::after { height: 1px; opacity: .55; box-shadow: none; }
+html[data-tema="cyber"] .hdr-logo, html[data-tema="cyber"] .pl-logo, html[data-tema="cyber"] .top-bar-logo { letter-spacing: .06em !important; }
+html[data-tema="cyber"] .hdr-logo .up, html[data-tema="cyber"] .pl-logo .up, html[data-tema="cyber"] .top-bar-logo .up {
+  background: linear-gradient(120deg, #39FF88, #5CE1FF); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent !important; text-shadow: none !important;
+  filter: drop-shadow(0 0 10px rgba(57,255,136,.45));
+}
+html[data-tema="cyber"] .hdr-logo .gm, html[data-tema="cyber"] .pl-logo .gm { text-shadow: none !important; animation: none; }
+
+html[data-tema="cyber"] #buscador {
+  font-weight: 500; font-size: .92rem; letter-spacing: 0;
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid rgba(255,255,255,.1) !important; border-radius: 14px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  transition: border-color .2s, box-shadow .25s, background .2s;
+}
+html[data-tema="cyber"] #buscador::placeholder { font-family: var(--ff); font-size: .86rem; letter-spacing: 0; color: var(--txt3); }
+html[data-tema="cyber"] #buscador:focus {
+  background: rgba(255,255,255,.06) !important; border-color: rgba(57,255,136,.7) !important;
+  box-shadow: 0 0 0 4px rgba(57,255,136,.12), 0 10px 30px -14px rgba(57,255,136,.5) !important;
+}
+html[data-tema="cyber"] .search-bar svg { filter: none; opacity: .9; }
+html[data-tema="cyber"] #autocomplete-dropdown {
+  background: rgba(9,13,22,.96) !important; border: 1px solid rgba(255,255,255,.1) !important; border-radius: 16px !important;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 24px 60px -20px rgba(0,0,0,.9) !important; overflow: hidden;
+}
+html[data-tema="cyber"] .search-bar .nxb-btn { background: var(--cb-aurora); }
+html[data-tema="cyber"] .hdr-orb { background: linear-gradient(135deg, rgba(57,255,136,.3), rgba(92,225,255,.28) 60%, rgba(143,123,255,.3)) !important; }
+
+/* ── 3. CHIPS ─────────────────────────────────────────────── */
+html[data-tema="cyber"] #category-row { gap: 8px; }
+html[data-tema="cyber"] #category-row .chip {
+  font-weight: 600 !important; letter-spacing: .04em; font-size: .72rem !important;
+  border-radius: 999px !important; clip-path: none;
+  background: rgba(255,255,255,.045) !important; color: var(--txt2) !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  padding-left: 15px !important; padding-right: 15px !important;
+  transition: background .2s, color .2s, border-color .2s, box-shadow .25s, transform .15s;
+}
+html[data-tema="cyber"] #category-row .chip:hover { color: #fff !important; border-color: rgba(57,255,136,.55) !important; background: rgba(57,255,136,.08) !important; }
+html[data-tema="cyber"] #category-row .chip:active { transform: scale(.96); }
+html[data-tema="cyber"] #category-row .chip.active {
+  background: linear-gradient(120deg, #39FF88, #5CE1FF) !important; color: #031109 !important; border-color: transparent !important;
+  box-shadow: 0 8px 22px -8px rgba(57,255,136,.75) !important;
+}
+html[data-tema="cyber"] #category-row .chip--video { border-color: rgba(92,225,255,.35) !important; color: var(--cy) !important; }
+html[data-tema="cyber"] #category-row .chip--video.active { background: linear-gradient(120deg, #5CE1FF, #8F7BFF) !important; color: #050A1A !important; box-shadow: 0 8px 22px -8px rgba(92,225,255,.75) !important; }
+
+/* ── 4. PORTADA Y SECCIONES ───────────────────────────────── */
+html[data-tema="cyber"] #hero-carousel {
+  border-radius: 22px !important; border: 1px solid rgba(255,255,255,.1) !important; overflow: hidden;
+  box-shadow: 0 30px 70px -34px rgba(0,0,0,.95), 0 0 0 1px rgba(57,255,136,.06), 0 24px 80px -50px rgba(57,255,136,.55) !important;
+}
+/* Sin tramas sobre la imagen: solo un filo de luz arriba */
+html[data-tema="cyber"] #hero-carousel::before {
+  background: linear-gradient(90deg, transparent, rgba(57,255,136,.9) 30%, rgba(92,225,255,.9) 70%, transparent) top / 100% 1px no-repeat;
+}
+html[data-tema="cyber"] .hero-title {
+  font-weight: 800 !important; letter-spacing: .02em !important; line-height: 1.08 !important;
+  text-shadow: 0 2px 24px rgba(0,0,0,.75);
+}
+html[data-tema="cyber"] .hero-badge {
+  clip-path: none; border-radius: 999px !important; font-weight: 700; letter-spacing: .06em;
+  background: linear-gradient(120deg, #39FF88, #5CE1FF) !important; box-shadow: 0 6px 18px -6px rgba(57,255,136,.8);
+}
+html[data-tema="cyber"] .hero-user, html[data-tema="cyber"] .hero-meta { color: #D8FCE8 !important; }
+html[data-tema="cyber"] .hero-arrow {
+  border-radius: 50% !important; background: rgba(4,6,11,.5) !important; border: 1px solid rgba(255,255,255,.18) !important; color: #fff !important;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: background .2s, border-color .2s, transform .2s;
+}
+html[data-tema="cyber"] .hero-arrow:hover { background: rgba(57,255,136,.18) !important; border-color: var(--g) !important; transform: scale(1.06); }
+html[data-tema="cyber"] .hero-dot { border-radius: 999px !important; }
+html[data-tema="cyber"] .hero-dot.active { background: linear-gradient(90deg, #39FF88, #5CE1FF) !important; box-shadow: 0 0 10px rgba(57,255,136,.7); }
+
+html[data-tema="cyber"] .section-title {
+  font-size: .86rem !important; letter-spacing: .09em !important; color: #fff !important; text-shadow: none;
+}
+html[data-tema="cyber"] .section-count { font-size: .7rem; }
+
+/* ── 5. TARJETAS DEL CATÁLOGO ─────────────────────────────── */
+html[data-tema="cyber"] .game-tile {
+  border-radius: 18px !important;
+  background: linear-gradient(165deg, rgba(20,28,44,.72), rgba(9,13,22,.86)) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: 0 16px 36px -22px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06) !important;
+  overflow: hidden;
+  transition: transform .4s cubic-bezier(.22,1,.36,1), border-color .25s, box-shadow .35s !important;
+}
+/* Las esquinas HUD pasan a ser un filo de luz arriba que se enciende al pasar */
+html[data-tema="cyber"] .game-tile::before {
+  inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(57,255,136,.9) 30%, rgba(92,225,255,.9) 70%, transparent);
+  opacity: 0; transition: opacity .3s;
+}
+html[data-tema="cyber"] .game-tile::after { background: linear-gradient(105deg, transparent 40%, rgba(92,225,255,.12) 47%, rgba(255,255,255,.12) 52%, transparent 58%); }
+@media (hover: hover) {
+  html[data-tema="cyber"] .game-tile:hover {
+    transform: translateY(-6px) !important; border-color: rgba(57,255,136,.5) !important;
+    background: linear-gradient(165deg, rgba(24,34,54,.82), rgba(10,15,26,.9)) !important;
+    box-shadow: 0 28px 54px -26px rgba(0,0,0,.95), 0 20px 50px -28px rgba(57,255,136,.6), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+  html[data-tema="cyber"] .game-tile:hover .thumb-wrap img { transform: scale(1.05); }
+}
+html[data-tema="cyber"] .game-tile .thumb-wrap { border-radius: 13px !important; margin: 6px 6px 0 !important; overflow: hidden; }
+html[data-tema="cyber"] .game-tile .thumb-wrap img { transition: transform .7s cubic-bezier(.22,1,.36,1); }
+html[data-tema="cyber"] .game-tile .thumb-wrap::after { background: linear-gradient(180deg, transparent 60%, rgba(4,6,11,.6)); }
+html[data-tema="cyber"] .tile-cat { font-size: .62rem !important; letter-spacing: .14em !important; font-weight: 500 !important; color: var(--g) !important; }
+html[data-tema="cyber"] .tile-cat::before { content: ''; }
+html[data-tema="cyber"] .tile-title { font-weight: 600 !important; font-size: .92rem !important; letter-spacing: -.005em !important; line-height: 1.22 !important; }
+html[data-tema="cyber"] .tile-user, html[data-tema="cyber"] .tile-downloads, html[data-tema="cyber"] .tile-meta { font-size: .68rem; }
+html[data-tema="cyber"] .tile-avatar { background: linear-gradient(135deg, #5CE1FF, #8F7BFF) !important; }
+html[data-tema="cyber"] .tile-extra-badge { border-radius: 8px !important; border-color: rgba(255,255,255,.1) !important; color: var(--txt2) !important; background: rgba(255,255,255,.04) !important; }
+html[data-tema="cyber"] .tile-status {
+  border-radius: 999px !important; font-size: .58rem; letter-spacing: .1em; font-weight: 700;
+  background: rgba(4,6,11,.62) !important; border: 1px solid rgba(255,255,255,.14) !important;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+html[data-tema="cyber"] .tile-status.online { text-shadow: none; border-color: rgba(57,255,136,.45) !important; }
+html[data-tema="cyber"] .tile-fav-quick { background: rgba(4,6,11,.6) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+html[data-tema="cyber"] .tile-fav-quick.active { color: #FF5C8A !important; filter: drop-shadow(0 0 6px rgba(255,92,138,.8)); }
+html[data-tema="cyber"] .skeleton-card, html[data-tema="cyber"] .skel { border-radius: 18px !important; background: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.08), rgba(255,255,255,.03)) !important; background-size: 200% 100% !important; }
+html[data-tema="cyber"] .empty-state h3 { color: #fff; text-shadow: none; letter-spacing: .06em; }
+
+/* ── 6. BOTONES ───────────────────────────────────────────── */
+html[data-tema="cyber"] .sheet-download, html[data-tema="cyber"] .pf-btn-submit, html[data-tema="cyber"] .pf-btn-save,
+html[data-tema="cyber"] .btn-login-action, html[data-tema="cyber"] .empty-action, html[data-tema="cyber"] #hdr-entrar,
+html[data-tema="cyber"] .btn-seguir, html[data-tema="cyber"] .btn-volver-inicio, html[data-tema="cyber"] .ob-btn-accept {
+  border-radius: 14px !important; clip-path: none;
+  font-weight: 800 !important; letter-spacing: .08em !important;
+  background: linear-gradient(120deg, #39FF88 0%, #4BF0C4 55%, #5CE1FF 100%) !important; color: #031109 !important;
+  box-shadow: 0 12px 30px -12px rgba(57,255,136,.8), inset 0 1px 0 rgba(255,255,255,.45) !important;
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .25s, filter .2s !important;
+}
+html[data-tema="cyber"] .sheet-download:hover, html[data-tema="cyber"] .pf-btn-submit:hover, html[data-tema="cyber"] .pf-btn-save:hover,
+html[data-tema="cyber"] .btn-login-action:hover, html[data-tema="cyber"] .empty-action:hover, html[data-tema="cyber"] #hdr-entrar:hover,
+html[data-tema="cyber"] .btn-seguir:hover:not(:disabled) {
+  filter: brightness(1.06); animation: none; transform: translateY(-2px);
+  box-shadow: 0 18px 38px -12px rgba(57,255,136,.95), inset 0 1px 0 rgba(255,255,255,.5) !important;
+}
+html[data-tema="cyber"] .empty-action--nexus, html[data-tema="cyber"] .btn-seguir.btn-siguiendo {
+  background: rgba(57,255,136,.06) !important; color: var(--g) !important; box-shadow: inset 0 0 0 1px rgba(57,255,136,.5) !important;
+}
+html[data-tema="cyber"] #hdr-entrar { clip-path: none; border-radius: 12px !important; padding-left: 18px !important; padding-right: 18px !important; }
+
+/* ── 7. FICHA, MODALES Y FORMULARIOS ──────────────────────── */
+html[data-tema="cyber"] #detail-sheet, html[data-tema="cyber"] .modal-sheet, html[data-tema="cyber"] .pf-modal-sheet {
+  background: linear-gradient(180deg, rgba(13,19,32,.97), rgba(5,8,14,.99)) !important;
+  border-radius: 26px 26px 0 0 !important; border: 1px solid rgba(255,255,255,.1) !important; border-bottom: 0 !important;
+  box-shadow: 0 -24px 80px -20px rgba(0,0,0,.9), 0 -10px 60px -30px rgba(57,255,136,.35) !important;
+}
+html[data-tema="cyber"] #detail-sheet::before, html[data-tema="cyber"] .pf-modal-sheet::before { left: 26px; right: 26px; height: 1px; box-shadow: none; opacity: .8; }
+html[data-tema="cyber"] .sheet-handle, html[data-tema="cyber"] .modal-handle, html[data-tema="cyber"] .pf-modal-handle { background: rgba(255,255,255,.28) !important; box-shadow: none; height: 4px !important; border-radius: 4px !important; }
+html[data-tema="cyber"] .sheet-media { border-radius: 18px !important; }
+html[data-tema="cyber"] .sheet-title, html[data-tema="cyber"] .pf-modal-hdr-title { letter-spacing: .02em !important; text-shadow: none; }
+html[data-tema="cyber"] .sheet-cat::before { content: ''; }
+html[data-tema="cyber"] .sheet-stats > *, html[data-tema="cyber"] .stat-box {
+  border-radius: 14px !important; background: rgba(255,255,255,.04) !important; border: 1px solid rgba(255,255,255,.08) !important;
+}
+html[data-tema="cyber"] .stat-val, html[data-tema="cyber"] .pf2-stat b, html[data-tema="cyber"] .stat-number { text-shadow: none; font-weight: 700; }
+html[data-tema="cyber"] .sheet-desc { font-size: .94rem !important; line-height: 1.62 !important; }
+html[data-tema="cyber"] .action-pill {
+  clip-path: none; border-radius: 12px !important; letter-spacing: .04em; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.1) !important; background: rgba(255,255,255,.045) !important;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+html[data-tema="cyber"] .action-pill:hover { border-color: rgba(57,255,136,.5) !important; background: rgba(57,255,136,.08) !important; }
+html[data-tema="cyber"] .sheet-close, html[data-tema="cyber"] .pf-modal-close { background: rgba(255,255,255,.1) !important; color: #fff !important; }
+html[data-tema="cyber"] .ds-ask-nexus, html[data-tema="cyber"] .nxb-banner {
+  background: linear-gradient(135deg, rgba(143,123,255,.16), rgba(92,225,255,.07)) !important; border: 1px solid rgba(143,123,255,.4) !important; border-radius: 16px !important;
+}
+html[data-tema="cyber"] .nxc-btn { border-radius: 16px !important; }
+html[data-tema="cyber"] .nxc-bar, html[data-tema="cyber"] .nxc-bar i { border-radius: 8px; }
+html[data-tema="cyber"] .nxc-bar { background: rgba(255,255,255,.07); }
+html[data-tema="cyber"] .nxc-bar i { background: var(--nxc); }
+html[data-tema="cyber"] .nxc-bad { --nxc: #FF5C7A; }
+html[data-tema="cyber"] .nxb-chip { background: rgba(143,123,255,.2) !important; border-radius: 999px !important; }
+
+html[data-tema="cyber"] .cc-box, html[data-tema="cyber"] .custom-confirm-box { border-radius: 22px !important; border: 1px solid rgba(255,255,255,.1) !important; box-shadow: 0 40px 90px -30px rgba(0,0,0,.95), 0 0 0 1px rgba(57,255,136,.08) !important; }
+html[data-tema="cyber"] .pf2-cover, html[data-tema="cyber"] .hero-cover { border-radius: 0 0 22px 22px !important; }
+html[data-tema="cyber"] .pf2-cover::before, html[data-tema="cyber"] .hero-cover::before { background: linear-gradient(120deg, rgba(57,255,136,.1), transparent 45%, rgba(143,123,255,.14)); }
+html[data-tema="cyber"] .pf2-create { border-radius: 18px !important; }
+html[data-tema="cyber"] .pf-cat-btn { clip-path: none; border-radius: 14px !important; background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.09) !important; }
+html[data-tema="cyber"] .pfp-paso-h span, html[data-tema="cyber"] .pfp-num { background: linear-gradient(135deg, #39FF88, #5CE1FF) !important; }
+
+/* Campos: un mismo lenguaje en toda la app */
+html[data-tema="cyber"] input[type="text"], html[data-tema="cyber"] input[type="email"], html[data-tema="cyber"] input[type="password"],
+html[data-tema="cyber"] input[type="url"], html[data-tema="cyber"] input[type="number"], html[data-tema="cyber"] input[type="search"],
+html[data-tema="cyber"] textarea, html[data-tema="cyber"] select { font-family: var(--ff); }
+
+/* ── 8. NAVEGACIÓN INFERIOR ───────────────────────────────── */
+html[data-tema="cyber"] #bottom-nav {
+  border-radius: 24px !important; background: rgba(9,13,22,.78) !important;
+  backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.1) !important;
+  box-shadow: 0 24px 60px -18px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px rgba(57,255,136,.05) !important;
+}
+html[data-tema="cyber"] #bottom-nav::before { left: 28px; right: 28px; opacity: .6; box-shadow: none; }
+html[data-tema="cyber"] .nav-tab { font-weight: 600 !important; letter-spacing: .05em; }
+html[data-tema="cyber"] .nav-tab span { font-size: .6rem !important; }
+html[data-tema="cyber"] .nav-tab.active { text-shadow: none; }
+html[data-tema="cyber"] .ug-nav-pill { border-radius: 16px !important; background: linear-gradient(160deg, rgba(57,255,136,.16), rgba(92,225,255,.08)) !important; border: 1px solid rgba(57,255,136,.35) !important; box-shadow: 0 8px 22px -10px rgba(57,255,136,.6) !important; }
+html[data-tema="cyber"] .nav-nexus-ring { background: radial-gradient(circle, rgba(143,123,255,.5), rgba(4,6,11,.9) 72%) !important; }
+html[data-tema="cyber"] .nav-nexus span { color: #CFC7FF !important; }
+html[data-tema="cyber"] #toast-container > *, html[data-tema="cyber"] .toast {
+  border-radius: 14px !important; font-family: var(--ff) !important; font-weight: 500; background: rgba(9,13,22,.94) !important;
+  border: 1px solid rgba(57,255,136,.4) !important; box-shadow: 0 18px 44px -16px rgba(0,0,0,.9), 0 0 0 1px rgba(57,255,136,.08) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+html[data-tema="cyber"] .pl-fill { background: var(--cb-aurora) !important; box-shadow: 0 0 14px rgba(57,255,136,.6); border-radius: 6px !important; }
+html[data-tema="cyber"] .pl-track { border-radius: 6px !important; background: rgba(255,255,255,.08) !important; }
+html[data-tema="cyber"] .top-bar { background: rgba(4,6,11,.72) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+html[data-tema="cyber"] .top-bar::after { opacity: .55; box-shadow: none; }
+
+/* ── 9. ECONOMÍA ──────────────────────────────────────────── */
+/* Tarjeta de tarifa: lo primero que ve un creador (US$1,50 por 1.000 anuncios vistos) */
+.eco-tarifa {
+  position: relative; overflow: hidden; margin: 0 12px 14px; padding: 18px 18px 16px; border-radius: 20px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(92,225,255,.16), transparent 55%),
+    radial-gradient(120% 140% at 0% 100%, rgba(57,255,136,.16), transparent 55%),
+    rgba(13,19,32,.72);
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 22px 50px -28px rgba(57,255,136,.55), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.eco-tarifa::before { content: ''; position: absolute; left: 18px; right: 18px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #39FF88 30%, #5CE1FF 70%, transparent); }
+.eco-tarifa-k { font-family: var(--ff-mono, ui-monospace, monospace); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: #39FF88; margin: 0 0 6px; }
+.eco-tarifa-v { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 0; }
+.eco-tarifa-v b {
+  font-family: var(--ff-disp, system-ui); font-weight: 900; font-size: 2.1rem; line-height: 1; letter-spacing: .01em;
+  background: linear-gradient(120deg, #39FF88, #5CE1FF); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+}
+.eco-tarifa-v span { font-size: .84rem; color: var(--txt2, #AEB7C4); }
+.eco-tarifa-d { margin: 10px 0 0; font-size: .8rem; line-height: 1.5; color: var(--txt2, #AEB7C4); }
+.eco-tarifa-d strong { color: #fff; font-weight: 600; }
+.eco-tarifa-pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.eco-tarifa-pasos li { padding: 10px 10px 9px; border-radius: 13px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); font-size: .7rem; line-height: 1.35; color: var(--txt2, #AEB7C4); }
+.eco-tarifa-pasos li b { display: block; font-family: var(--ff-mono, ui-monospace, monospace); font-size: .6rem; letter-spacing: .12em; color: #5CE1FF; margin-bottom: 3px; }
+@media (max-width: 380px) { .eco-tarifa-pasos { grid-template-columns: 1fr; } .eco-tarifa-v b { font-size: 1.8rem; } }
+
+html[data-tema="cyber"] .eco-panel, html[data-tema="cyber"] .eco-card, html[data-tema="cyber"] .eco-box {
+  border-radius: 18px !important;
+}
+html[data-tema="cyber"] .eco-panel-badge { border-radius: 999px !important; }
+
+/* ── 10. DETALLES ─────────────────────────────────────────── */
+html[data-tema="cyber"] :focus-visible { outline: 2px solid var(--g); outline-offset: 3px; border-radius: 6px; }
+html[data-tema="cyber"] a { text-underline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-tema="cyber"] .game-tile, html[data-tema="cyber"] .game-tile .thumb-wrap img { transition: none !important; }
+}

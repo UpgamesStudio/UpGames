@@ -320,7 +320,7 @@ async function renderEconomia() {
       <div class="empty-state" style="padding:40px 20px">
         <ion-icon name="person-circle-outline"></ion-icon>
         <h3>Inicia sesión</h3>
-        <p>Con una cuenta ganas dinero por cada descarga de lo que publicas, recibes regalos en tus lives y ganas UpCoins (la moneda de UpGames) que puedes gastar o retirar, y puedes hacerte Premium: sin anuncios y NEXUS ilimitado.</p><a href="${ugUrlLogin(true)}" class="btn-login-action" style="margin-top:14px;display:inline-flex">Crear cuenta gratis</a><p style="margin-top:10px;font-size:.82rem"><a href="${ugUrlLogin(false)}" style="color:#32D583">Ya tengo cuenta</a></p>
+        <p>Con una cuenta ganas dinero con la publicidad que ven quienes abren lo que publicas (US$1,50 por cada 1.000 visualizaciones), recibes regalos en tus lives y ganas UpCoins (la moneda de UpGames) que puedes gastar o retirar, y puedes hacerte Premium: sin anuncios y NEXUS ilimitado.</p><a href="${ugUrlLogin(true)}" class="btn-login-action" style="margin-top:14px;display:inline-flex">Crear cuenta gratis</a><p style="margin-top:10px;font-size:.82rem"><a href="${ugUrlLogin(false)}" style="color:#32D583">Ya tengo cuenta</a></p>
       </div>`;
     return;
   }
