@@ -244,10 +244,10 @@ function conGotas(mat) {
     sh.uniforms.uMojado = LLUVIA_CARROCERIA.mojado; sh.uniforms.uTiempoG = LLUVIA_CARROCERIA.tiempo; sh.uniforms.uSucio = mat.userData.sucio;
     // golpes: atributo por vértice (0 = intacto, 1 = muy golpeado). Donde el golpe es fuerte la
     // pintura salta a parches y asoma el tejido de carbono de debajo
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float golpe; varying float vGolpe; varying vec3 vPosCoche;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGolpe = golpe; vPosCoche = position;');
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float golpe; varying float vGolpe; varying vec3 vPosCoche; varying vec3 vNormCoche;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGolpe = golpe; vPosCoche = position; vNormCoche = normal;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      uniform float uMojado; uniform float uTiempoG; uniform float uSucio; varying float vGolpe; varying vec3 vPosCoche;
+      uniform float uMojado; uniform float uTiempoG; uniform float uSucio; varying float vGolpe; varying vec3 vPosCoche; varying vec3 vNormCoche;
       float ruidoG(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
         float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.55), b = fract(sin(dot(i + vec2(1, 0), vec2(127.1, 311.7))) * 43758.55);
         float c = fract(sin(dot(i + vec2(0, 1), vec2(127.1, 311.7))) * 43758.55), d = fract(sin(dot(i + vec2(1, 1), vec2(127.1, 311.7))) * 43758.55);
@@ -273,6 +273,9 @@ function conGotas(mat) {
         roughnessFactor = mix(roughnessFactor, 0.06, uMojado * 0.75);
         roughnessFactor = mix(roughnessFactor, 0.0, gG);
         diffuseColor.rgb *= 1.0 - 0.18 * uMojado;
+        // sombra propia: los bajos, los pasos de rueda y lo que mira al suelo reciben menos luz del cielo
+        float aoC = mix(0.5, 1.0, smoothstep(0.03, 0.42, vPosCoche.y)) * mix(0.62, 1.0, smoothstep(-0.75, 0.1, vNormCoche.y));
+        diffuseColor.rgb *= aoC;
         diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.7 + 0.22, gG * 0.55);
         if (uSucio > 0.01) {
           // polvo y goma: más en los bajos, tras las ruedas y en la zaga; a manchas, no uniforme
@@ -298,7 +301,7 @@ function conGotas(mat) {
         }
       #endif`);
   };
-  mat.customProgramCacheKey = () => 'libreaGotas4';
+  mat.customProgramCacheKey = () => 'libreaGotas5';
   return mat;
 }
 
@@ -334,12 +337,12 @@ const escamas = (n) => ({ normalMap: texturaEscamas(), normalScale: new THREE.Ve
 
 function materialLibreaBase(textura, acabado, fisico) {
   const base = { map: textura };
-  if (!fisico) return new THREE.MeshStandardMaterial({ ...base, metalness: acabado === 'cromado' || acabado === 'dorado' ? 0.8 : 0.3, roughness: acabado === 'mate' ? 0.8 : 0.35 });
+  if (!fisico) return new THREE.MeshStandardMaterial({ ...base, metalness: acabado === 'cromado' || acabado === 'dorado' ? 0.85 : 0.45, roughness: acabado === 'mate' ? 0.8 : 0.2, envMapIntensity: 1.5 });
   switch (acabado) {
     case 'mate': return new THREE.MeshPhysicalMaterial({ ...base, metalness: 0.1, roughness: 0.78, clearcoat: 0 });
     case 'perlado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.14), metalness: 0.3, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0.8, iridescenceIOR: 1.6, sheen: 0.4 });
     case 'cromado': return new THREE.MeshPhysicalMaterial({ ...base, metalness: 1, roughness: 0.07, clearcoat: 1, clearcoatRoughness: 0.02 });
     case 'dorado': return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.08), color: 0xffd27a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.03 });
-    default: return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.1), metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.45 });
+    default: return new THREE.MeshPhysicalMaterial({ ...base, ...escamas(0.1), metalness: 0.5, roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.025, envMapIntensity: 1.5 });
   }
 }

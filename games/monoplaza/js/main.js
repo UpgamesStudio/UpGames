@@ -1,4 +1,4 @@
-// APEX GP: arranque, menús, bucle de juego, render y HUD.
+// UpGames RACING: arranque, menús, bucle de juego, render y HUD.
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -165,6 +165,7 @@ function calidadInicial() {
   return mem >= 6 ? 1 : 0;
 }
 let calidad = calidadInicial();
+document.body.classList.toggle('sin-blur', calidad <= 1);
 
 // --- Estado global ----------------------------------------------------------
 let renderer, scene, composer, camara, efectos, escenario, circuito;
@@ -211,6 +212,9 @@ async function iniciar() {
   crearRenderer();
   await cargarImagenLibrea();
   await Promise.all([cargarCuerpo(), cargarCuerpoEscaneado()]); // cuerpos de los personajes: el escaneado (mecánicos y pilotos) y el de Studio
+  // (un mecánico de prueba: deja hechas la malla ligera y sus sombreadores, para que la primera
+  // entrada a boxes no dé un tirón)
+  try { new Persona({ rol: 'mecanico', calidad }); } catch (e) { console.warn('mecánico de prueba', e); }
   ponerCategoria(ajustes.categoria, false);
   await cargarCircuito(circuitoId);
   mostrar('menu');
@@ -439,24 +443,46 @@ function crearRenderer() {
 
 function pixelRatio() {
   const dpr = devicePixelRatio || 1;
-  // (resolución interna contenida: en un móvil de pantalla muy densa apenas se nota y es lo que más calienta)
-  return [Math.min(dpr, 1), Math.min(dpr, 1.15), Math.min(dpr, 1.35), Math.min(dpr, 1.6)][calidad] * escalaRes;
+  // resolución interna nítida desde la calidad media: lo que se recorta cuando el móvil no llega
+  // es antes la distancia de dibujo, las sombras y los efectos (ver ahorro) que los píxeles
+  return [Math.min(dpr, 1.1), Math.min(dpr, 1.5), Math.min(dpr, 1.75), Math.min(dpr, 2)][calidad] * escalaRes;
 }
-// Resolución dinámica (como en las consolas): con la calidad elegida, si los FPS caen por debajo
-// de 50 la resolución interna baja un poco (hasta el 70 %) y sube sola cuando sobra margen. Se
-// mantienen sombras, efectos y detalle; en pantallas de móvil de alta densidad apenas se nota.
-let escalaRes = 1, tResLento = 0, tResRapido = 0;
+// Rendimiento adaptable: si los FPS caen por debajo de 50, primero sube el nivel de ahorro
+// (distancia de dibujo y bruma más cerca, sombras refrescadas cada 2 o 3 fotogramas, sin distorsión
+// de calor ni desenfoque de velocidad); solo después baja la resolución, y poco (hasta el 85 % en
+// media, alta y ultra; 75 % en baja). Todo vuelve a subir solo cuando sobra margen.
+let escalaRes = 1, tResLento = 0, tResRapido = 0, ahorro = 0, cuadroSombra = 0;
+const AHORRO_DIST = [1, 0.8, 0.64, 0.5];
+const resMinima = () => (calidad >= 1 ? 0.85 : 0.75);
+function aplicarAhorro() {
+  if (!camara || !scene?.fog) return;
+  const k = AHORRO_DIST[ahorro], base = escenario?.base?.fogFar ?? scene.fog.far;
+  camara.cam.far = Math.max(1400, 9000 * k);
+  camara.cam.updateProjectionMatrix();
+  scene.fog.near = 420 * k;
+  scene.userData.ahorroDist = k;
+  lluviaFx?.forzar();
+  if (!lluviaFx) scene.fog.far = base * k;
+  renderer.shadowMap.autoUpdate = ahorro < 2;
+}
 function resolucionDinamica(fps) {
   if (ajustes.resDinamica === false) return;
   tResLento = fps < 50 ? tResLento + 1 : 0;
   tResRapido = fps > 58 ? tResRapido + 1 : 0;
-  let nueva = escalaRes;
-  // a la resolución mínima y aún lento (< 40 fps): se baja la calidad gráfica (sombras, efectos)
-  if (tResLento >= 4 && escalaRes <= 0.6 && fps < 40 && calidad > 0 && ajustes.calidad === 'auto') {
+  // a lo mínimo de todo y aún lento (< 40 fps): se baja la calidad gráfica
+  if (tResLento >= 4 && ahorro >= 3 && escalaRes <= resMinima() && fps < 40 && calidad > 0 && ajustes.calidad === 'auto') {
     tResLento = 0; cambiarCalidad(calidad - 1); mensaje('CALIDAD AJUSTADA', 'Para ir más fluido', 1.2); return;
   }
-  if (tResLento >= 2 && escalaRes > 0.6) { nueva = Math.max(0.6, escalaRes - 0.1); tResLento = 0; }
-  else if (tResRapido >= 5 && escalaRes < 1) { nueva = Math.min(1, escalaRes + 0.1); tResRapido = 0; }
+  let nueva = escalaRes;
+  if (tResLento >= 2) {
+    tResLento = 0;
+    if (ahorro < 3) { ahorro++; aplicarAhorro(); return; }
+    if (escalaRes > resMinima()) nueva = Math.max(resMinima(), escalaRes - 0.05);
+  } else if (tResRapido >= 5) {
+    tResRapido = 0;
+    if (escalaRes < 1) nueva = Math.min(1, escalaRes + 0.05);
+    else if (ahorro > 0) { ahorro--; aplicarAhorro(); return; }
+  }
   if (nueva === escalaRes) return;
   escalaRes = nueva;
   renderer.setPixelRatio(pixelRatio());
@@ -542,7 +568,20 @@ function actualizarGotas(dt) {
 }
 
 /** En calidad media el compositor solo se usa mientras hay calor que dibujar (ahorra un pase). */
+// punto del asfalto junto al coche que se mira y su pendiente: ahí caen las salpicaduras de la lluvia
+const _sueloLl = { x: 0, y: 0, z: 0, px: 0, pz: 0 };
+function sueloLluvia() {
+  const car = sesion?.jugador?.coche, c = circuito;
+  if (!car || !c || calidad < 1) return null;
+  const cp = camara.cam.position;
+  if ((car.x - cp.x) ** 2 + (car.z - cp.z) ** 2 > 60 * 60) return null;
+  const i = car.proj?.i ?? 0, pend = c.pendiente?.[i] || 0, tx = c.tx?.[i] ?? 1, tz = c.tz?.[i] ?? 0;
+  _sueloLl.x = car.x; _sueloLl.y = car.y; _sueloLl.z = car.z; _sueloLl.px = pend * tx; _sueloLl.pz = pend * tz;
+  return _sueloLl;
+}
 function renderizar() {
+  // con ahorro, las sombras se refrescan cada 2 o 3 fotogramas (apenas se nota y ahorra una pasada entera)
+  if (ahorro >= 2) renderer.shadowMap.needsUpdate = (++cuadroSombra % ahorro) === 0;
   const usar = composer && (calidad >= 2 || pasoCalor?.enabled);
   if (usar) composer.render(); else renderer.render(scene, camara.cam);
 }
@@ -621,7 +660,7 @@ function actualizarCalor(dt, coches, jugadorCoche) {
   _pc.copy(cam.position).addScaledVector(cam.getWorldDirection(_fw).setY(0).normalize(), 500).project(cam);
   u.horizonte.value = Math.min(0.95, Math.max(0.05, _pc.y * 0.5 + 0.5));
   u.suelo.value += (fuerza * (escenario?.hora === 'dia' ? 1 : 0.35) - u.suelo.value) * Math.min(1, dt * 1.5);
-  pasoCalor.enabled = k > 0;
+  pasoCalor.enabled = k > 0 && ahorro === 0;
 }
 
 // Desenfoque por velocidad: zoom radial suave hacia los bordes (el centro queda nítido)
@@ -685,7 +724,7 @@ const DESENFOQUE_VELOCIDAD = {
 function actualizarDesenfoque(v, dt) {
   if (!pasoVelocidad) return;
   const activo = ajustes.desenfoque !== false && ['cabina', 'tcam', 'persecucion', 'cercana'].includes(camara.modo);
-  const obj = activo ? Math.max(0, Math.min(1, (v * 3.6 - 180) / 150)) * 0.035 : 0;
+  const obj = activo && ahorro === 0 ? Math.max(0, Math.min(1, (v * 3.6 - 200) / 150)) * 0.022 : 0;
   const u = pasoVelocidad.uniforms.fuerza;
   u.value += (obj - u.value) * Math.min(1, dt * 4);
   pasoVelocidad.enabled = u.value > 0.0015;      // a pantalla completa cuesta: fuera cuando no se nota
@@ -702,6 +741,8 @@ function redimensionar() {
 function cambiarCalidad(nueva) {
   if (nueva === calidad) return;
   calidad = nueva; if (escenario) escenario.calidad = nueva;
+  escalaRes = 1; ahorro = 0; aplicarAhorro();
+  document.body.classList.toggle('sin-blur', calidad <= 1);
   renderer.setPixelRatio(pixelRatio());
   renderer.shadowMap.enabled = true;
   escenario.luzSol.castShadow = true;
@@ -801,9 +842,9 @@ function crearModelos() {
 // ni trazada ideal (el cambio automático queda para todos, igual que en el resto de pilotos)
 const AYUDAS_RED = { tc: 0, abs: false, cambioAuto: true, direccion: false, estabilidad: false, frenada: false };
 function ayudasDe(red = enRed) {
-  if (red) return { ...AYUDAS_RED };
-  // los GT y los Stock Car llevan de serie ABS y control de tracción (como los de verdad)
+  // los GT y los Stock Car llevan de serie ABS y control de tracción (como los de verdad), también en línea
   const cerrado = CAT.id !== 'f1';
+  if (red) return cerrado ? { ...AYUDAS_RED, tc: 1, abs: true } : { ...AYUDAS_RED };
   return { tc: cerrado ? Math.max(1, +ajustes.tc) : +ajustes.tc, abs: cerrado ? true : ajustes.abs, cambioAuto: ajustes.cambioAuto, direccion: ajustes.direccion, estabilidad: ajustes.estabilidad, frenada: ajustes.frenada !== false };
 }
 
@@ -1633,7 +1674,7 @@ function procesarEventos() {
       const k = sesion.participantes.indexOf(e.p);
       // día de calor: le pasan agua al piloto mientras cambian las ruedas
       if (e.trabajo) e.trabajo.bebida = escenario?.hora === 'dia' && (sesion.clima?.lluvia || 0) < 0.05;
-      gestorBoxes.empezar(k, e.p.coche, modelos[k], { color: e.p.equipo.base, texto: e.p.equipo.corto === 'UPG' ? 'UPGAMES' : e.p.equipo.nombre.split(' ')[0].toUpperCase(), compuesto: e.p.paradaInfo?.compuesto, duracion: e.duracion, morro: e.morro, trabajo: e.trabajo });
+      gestorBoxes.empezar(k, e.p.coche, modelos[k], { color: e.p.equipo.base, texto: e.p.equipo.corto === 'UPG' ? 'UPGAMES' : e.p.equipo.nombre.split(' ')[0].toUpperCase(), compuesto: e.p.paradaInfo?.compuesto, duracion: e.duracion, morro: e.morro, trabajo: e.trabajo, ligero: !e.p.jugador });
       if (e.p.jugador) paradaJugador = { t0: performance.now(), duracion: e.duracion, k };
       if (e.p.jugador) radio.decir('Gatos arriba. Ruedas fuera…', { clave: 'gatos', cada: 10 });
       if (e.p.jugador) { mensaje('PARADA EN BOXES', ['Neumáticos', e.morro && 'morro nuevo', e.trabajo?.susp && 'suspensión', e.trabajo?.alaDel && !e.morro && 'flap del alerón'].filter(Boolean).join(', '), 2); estadoRadio.avisoDesg = false; }
@@ -2083,7 +2124,7 @@ function bucle(ahora) {
   mojarCoches(sesion.clima.agua, sesion.clima.lluvia);
   { // lluvia y agua del lugar donde está la cámara (el frente puede cubrir solo una parte)
     const fc = sesion.clima.factor ? sesion.clima.factor((sesion.jugador?.coche.proj.s || 0) / circuito.largo) : 1;
-    lluviaFx.actualizar(dt, camara.cam.position, sesion.clima.lluvia * fc, sesion.clima.agua * fc, renderer, sesion.clima.sombraNubes?.() || 0);
+    lluviaFx.actualizar(dt, camara.cam.position, sesion.clima.lluvia * fc, sesion.clima.agua * fc, renderer, sesion.clima.sombraNubes?.() || 0, sueloLluvia(), sesion.viento);
   }
   nivelDetalle();
   if (efectos._escala !== camara.cam.fov) { efectos.ajustarEscala(innerHeight * renderer.getPixelRatio(), camara.cam.fov); efectos._escala = camara.cam.fov; }
@@ -2134,8 +2175,9 @@ function bucle(ahora) {
     if (ajustes.fps) $('#hFps').textContent = `${fpsMostrar.toFixed(0)} FPS · calidad ${['baja', 'media', 'alta', 'ultra'][calidad]}`;
     else $('#hFps').textContent = '';
     if (ajustes.calidad === 'auto' && jugando && !pausado) {
-      tLento = fpsMostrar < 40 ? tLento + 1 : 0;
-      if (tLento >= 4 && calidad > 0) { cambiarCalidad(calidad - 1); tLento = 0; }
+      // (la calidad solo baja cuando ya no queda nada más que recortar: ver resolucionDinamica)
+      tLento = fpsMostrar < 28 ? tLento + 1 : 0;
+      if (tLento >= 6 && calidad > 0) { cambiarCalidad(calidad - 1); tLento = 0; }
     }
     fpsAcum = 0; fpsN = 0;
   }
@@ -2478,7 +2520,7 @@ function prepararEquipo(p) {
   if (!p.box || k < 0) return;
   const c = circuito, sB = p.box.sBox, d = c.dCarrilPit(sB) + 2.2, m = c.muestra(sB);
   gestorBoxes.preparar(k, {
-    color: p.equipo.base, texto: p.equipo.corto === 'UPG' ? 'UPGAMES' : p.equipo.nombre.split(' ')[0].toUpperCase(), compuesto: p.solicitudBox,
+    color: p.equipo.base, texto: p.equipo.corto === 'UPG' ? 'UPGAMES' : p.equipo.nombre.split(' ')[0].toUpperCase(), compuesto: p.solicitudBox, ligero: !p.jugador,
     posicion: { x: m.x - m.tz * d, y: m.y, z: m.z + m.tx * d, psi: Math.atan2(m.tz, m.tx) },
   });
 }
@@ -2727,7 +2769,7 @@ function descargarPlantilla() {
   const cv = dibujarPlantilla(2048);
   cv.toBlob((b) => {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(b); a.download = 'apexgp-plantilla-librea.png';
+    a.href = URL.createObjectURL(b); a.download = 'upgames-racing-plantilla-librea.png';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }, 'image/png');
@@ -2918,8 +2960,8 @@ $('#bSalaListo').addEventListener('click', () => { const j = salaActual?.jugador
 $('#bSalaEmpezar').addEventListener('click', async () => { const r = await multi.iniciar(); if (!r?.ok) $('#salaInfo').textContent = r?.error || 'No se pudo empezar'; });
 $('#bSalaSalir').addEventListener('click', () => { if (espectando) multi.dejarEspectar(); multi.salir(); espectando = false; salaActual = null; abrirMulti(); });
 $('#bSalaCompartir').addEventListener('click', async () => {
-  const t = `¡Corre contra mí en APEX GP! Código de sala: ${salaActual?.codigo} · https://upgames.games/games/monoplaza/`;
-  try { if (navigator.share) await navigator.share({ title: 'APEX GP', text: t }); else { await navigator.clipboard.writeText(t); $('#salaInfo').textContent = 'Código copiado'; } } catch { /* cancelado */ }
+  const t = `¡Corre contra mí en UpGames RACING! Código de sala: ${salaActual?.codigo} · https://upgames.games/games/monoplaza/`;
+  try { if (navigator.share) await navigator.share({ title: 'UpGames RACING', text: t }); else { await navigator.clipboard.writeText(t); $('#salaInfo').textContent = 'Código copiado'; } } catch { /* cancelado */ }
 });
 
 // el servidor da la salida: todos arrancan la carrera a la vez con el mismo semáforo
@@ -3267,7 +3309,7 @@ function actualizarRepe(dt) {
   efectos.actualizar(dtR, [], camara.cam.position);
   { // lluvia y agua del lugar donde está la cámara (el frente puede cubrir solo una parte)
     const fc = sesion.clima.factor ? sesion.clima.factor((sesion.jugador?.coche.proj.s || 0) / circuito.largo) : 1;
-    lluviaFx.actualizar(dt, camara.cam.position, sesion.clima.lluvia * fc, sesion.clima.agua * fc, renderer, sesion.clima.sombraNubes?.() || 0);
+    lluviaFx.actualizar(dt, camara.cam.position, sesion.clima.lluvia * fc, sesion.clima.agua * fc, renderer, sesion.clima.sombraNubes?.() || 0, sueloLluvia(), sesion.viento);
   }
   escenario.luzSol.target.position.set(c.x, c.y, c.z);
   escenario.luzSol.position.copy(escenario.sol).multiplyScalar(250).add(escenario.luzSol.target.position);
@@ -3419,7 +3461,7 @@ async function exportarVideo() {
     await enc.flush();
     if (fallo) throw fallo;
     muxer.finalize();
-    const nombre = `APEX-GP-1080p60-${Date.now()}.mp4`;
+    const nombre = `UpGames-RACING-1080p60-${Date.now()}.mp4`;
     await guardarArchivo(new Blob([muxer.target.buffer], { type: 'video/mp4' }), nombre);
     mensajeRepe('Vídeo exportado: ' + nombre);
   } catch (e) { console.warn('exportar', e); mensajeRepe('No se pudo exportar el vídeo'); }
@@ -3569,9 +3611,9 @@ function guardarFoto() {
     // marca de agua
     const h = Math.max(18, cv.height * 0.035);
     x.font = `900 italic ${h}px system-ui, Arial`; x.textBaseline = 'bottom'; x.textAlign = 'right';
-    x.fillStyle = 'rgba(0,0,0,.45)'; x.fillText('APEX GP · UPGAMES', cv.width - h * 0.6 + 2, cv.height - h * 0.5 + 2);
-    x.fillStyle = '#fff'; x.fillText('APEX GP · UPGAMES', cv.width - h * 0.6, cv.height - h * 0.5);
-    cv.toBlob(b => { guardarArchivo(b, `apexgp-${circuito.id}-${Date.now()}.png`).catch(e => console.warn('foto', e)); }, 'image/png');
+    x.fillStyle = 'rgba(0,0,0,.45)'; x.fillText('UpGames RACING · UPGAMES', cv.width - h * 0.6 + 2, cv.height - h * 0.5 + 2);
+    x.fillStyle = '#fff'; x.fillText('UpGames RACING · UPGAMES', cv.width - h * 0.6, cv.height - h * 0.5);
+    cv.toBlob(b => { guardarArchivo(b, `upgames-racing-${circuito.id}-${Date.now()}.png`).catch(e => console.warn('foto', e)); }, 'image/png');
   } catch (e) { console.warn('foto', e); }
   const f = $('#flash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
   setTimeout(() => document.body.classList.remove('foto'), 400);
@@ -3856,7 +3898,7 @@ async function pintarRankings() {
   $('#rkLista').innerHTML = '<p class="nota">Cargando…</p>';
   try {
     if (rk.tab === 'mundial') {
-      $('#rkInfo').innerHTML = `Puntos del Campeonato de APEX GP en todo el mundo: cada carrera de campeonato suma (25-18-15-12-10-8-6-4-2-1, más en difícil y extremo). ${TXT_PREMIOS}`;
+      $('#rkInfo').innerHTML = `Puntos del Campeonato de UpGames RACING en todo el mundo: cada carrera de campeonato suma (25-18-15-12-10-8-6-4-2-1, más en difícil y extremo). ${TXT_PREMIOS}`;
       const d = await cuenta.rankingMundial(rk.periodo);
       const yo = cuenta.usuario();
       $('#rkLista').innerHTML = d.filas.length ? d.filas.map(f => `${f.pos === 6 && rk.periodo === 'semana' ? '<div class="corte">FIN DE LOS PREMIOS</div>' : ''}<div class="fila-q ${f.usuario === yo ? 'yo' : ''}"><b>${f.pos}</b><span>@${String(f.usuario).replace(/</g, '')} <small style="color:var(--tenue)">${f.carreras} carr.${f.victorias ? ` · 🏆${f.victorias}` : ''}</small></span><span>${f.puntos} pts</span><span>${MEDALLA(f.pos, rk.periodo === 'semana')}</span></div>`).join('') : '<p class="nota">Nadie ha puntuado esta semana. ¡Corre el campeonato y ponte primero!</p>';
@@ -3902,8 +3944,8 @@ $('#bRetar').addEventListener('click', async () => {
   try {
     const d = await cuenta.crearReto({ circuito: circuito.id, tiempo: f.tiempo, fantasma: fantasmaAServidor(f) });
     const url = `https://upgames.games/games/monoplaza/?reto=${d.id}`;
-    const txt = `¿Me ganas? ${fmt(d.tiempo)} en ${circuito.def.corto} · APEX GP`;
-    if (navigator.share) await navigator.share({ title: 'Reto APEX GP', text: txt, url }).catch(() => {});
+    const txt = `¿Me ganas? ${fmt(d.tiempo)} en ${circuito.def.corto} · UpGames RACING`;
+    if (navigator.share) await navigator.share({ title: 'Reto UpGames RACING', text: txt, url }).catch(() => {});
     else { await navigator.clipboard?.writeText(`${txt} ${url}`).catch(() => {}); }
     mensaje('RETO CREADO', navigator.share ? 'Compártelo con tus amigos' : 'Enlace copiado: pégalo a tus amigos', 2.5);
   } catch (e) { mensaje('NO SE PUDO CREAR EL RETO', e.message || '', 2.5); }
@@ -4012,9 +4054,9 @@ async function compartirCircuitoEd() {
   if (!edActual || !ED.revisar(edActual).ok) { $('#edEstado').innerHTML += '<br><b style="color:#ff6b6b">El circuito tiene errores: corrígelos para compartirlo</b>'; return; }
   edActual.nombre = ED.limpiarNombre($('#edNombre').value);
   const codigo = ED.codificar(edActual);
-  const t = `Corre en mi circuito «${edActual.nombre}» en APEX GP. Ábrelo en Crear circuito → Importar código:\n${codigo}`;
+  const t = `Corre en mi circuito «${edActual.nombre}» en UpGames RACING. Ábrelo en Crear circuito → Importar código:\n${codigo}`;
   try {
-    if (navigator.share) await navigator.share({ title: 'Circuito APEX GP', text: t });
+    if (navigator.share) await navigator.share({ title: 'Circuito UpGames RACING', text: t });
     else { await navigator.clipboard.writeText(codigo); $('#edEstado').innerHTML += '<br>Código copiado al portapapeles'; }
   } catch { prompt('Copia este código y compártelo:', codigo); }
 }

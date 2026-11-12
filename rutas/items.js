@@ -138,7 +138,7 @@ const LINKS_PERMITIDOS = ['mediafire.com', 'mega.nz', 'mega.co.nz', 'drive.googl
     'gofile.io', 'onedrive.live.com', 'icloud.com', 'proton.me', 'pcloud.com',
     'pixeldrain.com', '1fichier.com', 'qiwi.gg', 'krakenfiles.com', 'dropbox.com',
     'github.com', 'github.io', 'sto.romsfast.com', 'clarodrive.com',
-    // descargas oficiales de UpGames (APK de APEX GP): solo este servidor, no todo railway.app
+    // descargas oficiales de UpGames (APK de UpGames RACING): solo este servidor, no todo railway.app
     'upgames-production.up.railway.app'];
 
 // Devuelve null si el enlace es válido o un mensaje de error si no.

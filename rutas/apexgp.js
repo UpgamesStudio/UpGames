@@ -1,5 +1,5 @@
 /**
- * APEX GP (games/monoplaza): mejoras y cosméticos con UpCoins y salas multijugador.
+ * UpGames RACING (games/monoplaza): mejoras y cosméticos con UpCoins y salas multijugador.
  *
  *   GET  /apexgp/catalogo        mejoras, niveles, precios y cosméticos (público)
  *   GET  /apexgp/perfil          lo mío: mejoras, cosméticos, lo equipado y mis UpCoins
@@ -134,7 +134,7 @@ function registrar(app, deps) {
 
     // APK de Android con un enlace estable: el de GitHub redirige a una URL firmada que
     // caduca y que algunos gestores de descarga de Android no consiguen reanudar. Se sirve desde
-    // aquí (con una copia en memoria de 10 min) para APEX GP y para UPSTAR.
+    // aquí (con una copia en memoria de 10 min) para UpGames RACING y para UPSTAR.
     function servirApk(ruta, origen, nombre) {
         let apk = { buf: null, t: 0, cargando: null };
         async function cargar() {

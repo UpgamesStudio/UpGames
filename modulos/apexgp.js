@@ -1,5 +1,5 @@
 /**
- * APEX GP (games/monoplaza): catálogo de mejoras y cosméticos que se pagan con
+ * UpGames RACING (games/monoplaza): catálogo de mejoras y cosméticos que se pagan con
  * UpCoins, validación de lo que equipa cada piloto y lógica de las salas
  * multijugador (sin red: rutas/apexgp.js la conecta a Socket.IO).
  */

@@ -429,6 +429,17 @@ export class Monoplaza {
       angMax = Math.min(angMax, Math.max(0.05, util));
     }
     let delta = dir * angMax;
+    // el eje trasero empieza a irse (su deriva pasa del pico y el coche gira hacia dentro): la
+    // dirección asistida quita volante hacia el ángulo neutro, como haría un piloto al contravolantear
+    if (this.ayudas.direccion && !this.esIA && this.vx > 8) {
+      const tT = (this.ruedas[2].tanAlfa + this.ruedas[3].tanAlfa) / 2;
+      const uso = Math.abs(tT) / this.ruedas[2].neum.picoAlfa;
+      const exceso = clamp((uso - 1.3) / 0.8, 0, 1);
+      if (exceso > 0) {
+        const neutro = Math.atan2(this.vy + this.r * this.a, this.vx);
+        delta += (clamp(neutro, -COCHE.angMaxRueda, COCHE.angMaxRueda) - delta) * exceso * (CAT.id === 'f1' ? 0.6 : 0.9);
+      }
+    }
     if (this.ayudas.estabilidad && this.vx > 5) {
       const beta = Math.atan2(this.vy, this.vx);
       delta += clamp(beta * 0.6, -0.1, 0.1);
@@ -444,6 +455,7 @@ export class Monoplaza {
     // --- Tren motriz ------------------------------------------------------
     let acel = clamp(mand.acelerador, 0, 1);
     let freno = clamp(mand.freno, 0, 1);
+    const pedal = acel;
     this._cajaAutomatica(dt, acel, freno, v);
     if (this.marcha === -1) { const t = acel; acel = freno * 0.35; freno = t * 0.6; }
     if (this.ayudas.estabilidad && Math.abs(Math.atan2(this.vy, Math.max(1, this.vx))) > 0.14) acel *= 0.6;
@@ -462,11 +474,13 @@ export class Monoplaza {
     if (relacion !== 0 && !cambiando) {
       if (rpmRuedas >= COCHE.rpmEmbrague) {
         embragado = true;
-        this.rpm = rpmRuedas;
+        // (el embrague termina de entrar en unas centésimas: las vueltas no saltan de golpe)
+        this.rpm += (rpmRuedas - this.rpm) * Math.min(1, dt * 30);
       } else if (acel > 0.02) {
         // embrague patinando (salida / muy baja velocidad)
-        const objetivo = COCHE.rpmEmbrague + 3500 * acel;
-        this.rpm += (objetivo - this.rpm) * Math.min(1, dt * 8);
+        // (salida a fondo: el motor sube alto y el embrague entra de golpe; las ruedas patinan)
+        const objetivo = Math.max(rpmRuedas, COCHE.rpmEmbrague + 4800 * Math.max(acel, pedal * 0.8));
+        this.rpm += (objetivo - this.rpm) * Math.min(1, dt * 12);
       } else {
         this.rpm += (COCHE.rpmRalenti - this.rpm) * Math.min(1, dt * 4);
       }
@@ -477,7 +491,7 @@ export class Monoplaza {
     }
     this.limitador = false;
     // turbo: la presión llega con retraso al pisar (más a pocas vueltas) y se va enseguida al soltar
-    const tauTurbo = acel > this.turbo ? 0.12 + 0.38 * clamp(1 - this.rpm / 11000, 0, 1) : 0.05;
+    const tauTurbo = acel > this.turbo ? 0.08 + 0.24 * clamp(1 - this.rpm / 11000, 0, 1) : 0.05;
     this.turbo += (acel - this.turbo) * Math.min(1, dt / tauTurbo);
     // temperatura del motor: sube con la carga y baja con el aire; en el rebufo y el aire sucio
     // de otro coche entra aire caliente y poco caudal, y se recalienta
@@ -490,7 +504,9 @@ export class Monoplaza {
       // freno motor ajustable desde el volante (bajo, medio, alto)
       // (al pisar el freno la retención del motor se alivia: si no, se sumaba al freno trasero —sobre
       // todo en los coches cerrados, de desarrollos cortos— y bloqueaba el eje de atrás: trompo)
-      const fm = (COCHE.frenoMotor[0] + COCHE.frenoMotor[1] * this.rpm) * FRENO_MOTOR[mand.fm ?? 1] * (CAT.id !== 'f1' || this.ayudas.frenada ? 1 - 0.75 * freno : 1);
+      const usoTras = Math.max(Math.abs(rl.tanAlfa), Math.abs(rr.tanAlfa)) / rl.neum.picoAlfa;
+      const arrastre = CAT.id !== 'f1' || this.ayudas.frenada ? 1 - clamp((usoTras - 0.35) / 0.5, 0, 0.9) : 1;
+      const fm = (COCHE.frenoMotor[0] + COCHE.frenoMotor[1] * this.rpm) * FRENO_MOTOR[mand.fm ?? 1] * (CAT.id !== 'f1' || this.ayudas.frenada ? 1 - 0.75 * freno : 1) * arrastre * (CAT.frenoMotor ?? 1);
       parCig = pT * acel - fm * (1 - acel) * (embragado ? 1 : 0);
       if (this.rpm > COCHE.rpmLimite) { parCig = Math.min(parCig, -fm); this.limitador = true; }
     }
@@ -611,6 +627,7 @@ export class Monoplaza {
       w.tanAlfa += (tanSS - w.tanAlfa) * kr;
       const nm = w.neum;
       let mu = muCarga(nm.c.mu, w.fz) * nm.factorAgarre() * sp.mu;
+      if (!w.delantera && CAT.muTras) mu *= CAT.muTras;
       // agua en la pista (fuera del asfalto, la hierba mojada es una pista de hielo)
       const agua = aguaAqui;
       if (agua > 0) mu *= factorAgua(nm.c, agua) * (w.sup > SUP_ESCAPE ? 1 - 0.35 * agua : 1);
@@ -667,7 +684,12 @@ export class Monoplaza {
       // ABS
       if (this.ayudas.abs && parFr > 0) {
         // (detrás el ABS corta antes del pico: la rueda trasera conserva agarre lateral y el coche no se cruza)
-        const lim = -nm.picoKappa * (w.delantera ? 1.05 : asisteFreno ? 0.7 : 0.78);
+        let limT = asisteFreno ? 0.7 : 0.78;
+        if (!w.delantera && (CAT.id !== 'f1' || asisteFreno)) {
+          const sy = Math.abs(w.tanAlfa) / nm.picoAlfa;
+          limT = clamp(Math.sqrt(Math.max(0, 0.72 - sy * sy)), 0.1, limT);
+        }
+        const lim = -nm.picoKappa * (w.delantera ? 1.05 : limT);
         if (w.kappa < lim) w.factorAbs = Math.max(0.2, w.factorAbs - dt * 25);
         else w.factorAbs = Math.min(1, w.factorAbs + dt * 10);
         parFr *= w.factorAbs;
@@ -727,9 +749,15 @@ export class Monoplaza {
     }
     // control de tracción: limita el deslizamiento de las traseras
     if (this.ayudas.tc > 0) {
-      const umbral = 1.0 + 0.35 * (3 - this.ayudas.tc);
-      if (maxKappaTras > umbral) this.tc = Math.max(0.15, this.tc - dt * 14);
-      else this.tc = Math.min(1, this.tc + dt * 3.5);
+      // salida a fondo desde parado: el control deja patinar las traseras (humo y marcas) y va
+      // cerrando el deslizamiento según el coche coge velocidad; en curva no lo permite
+      // (se mide en velocidad de patinaje: ~8 m/s con el coche parado, nada a partir de ~85 km/h)
+      const recto = 1 - clamp(Math.abs(this.ayF) / 4, 0, 1);
+      const vPatina = pedal > 0.8 && this.marcha > 0 ? (this.ayudas.tc >= 2 ? 6 : 8.5) * clamp(1 - this.vx / 24, 0, 1) * recto * (1 - 0.6 * aguaAqui) : 0;
+      const umbral = 1.0 + 0.35 * (3 - this.ayudas.tc) + vPatina / Math.max(3, this.vx) / rl.neum.picoKappa;
+      // regulador proporcional (la rueda responde en milésimas): sin dientes de sierra en el empuje
+      const objetivo = clamp(1 - 0.5 * (maxKappaTras - umbral), 0.1, 1);
+      this.tc += (objetivo - this.tc) * Math.min(1, dt * (objetivo < this.tc ? 60 : 14));
     } else this.tc = 1;
 
     // --- Fuerzas externas ---------------------------------------------------

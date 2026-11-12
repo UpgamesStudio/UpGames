@@ -19,7 +19,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-// Guarda fotos y vídeos de la repetición en la galería (Imágenes/Películas › APEX GP).
+// Guarda fotos y vídeos de la repetición en la galería (Imágenes/Películas › UpGames RACING).
 // El WebView no sabe descargar archivos creados en la página: el juego los manda por
 // trozos en base64 a window.ApexArchivo.
 public class ArchivoNativo {
@@ -66,12 +66,12 @@ public class ArchivoNativo {
                 ContentValues v = new ContentValues();
                 v.put(MediaStore.MediaColumns.DISPLAY_NAME, p.nombre);
                 v.put(MediaStore.MediaColumns.MIME_TYPE, p.tipo);
-                v.put(MediaStore.MediaColumns.RELATIVE_PATH, (video ? Environment.DIRECTORY_MOVIES : Environment.DIRECTORY_PICTURES) + "/APEX GP");
+                v.put(MediaStore.MediaColumns.RELATIVE_PATH, (video ? Environment.DIRECTORY_MOVIES : Environment.DIRECTORY_PICTURES) + "/UpGames RACING");
                 Uri col = video ? MediaStore.Video.Media.EXTERNAL_CONTENT_URI : MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
                 Uri uri = cr.insert(col, v);
                 if (uri == null) return false;
                 try (InputStream in = new FileInputStream(p.tmp); OutputStream out = cr.openOutputStream(uri)) { copiar(in, out); }
-                donde = (video ? "Películas" : "Imágenes") + "/APEX GP";
+                donde = (video ? "Películas" : "Imágenes") + "/UpGames RACING";
             } else {
                 // Android 9 o anterior: carpeta propia de la app (no necesita permisos)
                 File dir = ctx.getExternalFilesDir(video ? Environment.DIRECTORY_MOVIES : Environment.DIRECTORY_PICTURES);

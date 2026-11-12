@@ -1281,7 +1281,7 @@ const live = require('./rutas/live').registrar(app, server, {
     verificarToken, verificarAdmin, Usuario, Notificacion, logger, config, JWT_SECRET,
     estaSuspendido: u => adminPanel.estaSuspendido(u), getPayPalAccessToken,
 });
-// APEX GP (games/monoplaza): mejoras y cosméticos con UpCoins y salas multijugador (Socket.IO /apexgp)
+// UpGames RACING (games/monoplaza): mejoras y cosméticos con UpCoins y salas multijugador (Socket.IO /apexgp)
 require('./rutas/apexgp').registrar(app, { verificarToken, Usuario, LiveTx: live.LiveTx, io: live.io, logger, JWT_SECRET, estaSuspendido: u => adminPanel.estaSuspendido(u) });
 // UpGames Studio: IA en la nube (fotos → modelo 3D completo con TRELLIS; necesita HF_TOKEN)
 require('./rutas/studio').registrar(app, { verificarToken, logger });

@@ -1,4 +1,4 @@
-// Exportar la escena a GLB (Blender, Unity, Godot y APEX GP lo abren).
+// Exportar la escena a GLB (Blender, Unity, Godot y UpGames RACING lo abren).
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { descargar } from './descargar.js';
 

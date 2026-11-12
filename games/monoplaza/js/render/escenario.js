@@ -1,6 +1,7 @@
 // Escenario: cielo, luz, terreno, pista, bordillos, escapatorias, muros, gradas,
 // boxes, pórtico de salida con semáforo, carteles de frenada y vegetación.
 
+import { crearEntorno } from './entorno.js';
 import * as THREE from 'three';
 import { crearHelicoptero } from './helicoptero.js';
 import { Publico } from './publico.js';
@@ -689,7 +690,9 @@ function ponerEntorno(scene, env) {
 }
 export function actualizarEntorno(esc, scene, renderer) {
   if (!(esc.calidad >= 2 && esc.puntoEntorno)) {
-    entornoCielo(esc, scene, renderer, esc.hora === 'noche' ? 0x0c0e12 : esc.hora === 'atardecer' ? 0x4a3a2c : 0x4d5a3a);
+    // baja y media: entorno «de circuito» (cielo luminoso, horizonte con arboleda, muros y gradas,
+    // asfalto oscuro): la pintura y los cristales tienen algo que reflejar sin fotografiar el circuito
+    ponerEntorno(scene, crearEntorno(renderer, esc.hora || 'dia', esc.sol));
     return;
   }
   const rt = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
@@ -1277,7 +1280,7 @@ const LEMAS = [
   ['UPGAMES LIVE', 'Transmite tus carreras', '#e8202a', '#ffffff'],
   ['NEXUS IA', 'El cerebro de UpGames', '#0b0b14', '#00e5ff'],
   ['upgames.games', 'Juegos, mods y apps', '#ffffff', '#0d47ff'],
-  ['APEX GP', 'Corre contra 21 pilotos en línea', '#ff7a00', '#111111'],
+  ['UpGames RACING', 'Corre contra 21 pilotos en línea', '#ff7a00', '#111111'],
   ['UPGAMES STORE', 'Mods, apps y juegos para tu móvil', '#0b0b14', '#ffd23f'],
   ['UPGAMES TV', 'Las carreras en directo', '#f2f4f8', '#e8202a'],
   ['JUEGA EN UPGAMES', 'Gratis · sin descargas · upgames.games', '#16a34a', '#ffffff'],

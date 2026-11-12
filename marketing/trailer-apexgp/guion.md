@@ -1,4 +1,4 @@
-# Tráiler APEX GP: guion y narración
+# Tráiler UpGames RACING: guion y narración
 
 Vídeo de **76 s** rodado con el propio juego (`games/monoplaza/tools/trailer.js`), sobre «There Is No Way Out» (Infraction, sin copyright).
 
@@ -12,7 +12,7 @@ Vídeo de **76 s** rodado con el propio juego (`games/monoplaza/tools/trailer.js
 | 0:04.8 | Primer golpe | **UPGAMES** aparece con un destello; debajo, «presenta» |
 | 0:09 – 0:28.8 | Subida lenta | Parrilla al atardecer: plano aéreo, rueda, casco del piloto, travelling lateral |
 | 0:23.8 – 0:27.8 | Un golpe por segundo | Se encienden las **5 luces** de salida, una por golpe |
-| 0:28.8 | **Drop** | Se apagan las luces: **¡salida!** Logotipo **APEX GP** |
+| 0:28.8 | **Drop** | Se apagan las luces: **¡salida!** Logotipo **UpGames RACING** |
 | 0:28.8 – 1:04.8 | Música a tope | Tomas rápidas cada 2 s: a ras de suelo, de frente, en la rueda, a bordo, teleobjetivo, dron; atardecer, noche y lluvia; tarjetas con las características |
 | 1:04.8 – 1:07.2 | Corte: la música cae | **Cámara lenta** alrededor del coche · «¿Estás listo?» |
 | 1:07.2 | Golpe | Pasada a ras de suelo |
@@ -35,7 +35,7 @@ Las frases van en los huecos de la música. Los tiempos son el **inicio** de cad
 | 7 | 0:52.5 | 3 s | De día. De noche. Bajo la lluvia. |
 | 8 | 1:05.2 | 1.5 s | Respira. |
 | 9 | 1:08.0 | 3 s | Ahora… acelera. |
-| 10 | 1:12.6 | 3 s | APEX GP. Juega gratis en upgames punto games. |
+| 10 | 1:12.6 | 3 s | UpGames RACING. Juega gratis en upgames punto games. |
 
 ### Versión en inglés (por si se publica fuera)
 
@@ -48,17 +48,17 @@ Las frases van en los huecos de la música. Los tiempos son el **inicio** de cad
 7. By day. By night. In the rain.
 8. Breathe.
 9. Now… go.
-10. APEX GP. Play free at upgames dot games.
+10. UpGames RACING. Play free at upgames dot games.
 
 ## Textos en pantalla
 
 - 0:04.8 · **UPGAMES** / *presenta*
 - 0:10 · *Cada milésima cuenta.*
 - 0:19.6 · *22 pilotos. Una sola línea.*
-- 0:28.8 · **APEX GP** · SIMULADOR DE MONOPLAZAS
+- 0:28.8 · **UpGames RACING** · SIMULADOR DE MONOPLAZAS
 - Tarjetas (cada 4 s desde 0:32): Física real a 300 Hz · El aire también corre · 22 pilotos con IA humana · Daños de verdad · Día, atardecer y noche · Multijugador en línea · La lluvia lo cambia todo · Campeonato y carrera profesional
 - 1:05 · *¿Estás listo?*
-- 1:12 · **APEX GP** · Juega gratis en upgames.games · ANDROID · NAVEGADOR · MULTIJUGADOR
+- 1:12 · **UpGames RACING** · Juega gratis en upgames.games · ANDROID · NAVEGADOR · MULTIJUGADOR
 
 ## Cómo se monta la voz cuando esté grabada
 

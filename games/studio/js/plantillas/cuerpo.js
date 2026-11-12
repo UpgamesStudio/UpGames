@@ -51,7 +51,7 @@ export const ESQUELETO = { PIERNA, PIE, BRAZO_IZQ, MANO_IZQ, BRAZO_DER, MANO_DER
 // Pose de la plantilla: mano izquierda en la cadera y el volante en la derecha.
 export const POSE_JARRA = { pierna: PIERNA, pie: PIE, brazos: [[1, BRAZO_IZQ, MANO_IZQ, [0, 0, -1]], [-1, BRAZO_DER, MANO_DER, [0, 0, 1]]], cuello: CUELLO };
 
-// Pose de reposo para los personajes de APEX GP: piernas rectas y brazos colgando, con las
+// Pose de reposo para los personajes de UpGames RACING: piernas rectas y brazos colgando, con las
 // articulaciones donde las tiene el esqueleto de los personajes del juego (hombro a 1,48 m, codo a
 // 1,19 m, muñeca a 0,94 m, cadera a 0,93 m, rodilla a 0,49 m), para poder animarlo.
 const brazoReposo = (s) => [

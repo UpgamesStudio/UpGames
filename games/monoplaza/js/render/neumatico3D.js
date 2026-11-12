@@ -10,6 +10,7 @@
 // Ejes: el eje de giro es z, centrado en el origen (como los neumáticos de antes).
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COMPUESTOS } from '../config.js';
 
 /** Proporción del radio de la llanta (18") respecto al del neumático (720 mm de diámetro). */
@@ -126,7 +127,7 @@ export function matFlanco(compuesto, calidad = 2) {
   textoEnArco(x, 'UP GAMES', R * 0.80, Math.PI, true);
   // letra pequeña del tamaño
   x.fillStyle = 'rgba(205,205,210,0.75)'; x.font = `bold ${Math.round(R * 0.045)}px Arial, Helvetica, sans-serif`;
-  textoEnArco(x, 'APEX GP  18"', R * 0.735, Math.PI / 2, false);
+  textoEnArco(x, 'RACING  18"', R * 0.735, Math.PI / 2, false);
   textoEnArco(x, (COMPUESTOS[compuesto]?.nombre || '').toUpperCase(), R * 0.735, -Math.PI / 2, false);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   // rugosidad: la goma es mate y la pintura de los rótulos y las franjas, satinada
@@ -296,4 +297,60 @@ function materialGomaLisa(compuesto) {
     gomaLisa.set(compuesto, new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.82, sheen: 0.35, sheenRoughness: 0.8, sheenColor: 0x45454c }));
   }
   return gomaLisa.get(compuesto);
+}
+
+// ─── Llanta en 3D (GT y Stock Car) ─────────────────────────────────────────────────────────────
+// Una llanta de verdad en lugar de un disco pintado: radios con volumen y arista central (cogen
+// brillos al girar), cara cóncava hacia el buje, buje con tuerca central y aro exterior. Una sola
+// geometría por medida y estilo, compartida por todos los coches. Eje z, la cara mira a +z.
+const _llantas3D = new Map();
+export function geoLlanta3D(r, w, estilo = 'gt') {
+  const clave = `${r.toFixed(3)}|${w.toFixed(3)}|${estilo}`;
+  if (_llantas3D.has(clave)) return _llantas3D.get(clave);
+  const ri = r * LLANTA, zF = w / 2 - HUNDIDO, prof = Math.min(0.075, w * 0.26), partes = [];
+  const rh = ri * 0.2, t = 0.03;
+  // ángulos de los radios: GT, cinco parejas en Y; Stock, siete radios anchos
+  const ang = [];
+  if (estilo === 'stock') for (let k = 0; k < 7; k++) ang.push([k * Math.PI * 2 / 7, 0]);
+  else for (let k = 0; k < 5; k++) for (const d of [-1, 1]) ang.push([k * Math.PI * 2 / 5, d]);
+  const wa = estilo === 'stock' ? ri * 0.12 : ri * 0.075, wb = estilo === 'stock' ? ri * 0.085 : ri * 0.05;
+  for (const [a0, d] of ang) {
+    // la pareja nace junta en el buje y se abre hacia el aro
+    const aH = a0 + d * 0.1, aR = a0 + d * 0.3;
+    const P = (R, a, lat, z) => new THREE.Vector3(Math.cos(a) * R - Math.sin(a) * lat, Math.sin(a) * R + Math.cos(a) * lat, z);
+    const zH = zF - prof, zR = zF - 0.006, Rr = ri * 0.965;
+    const h = [P(rh, aH, -wa, zH), P(rh, aH, 0, zH + 0.007), P(rh, aH, wa, zH), P(rh, aH, wa * 0.55, zH - t), P(rh, aH, -wa * 0.55, zH - t)];
+    const q = [P(Rr, aR, -wb, zR), P(Rr, aR, 0, zR + 0.005), P(Rr, aR, wb, zR), P(Rr, aR, wb * 0.55, zR - t), P(Rr, aR, -wb * 0.55, zR - t)];
+    const v = [];
+    const cara = (a, b, c, e) => { for (const p of [a, b, c, a, c, e]) v.push(p.x, p.y, p.z); };
+    cara(h[0], q[0], q[1], h[1]); cara(h[1], q[1], q[2], h[2]);          // dos faldones de la cara, con arista
+    cara(h[2], q[2], q[3], h[3]); cara(h[4], q[4], q[0], h[0]);          // costados
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.computeVertexNormals();
+    partes.push(g);
+  }
+  const pieza = (g, z, rx = Math.PI / 2) => { g.rotateX(rx); g.translate(0, 0, z); const n = g.index ? g.toNonIndexed() : g; n.deleteAttribute('uv'); partes.push(n); };
+  pieza(new THREE.CylinderGeometry(rh * 1.5, rh * 1.75, 0.045, 20), zF - prof - 0.012);                         // buje
+  pieza(new THREE.CylinderGeometry(rh * 0.62, rh * 0.72, 0.04, 6), zF - prof + 0.022);                          // tuerca central
+  pieza(new THREE.RingGeometry(ri * 0.93, ri * 0.995, 40), zF - 0.004, 0);                                      // pestaña del aro
+  pieza(new THREE.CylinderGeometry(ri * 0.975, ri * 0.975, 0.02, 40, 1, true), zF - 0.012);                     // canto del aro
+  const geo = mergeGeometries(partes, false);
+  // las caras laterales de los radios se ven por los dos lados: se duplican invertidas no hace falta (DoubleSide)
+  geo.computeBoundingSphere();
+  _llantas3D.set(clave, geo);
+  return geo;
+}
+const _matsLlanta3D = new Map();
+/** Material de la llanta 3D: aleación pintada con barniz (bronce, blanco, negro, oro o plata). */
+export function matLlanta3D(color, fisico = true) {
+  const k = color + (fisico ? 'f' : 's');
+  if (!_matsLlanta3D.has(k)) _matsLlanta3D.set(k, fisico
+    ? new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, metalness: 0.85, clearcoat: 0.7, clearcoatRoughness: 0.08, side: THREE.DoubleSide })
+    : new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.85, side: THREE.DoubleSide }));
+  return _matsLlanta3D.get(k);
+}
+let _geoPinza = null;
+/** Pinza de freno (no gira): un bloque curvo sobre el disco, detrás de los radios. */
+export function geoPinza() {
+  if (!_geoPinza) _geoPinza = new THREE.RingGeometry(0.6, 1, 10, 1, -0.42, 0.84);
+  return _geoPinza;
 }

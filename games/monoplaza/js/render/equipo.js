@@ -37,6 +37,7 @@ function ejes() {
   RUEDAS = [[A, -1, COCHE.viaDel / 2], [A, 1, COCHE.viaDel / 2], [-B, -1, COCHE.viaTras / 2], [-B, 1, COCHE.viaTras / 2]];
 }
 ejes();
+const _vLlegar = new THREE.Vector3(), _vA = new THREE.Vector3(), _vB = new THREE.Vector3();
 const entre = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
 const suave = (t) => t * t * (3 - 2 * t);
 
@@ -98,7 +99,10 @@ function ruedaSuelta(color, compuesto, conManta) {
 
 class Parada {
   /** car: estado del coche; posicion: {x, y, z, psi} del sitio de parada (el coche aún no ha llegado). */
-  constructor(scene, { color, texto, compuesto, calidad, posicion, alEvento }) {
+  constructor(scene, { color, texto, compuesto, calidad, posicion, alEvento, ligero = false }) {
+    // equipo ligero (paradas de los rivales): pistoleros, gatos y jefe; las ruedas entran y salen
+    // igual, pero sin los ocho que las llevan ni los del alerón y los pontones (12 personas menos)
+    this.ligero = ligero;
     this.scene = scene; this.alEvento = alEvento;
     this.color = color; this.compuesto = compuesto || 'medio';
     this.estado = 'espera'; this.t = 0; this.tFin = 0;
@@ -121,8 +125,8 @@ class Parada {
       const mira = lado > 0 ? Math.PI / 2 : -Math.PI / 2;     // de cara al coche
       const pis = persona('pistola', x, lado * (via + 0.62), mira, 'preparado', 10 + k);
       const pistola = e.pist.clone(); pistola.position.set(0.02, -0.1, 0); pistola.rotation.z = -1.2; pis.mD.add(pistola);
-      const quita = persona('quita', x - 0.62, lado * (via + 0.95), mira + lado * 0.35, 'preparado', 20 + k);
-      const pone = persona('pone', x + 0.62, lado * (via + 0.95), mira - lado * 0.35, 'rueda', 30 + k);
+      const quita = ligero ? null : persona('quita', x - 0.62, lado * (via + 0.95), mira + lado * 0.35, 'preparado', 20 + k);
+      const pone = ligero ? null : persona('pone', x + 0.62, lado * (via + 0.95), mira - lado * 0.35, 'rueda', 30 + k);
       const nueva = ruedaSuelta(color, this.compuesto, true);
       this.grupo.add(nueva);
       const vieja = ruedaSuelta(color, this.compuesto, false); vieja.visible = false; this.grupo.add(vieja);
@@ -135,15 +139,15 @@ class Parada {
     this.gatoT = e.gatoD.clone(); this.gatoT.scale.set(-0.6, 1, 1); this.gatoT.position.set(-B - 0.6, 0, 0); this.grupo.add(this.gatoT);
     // estabilizadores y alerón delantero
     // (en calidad baja se omiten para no cargar el móvil)
-    this.estab = calidad >= 1 ? [-1, 1].map(l => persona('estab', 0.2, l * 1.15, l > 0 ? Math.PI / 2 : -Math.PI / 2, 'espera', 40 + l)) : [];
-    this.alero = calidad >= 1 ? [-1, 1].map(l => persona('alero', A + 1.25, l * 1.25, l > 0 ? Math.PI / 2 + 0.6 : -Math.PI / 2 - 0.6, 'espera', 50 + l)) : [];
+    this.estab = calidad >= 1 && !ligero ? [-1, 1].map(l => persona('estab', 0.2, l * 1.15, l > 0 ? Math.PI / 2 : -Math.PI / 2, 'espera', 40 + l)) : [];
+    this.alero = calidad >= 1 && !ligero ? [-1, 1].map(l => persona('alero', A + 1.25, l * 1.25, l > 0 ? Math.PI / 2 + 0.6 : -Math.PI / 2 - 0.6, 'espera', 50 + l)) : [];
     // jefe de parada, junto al pórtico, que hace señas al coche para que entre
     this.jefe = persona('jefe', A + 3.4, 1.9, Math.PI + 0.5, 'senala', 3);
     this.portico = e.portico.clone(); this.portico.position.set(A + 1.6, 0, 0); this.grupo.add(this.portico);
     this.luz = new THREE.Mesh(new THREE.CircleGeometry(0.17, 16), new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0xff1a1a, emissiveIntensity: 4 }));
     this.luz.position.set(A + 1.48, 2.8, 0); this.luz.rotation.y = -Math.PI / 2; this.grupo.add(this.luz);
     this._colocarNuevas(0);
-    this.grupo.traverse(o => { if (o.isMesh) o.castShadow = calidad >= 1; });
+    this.grupo.traverse(o => { if (o.isMesh && !o.isSkinnedMesh) o.castShadow = calidad >= 1; });
     this.ponerEn(posicion);
     scene.add(this.grupo);
   }
@@ -204,7 +208,7 @@ class Parada {
     this._llegar(0, true);
     this.ponerEn({ x: car.x, y: car.y, z: car.z, psi: car.psi });
     this.jefe.poner('espera', 0.3);
-    for (const r of this.ruedas) { r.pis.poner('pistola', 0.12); r.quita.poner('preparado', 0.1); }
+    for (const r of this.ruedas) { r.pis.poner('pistola', 0.12); r.quita?.poner('preparado', 0.1); }
     for (const p of this.estab) p.poner('estabiliza', 0.2);
     for (const p of this.alero) p.poner('preparado', 0.2);
     this.alEvento?.('gato', this.grupo.position);
@@ -213,10 +217,11 @@ class Parada {
   /** Progreso de cada rueda (para el marcador de la parada): 0 sin empezar, 1 montada. */
   progreso() { return this.ruedas.map(r => r.prog || 0); }
 
-  actualizar(dt) {
+  actualizar(dt, visible = true) {
     this.t += dt;
     const e = this.equipo;
-    for (const p of e) p.actualizar(dt);
+    // lejos de la cámara no se anima el esqueleto (solo avanzan los relojes y las posiciones)
+    if (visible) for (const p of e) p.actualizar(dt);
     this._llegar(dt);
     if (this.estado === 'espera') {
       // el jefe hace señas con el brazo para que el coche venga a su sitio
@@ -251,7 +256,7 @@ class Parada {
   _llegar(dt, ya = false) {
     for (const p of this.equipo) {
       if (p.llego) continue;
-      const d = new THREE.Vector3().subVectors(p.base, p.raiz.position); d.y = 0;
+      const d = _vLlegar.subVectors(p.base, p.raiz.position); d.y = 0;
       const L = d.length(), paso = dt * 2.6;
       if (ya || L <= paso) {
         p.raiz.position.copy(p.base); p.raiz.rotation.y = p.rotBase; p.andar = 0; p.llego = true;
@@ -288,18 +293,18 @@ class Parada {
       const fuera = entre(t, T(0.42), T(0.78));
       r.vieja.visible = fuera > 0;
       if (fuera > 0) {
-        r.quita.poner(fuera < 1 ? 'rueda' : 'preparado', 0.08);
-        const ini = new THREE.Vector3(r.x, 0.36 + elev, r.lado * (r.via + 0.12)), fin = new THREE.Vector3(r.x - 0.75, 0.36, r.lado * (r.via + 1.35));
+        r.quita?.poner(fuera < 1 ? 'rueda' : 'preparado', 0.08);
+        const ini = _vA.set(r.x, 0.36 + elev, r.lado * (r.via + 0.12)), fin = _vB.set(r.x - 0.75, 0.36, r.lado * (r.via + 1.35));
         const u = suave(fuera);
         r.vieja.position.lerpVectors(ini, fin, u); r.vieja.position.y += Math.sin(Math.PI * u) * 0.28;
         r.vieja.rotation.set(0, r.lado * 0.5 * u, r.lado * 0.15 * Math.sin(Math.PI * u));
         if (fuera >= 1) { r.vieja.position.y = 0.17; r.vieja.rotation.set(Math.PI / 2, 0, 0); }   // en el suelo
-        r.quita.raiz.position.copy(r.quita.base).add(new THREE.Vector3(-0.2 * fuera, 0, r.lado * 0.25 * fuera));
+        if (r.quita) { r.quita.raiz.position.copy(r.quita.base); r.quita.raiz.position.x -= 0.2 * fuera; r.quita.raiz.position.z += r.lado * 0.25 * fuera; }
       }
       if (md) md.ruedaOculta[i] = t > T(0.42) && t < tm + 0.4 * k;
       // suspensión: el que quitó la rueda trae el brazo nuevo, se arrodilla en el buje y lo atornilla
       const brazo = this.brazos?.[i];
-      if (brazo) {
+      if (brazo && r.quita) {
         const llega = entre(t, T(0.8), T(0.8) + 0.9), monta = entre(t, T(0.8) + 0.9, tm - 0.3);
         brazo.visible = llega > 0 && monta < 1;
         if (llega > 0 && llega < 1) { r.quita.poner('rueda', 0.15); brazo.position.set(r.x - 0.5 + 0.5 * llega, 0.62, r.lado * (r.via + 1.1 - 0.5 * llega)); }
@@ -314,7 +319,7 @@ class Parada {
       }
       // la nueva entra (también en un pequeño arco, el mecánico la empuja hasta el buje)
       const dentro = entre(t, tm, tm + 0.4 * k);
-      if (dentro > 0) { r.pone.poner('preparado', 0.12); this._colocarUna(r, dentro, elev); }
+      if (dentro > 0) { r.pone?.poner('preparado', 0.12); this._colocarUna(r, dentro, elev); }
       r.prog = t > tm + 0.83 * k ? 1 : dentro * 0.8;
       if (dentro >= 1) r.nueva.visible = false;          // ya es la rueda del coche
     });
@@ -377,12 +382,12 @@ class Parada {
   }
 
   _colocarUna(r, u, elevar) {
-    const brazos = new THREE.Vector3(r.x + 0.5, 0.62, r.lado * (r.via + 0.62));
-    const montada = new THREE.Vector3(r.x, 0.36 + elevar, r.lado * (r.via + 0.12));
+    const brazos = _vA.set(r.x + 0.5, 0.62, r.lado * (r.via + 0.62));
+    const montada = _vB.set(r.x, 0.36 + elevar, r.lado * (r.via + 0.12));
     const w = suave(u);
     r.nueva.position.lerpVectors(brazos, montada, w); r.nueva.position.y += Math.sin(Math.PI * w) * 0.06;
     r.nueva.rotation.set(0, r.lado * 0.25 * (1 - w), 0);
-    r.nueva.traverse(o => { if (o.name === 'manta') o.visible = u < 0.12; });
+    if (r._manta !== (u < 0.12)) { r._manta = u < 0.12; r.nueva.traverse(o => { if (o.name === 'manta') o.visible = r._manta; }); }
   }
 
   quitar() { this.scene.remove(this.grupo); }
@@ -392,14 +397,14 @@ export class GestorBoxes {
   constructor(scene, calidad = 2, alEvento = null) { this.scene = scene; this.calidad = calidad; this.alEvento = alEvento; this.paradas = new Map(); }
 
   /** El coche ha entrado al carril: su equipo sale a esperarlo en el sitio de parada. */
-  preparar(id, { color, texto, compuesto, posicion }) {
+  preparar(id, { color, texto, compuesto, posicion, ligero = false }) {
     if (this.paradas.has(id)) return;
-    this.paradas.set(id, new Parada(this.scene, { color, texto, compuesto, calidad: this.calidad, posicion, alEvento: this.alEvento }));
+    this.paradas.set(id, new Parada(this.scene, { color, texto, compuesto, calidad: this.calidad, posicion, alEvento: this.alEvento, ligero }));
   }
 
   /** El coche está parado: empieza la parada (si nadie lo esperaba, el equipo aparece ya). */
-  empezar(id, car, modelo, { color, texto, compuesto, duracion, morro, trabajo }) {
-    if (!this.paradas.has(id)) this.preparar(id, { color, texto, compuesto, posicion: { x: car.x, y: car.y, z: car.z, psi: car.psi } });
+  empezar(id, car, modelo, { color, texto, compuesto, duracion, morro, trabajo, ligero = false }) {
+    if (!this.paradas.has(id)) this.preparar(id, { color, texto, compuesto, ligero, posicion: { x: car.x, y: car.y, z: car.z, psi: car.psi } });
     this.paradas.get(id).empezar(car, modelo, duracion, morro, trabajo);
   }
 
@@ -407,9 +412,10 @@ export class GestorBoxes {
 
   actualizar(dt, camPos = null) {
     for (const [id, p] of this.paradas) {
-      if (!p.actualizar(dt)) this.paradas.delete(id);
-      // lejos de la cámara no se dibujan (siguen animándose para no saltar al volver)
-      else if (camPos) p.grupo.visible = p.grupo.position.distanceToSquared(camPos) < 160 * 160;
+      // lejos de la cámara ni se dibujan ni se animan los esqueletos
+      const visible = !camPos || p.grupo.position.distanceToSquared(camPos) < 130 * 130;
+      if (!p.actualizar(dt, visible)) this.paradas.delete(id);
+      else p.grupo.visible = visible;
     }
   }
 

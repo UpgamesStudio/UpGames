@@ -1,10 +1,10 @@
-# Compila APEX GP (games/monoplaza) como app Android con Capacitor.
+# Compila UpGames RACING (games/monoplaza) como app Android con Capacitor.
 # - Siempre sube el APK como artefacto del workflow.
 # - En main, además publica/actualiza la versión "apex-gp-latest" con el APK para descargarlo.
 # - Si existen los secretos APEX_KEYSTORE_BASE64, APEX_KEYSTORE_PASSWORD, APEX_KEY_ALIAS y
 #   APEX_KEY_PASSWORD, compila la versión de publicación firmada; si no, una de depuración
 #   (instalable a mano igualmente).
-name: APK APEX GP
+name: APK UpGames RACING
 
 on:
   push:
@@ -86,9 +86,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apex-gp-latest
-          name: APEX GP (Android)
+          name: UpGames RACING (Android)
           body: |
-            APK de APEX GP, el simulador de monoplazas de UpGames.
+            APK de UpGames RACING, el simulador de monoplazas de UpGames.
             Descárgalo en el teléfono y ábrelo para instalarlo (Android pedirá permitir instalar apps de esta fuente).
             Compilado desde ${{ github.sha }}.
           files: ${{ runner.temp }}/APEX-GP.apk

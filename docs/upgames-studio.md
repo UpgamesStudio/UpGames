@@ -6,7 +6,7 @@ hecho a nuestra medida: Blender no corre en Android y su interfaz no sirve para 
 que se construye un modelador propio, web y táctil, que exporta a los formatos de Blender
 (GLB/OBJ) para que los modelos vayan y vuelvan entre los dos.
 
-> Esta sesión es solo del juego (APEX GP). Studio se empieza en **otra sesión**, con el
+> Esta sesión es solo del juego (UpGames RACING). Studio se empieza en **otra sesión**, con el
 > mensaje de arranque del final de este documento.
 
 ---
@@ -15,13 +15,13 @@ que se construye un modelador propio, web y táctil, que exporta a los formatos 
 
 | Tema | Decisión | Por qué |
 |---|---|---|
-| Plataforma | Web (PWA) + APK con Capacitor | Igual que APEX GP: una base de código para web, Android y PC |
-| Motor 3D | Three.js (la misma versión vendorizada que APEX GP) | Ya lo conocemos; trae GLTFExporter/Loader, OBJ, TransformControls |
+| Plataforma | Web (PWA) + APK con Capacitor | Igual que UpGames RACING: una base de código para web, Android y PC |
+| Motor 3D | Three.js (la misma versión vendorizada que UpGames RACING) | Ya lo conocemos; trae GLTFExporter/Loader, OBJ, TransformControls |
 | Datos de malla | Estructura propia de **media arista** (half-edge) | Permite extruir, biselar, cortes en bucle y subdividir sin romper la malla |
 | Render | La malla se convierte a BufferGeometry solo para dibujarla | La edición no depende de Three.js y es rápida |
 | Deshacer | Patrón comando (cada operación sabe hacerse y deshacerse) | Deshacer/rehacer ilimitado y guardado incremental |
 | Guardado | IndexedDB local, automático cada 10 s y al salir; nube opcional con la cuenta UpGames | Funciona sin conexión |
-| Formatos | Propio `.ups` (JSON comprimido) + exportar/importar **GLB**, **OBJ**, **STL** | GLB entra en APEX GP, Blender, Unity y Godot |
+| Formatos | Propio `.ups` (JSON comprimido) + exportar/importar **GLB**, **OBJ**, **STL** | GLB entra en UpGames RACING, Blender, Unity y Godot |
 | Cuenta y servidor | Los de UpGames (Railway, Express) | Login, UpCoins y publicar ya existen |
 | Carpeta | `apps/upgames-studio/` (web en `games/studio/` para servirla en upgames.games/studio) | Mismo patrón que `games/monoplaza` + `apps/apex-gp-android` |
 
@@ -87,7 +87,7 @@ que se construye un modelador propio, web y táctil, que exporta a los formatos 
 - Edición fluida hasta unos 20 000 vértices en modo edición.
 
 **Criterio de terminado de la etapa 1:** modelar en el móvil un monoplaza sencillo (morro,
-pontones, alerones y ruedas), exportarlo a GLB y que **APEX GP lo cargue como coche**.
+pontones, alerones y ruedas), exportarlo a GLB y que **UpGames RACING lo cargue como coche**.
 
 ### Etapa 2: Animación
 - Línea de tiempo con fotogramas clave para posición, rotación, escala y materiales, con curvas de suavizado.
@@ -104,13 +104,13 @@ pontones, alerones y ruedas), exportarlo a GLB y que **APEX GP lo cargue como co
   - meta, cámara que sigue, punto de control, zona de daño.
 - **Bloques visuales** tipo Scratch (eventos → condiciones → acciones).
 - **Modo código** JavaScript con API documentada y autocompletado (para usuarios avanzados).
-- **Plantillas:** carreras (basada en APEX GP), plataformas 3D, disparos en tercera persona, puzles y mundo abierto pequeño.
+- **Plantillas:** carreras (basada en UpGames RACING), plataformas 3D, disparos en tercera persona, puzles y mundo abierto pequeño.
 - **Botón «Jugar»** que prueba al instante en el móvil.
 
 ### Etapa 4: Publicar y comunidad
 - Publicar en UpGames con un botón: enlace propio, miniatura automática y página del juego.
 - Ranking, logros y multijugador simple reutilizando el servidor actual (salas Socket.IO).
-- Exportar a APK (plantilla Capacitor generada en el servidor con GitHub Actions, como el APK de APEX GP).
+- Exportar a APK (plantilla Capacitor generada en el servidor con GitHub Actions, como el APK de UpGames RACING).
 - Tienda de modelos y plantillas con UpCoins (el autor cobra una parte).
 - **Nexus IA** como asistente:
   - «hazme un coche rojo»: genera una base con primitivas y modificadores;
@@ -170,16 +170,16 @@ modulos/studio.js + rutas/studio.js   en el servidor: proyectos en la nube y pub
      cuchillo, imán a vértices y medidas; modo Presentación (GTAO, captura PNG); biblioteca de piezas;
      IA en la nube (TRELLIS vía rutas/studio.js, necesita HF_TOKEN en Railway).
 8. ✅ **APK:** proyecto Capacitor, flujo de GitHub Actions, enlace de descarga en el servidor.
-9. ✅ **Prueba real:** modelar el monoplaza y cargarlo en APEX GP.
+9. ✅ **Prueba real:** modelar el monoplaza y cargarlo en UpGames RACING.
 
 En cada sprint: pruebas automáticas de las operaciones de malla (sin navegador, con Node), prueba
 en el móvil (gestos y FPS) y publicación en upgames.games/studio.
 
 ---
 
-## 5. Conexión con APEX GP
+## 5. Conexión con UpGames RACING
 
-- APEX GP ya acepta modelos externos: añadir en el garaje «Cargar coche GLB» (escala y posición de
+- UpGames RACING ya acepta modelos externos: añadir en el garaje «Cargar coche GLB» (escala y posición de
   ruedas automáticas por nombres de pieza: `rueda_del_izq`, `alerón_trasero`, `halo`…).
 - Studio trae una **plantilla de monoplaza** con esas piezas ya nombradas para que el coche
   modelado se pueda conducir y romper con los daños por zonas del juego.

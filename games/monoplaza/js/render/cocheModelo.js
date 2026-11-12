@@ -9,7 +9,7 @@ import { texturaCarbono, texturaCarbonoNormal } from './texturas.js';
 import { proyectarUV, dibujarLibrea, materialLibrea, LLUVIA_CARROCERIA } from './librea.js';
 import { normalPliegues } from './personas.js';
 import { crearPiloto } from './pilotoFijo.js';
-import { geoNeumatico, matFlanco, texturaLlanta, mascaraBrilloLlanta, aroLlanta, dibujoBanda, LLANTA, HUNDIDO } from './neumatico3D.js';
+import { geoNeumatico, matFlanco, texturaLlanta, mascaraBrilloLlanta, aroLlanta, dibujoBanda, LLANTA, HUNDIDO, geoLlanta3D, matLlanta3D, geoPinza } from './neumatico3D.js';
 
 const A = COCHE.wheelbase * (1 - COCHE.repartoDel); // eje delantero
 const B = COCHE.wheelbase * COCHE.repartoDel;       // eje trasero
@@ -264,7 +264,7 @@ function texturaMono(col) {
   parche(40, 44, 170, 50, 'rgba(255,255,255,0.95)', 'UPGAMES', '#0d47ff');
   parche(302, 44, 170, 50, 'rgba(255,255,255,0.95)', 'UPGAMES', '#0d47ff');
   parche(60, 164, 130, 34, '#0b0b14', 'NEXUS IA', '#00e5ff');
-  parche(322, 164, 130, 34, '#0b0b14', 'APEX GP', '#ffd23f');
+  parche(322, 164, 130, 34, '#0b0b14', 'RACING', '#ffd23f');
   x.fillStyle = '#ffffff'; x.font = '700 22px Arial'; x.textAlign = 'center'; x.fillText('upgames.games', 256, 228);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
   cacheMono.set(k, t);
@@ -394,7 +394,7 @@ function texturaFrontalVolante() {
   }
   // logotipo y tornillos de la placa
   x.fillStyle = '#ffffff'; x.font = `900 ${Math.round(0.0075 * esc)}px Arial, sans-serif`;
-  x.fillText('APEX GP', px(0), py(-0.083));
+  x.fillText('UPGAMES', px(0), py(-0.083));
   x.fillStyle = '#8d939c';
   for (const [y, z] of [[0.072, -0.11], [0.072, 0.11], [-0.07, -0.072], [-0.07, 0.072], [0.03, -0.068], [0.03, 0.068]]) { x.beginPath(); x.arc(px(z), py(y), 5, 0, Math.PI * 2); x.fill(); }
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
@@ -606,11 +606,13 @@ export function crearModelo(opc) {
   const cat = opc.categoria || CAT.id, cerrado = cat === 'gt' || cat === 'stock';
   const eq = opc.equipado || {};
   const fisico = calidad >= 2;
+  // pintura con barniz (clearcoat) desde la calidad media, y siempre en el coche del jugador
+  const barniz = calidad >= 1 || !!cabina;
   const colores = { base: equipo.base, acento: equipo.acento, tercero: equipo.tercero || '#ffffff', ...(eq.colores || {}) };
   const numero = eq.numero ?? opc.numero ?? 7;
   // textura de la librea (compartida entre los dos coches de un equipo de la IA)
   // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
-  const tam = calidad >= 2 ? (cabina && !cerrado ? 2048 : 1024) : 512;
+  const tam = cabina && !cerrado ? (calidad >= 1 ? 2048 : 1024) : calidad >= 2 ? 1024 : 512;
   const claveTex = opc.imagen ? null : `${eq.patron || equipo.patron || 'franjas'}|${colores.base}|${colores.acento}|${colores.tercero}|${numero}|${equipo.nombre || ''}|${tam}`;
   let tex = claveTex && cacheTex.get(claveTex);
   if (!tex) {
@@ -619,7 +621,7 @@ export function crearModelo(opc) {
     tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
     if (claveTex) cacheTex.set(claveTex, tex);
   }
-  const pintura = materialLibrea(tex, eq.acabado || 'brillo', fisico);
+  const pintura = materialLibrea(tex, eq.acabado || 'brillo', barniz);
   const carbono = matComun('carbono');
   const negro = matComun('negro');
   const metal = matComun('metal');
@@ -932,8 +934,13 @@ export function crearModelo(opc) {
     rot.add(neum);
     const tapa = new THREE.Mesh(new THREE.CircleGeometry(r * LLANTA, 40), k < 2 ? matTapaDel : matTapaTras);
     tapa.position.z = sg * (w / 2 - HUNDIDO); if (sg < 0) tapa.rotation.y = Math.PI;
-    rot.add(tapa);
-    if (calidad >= 1) rot.add(aroLlanta(r, w, sg, calidad >= 2 ? 48 : 28));
+    if (cerrado) {
+      // GT y Stock Car: llanta de verdad, con radios en volumen (en vez del disco pintado)
+      const ll = new THREE.Mesh(geoLlanta3D(r, w, cat === 'stock' ? 'stock' : 'gt'), matLlanta3D(tonoLl[1], calidad >= 1));
+      if (sg < 0) ll.rotation.y = Math.PI;
+      ll.castShadow = calidad >= 2; rot.add(ll);
+    } else rot.add(tapa);
+    if (calidad >= 1 || cerrado) rot.add(aroLlanta(r, w, sg, calidad >= 2 ? 48 : 28));
     const tapaIn = new THREE.Mesh(new THREE.CircleGeometry(r * LLANTA * 0.97, 24), metal);
     tapaIn.position.z = -sg * (w / 2 - 0.016); if (sg > 0) tapaIn.rotation.y = Math.PI;
     rot.add(tapaIn);
@@ -951,6 +958,17 @@ export function crearModelo(opc) {
     const disco = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.48, r * 0.48, 0.035, 24), matF);
     disco.rotation.x = Math.PI / 2; disco.position.z = -sg * (w / 2 - 0.07);
     giro.add(disco);
+    if (cerrado) {
+      // tras los radios: el disco de acero (se pone al rojo) y la pinza del color del equipo
+      matF.color.set(0x5c6066); matF.metalness = 0.9; matF.roughness = 0.36;
+      const ri = r * LLANTA, zD = w / 2 - HUNDIDO - Math.min(0.075, w * 0.26) - 0.045;
+      fondo.position.z = sg * (zD - 0.03); fondo.material = negro;
+      const pista = new THREE.Mesh(new THREE.RingGeometry(ri * 0.36, ri * 0.9, 32), matF);
+      pista.position.z = sg * zD; if (sg < 0) pista.rotation.y = Math.PI; giro.add(pista);
+      const pinza = new THREE.Mesh(geoPinza(), matComun('pinza' + colores.acento, () => new THREE.MeshStandardMaterial({ color: colores.acento, roughness: 0.4, metalness: 0.3 })));
+      pinza.scale.set(ri * 0.92, ri * 0.92, 1); pinza.position.z = sg * (zD + 0.012); pinza.rotation.set(0, sg < 0 ? Math.PI : 0, 2.5);
+      giro.add(pinza);
+    }
     // a alta velocidad los radios de la llanta se ven como un disco borroso (como en la tele)
     const borroso = new THREE.Mesh(new THREE.CircleGeometry(r * 0.99, 48), matBorroso(cmp.color));
     borroso.position.z = sg * (w / 2 + 0.008); if (sg < 0) borroso.rotation.y = Math.PI;
@@ -975,7 +993,7 @@ export function crearModelo(opc) {
   let pinturaFinal = pintura, camaras = null, lucesC = null, interior = null, formaFinal = null;
   if (cerrado) {
     // el coche del jugador lleva la librea al doble de resolución (se ve de cerca)
-    const tamC = calidad >= 2 ? (cabina ? 2048 : 1024) : 512, transparente = calidad >= 1;
+    const tamC = cabina ? (calidad >= 1 ? 2048 : 1024) : calidad >= 2 ? 1024 : 512, transparente = calidad >= 1;
     // en GT cada equipo lleva uno de los tres coches (coupé, berlinetta o muscle)
     const semilla = [...String(equipo.nombre || equipo.base || '')].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) + (opc.variante ?? 0);
     const forma = opc.forma || (cat === 'gt' && FORMAS_GT.includes(eq.forma) ? eq.forma : formaDe(cat, semilla));
@@ -988,7 +1006,7 @@ export function crearModelo(opc) {
       texC = new THREE.CanvasTexture(cvC); texC.colorSpace = THREE.SRGBColorSpace; texC.anisotropy = 8;
       cacheTex.set(claveC, texC);
     }
-    pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', fisico);
+    pinturaFinal = materialLibrea(texC, eq.acabado || 'brillo', barniz);
     const ruedasC = pos.map(([x, z, r, w]) => ({ x, z, r, w }));
     formaFinal = forma;
     const cc = crearCarroceria(forma, { pintura: pinturaFinal, ruedas: ruedasC, calidad, colores, numero, nombre: equipo.nombre || '', transparente });
@@ -1357,6 +1375,6 @@ export function dibujarPlantilla(tam = 2048) {
   x.fillText('LADO DERECHO · morro a la derecha →', tam * 0.02, tam * 0.52);
   x.fillText('← morro a la izquierda · LADO IZQUIERDO', tam * 0.02, tam * 0.77);
   x.font = `600 ${tam / 70}px Arial`; x.fillStyle = 'rgba(255,255,255,0.5)';
-  x.fillText('APEX GP · plantilla de librea · pinta sobre las piezas y sube la imagen (cuadrada) en el Garaje', tam * 0.02, tam * 0.985);
+  x.fillText('UpGames RACING · plantilla de librea · pinta sobre las piezas y sube la imagen (cuadrada) en el Garaje', tam * 0.02, tam * 0.985);
   return cv;
 }
