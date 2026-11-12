@@ -42,10 +42,10 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
 
 <!-- css:inicio -->
-<!-- Paquete de: biblioteca.css, upgames-glass.css, upgames-estilo.css, upgames-cyber.css, upgames-videos.css, upgames-ux.css (scripts/unir-css.js) -->
-<link rel="stylesheet" href="upgames-app.css?v=54fde7325c">
+<!-- Paquete de: biblioteca.css, upgames-glass.css, upgames-estilo.css, upgames-cyber.css, upgames-videos.css, upgames-ux.css, upgames-neo.css (scripts/unir-css.js) -->
+<link rel="stylesheet" href="upgames-app.css?v=da61c670a0">
 <!-- css:fin -->
-<script src="upgames-tema.js?v=20261106d"></script>
+<script src="upgames-tema.js?v=20261112a"></script>
 <script src="upgames-intro.js?v=20261109a"></script>
 <script src="upgames-musica.js?v=20261108a" defer></script>
 <!-- Widget de subida (pesado): solo se usa al publicar → se descarga cuando la página ya cargó
@@ -720,6 +720,18 @@
   </nav>
 
   <section class="eco-sec active" data-sec="resumen">
+
+  <!-- ══ TARIFA: se paga por visualizaciones de publicidad ══ -->
+  <div class="eco-tarifa" role="note" aria-label="Cómo ganas en UpGames">
+    <p class="eco-tarifa-k">Tu tarifa de creador</p>
+    <p class="eco-tarifa-v"><b>US$1,50</b><span>por cada 1.000 visualizaciones de publicidad · 75 UpCoins</span></p>
+    <p class="eco-tarifa-d">UpGames <strong>no paga por descargas</strong>: ganas cada vez que alguien ve la publicidad de la página puente antes de abrir tu enlace. La misma tarifa para todo el catálogo.</p>
+    <ol class="eco-tarifa-pasos">
+      <li><b>01</b>Alguien abre tu publicación y toca “Obtener link”</li>
+      <li><b>02</b>Ve la publicidad de la página puente (≈30 s)</li>
+      <li><b>03</b>Se suma a tus anuncios vistos y a tus UpCoins</li>
+    </ol>
+  </div>
   <!-- Period Selector -->
   <div class="eco-period-strip">
     <button class="eco-period-btn active" data-period="7"  onclick="ecoSetPeriod(7,this)">7D</button>
@@ -734,7 +746,7 @@
     <div class="eco-kpi-card eco-kpi--green">
       <div class="eco-kpi-icon"><ion-icon name="cloud-download-outline"></ion-icon></div>
       <div class="eco-kpi-val" id="pf-descargas-totales" data-val="0">0</div>
-      <div class="eco-kpi-lbl">Descargas</div>
+      <div class="eco-kpi-lbl">Anuncios vistos</div>
       <div class="eco-kpi-delta" id="eco-kpi-dl-delta">— este período</div>
     </div>
     <div class="eco-kpi-card eco-kpi--cyan">
@@ -746,7 +758,7 @@
     <div class="eco-kpi-card eco-kpi--yellow">
       <div class="eco-kpi-icon"><ion-icon name="cash-outline"></ion-icon></div>
       <div class="eco-kpi-val" id="eco-kpi-rpm">$0.000</div>
-      <div class="eco-kpi-lbl">$/Descarga</div>
+      <div class="eco-kpi-lbl">UC / anuncio</div>
       <div class="eco-kpi-delta">Tasa real</div>
     </div>
     <div class="eco-kpi-card eco-kpi--pink">
@@ -760,14 +772,14 @@
   <!-- ══ CHART ══ -->
   <div class="eco-panel">
     <div class="eco-panel-hdr">
-      <div class="eco-panel-title"><ion-icon name="bar-chart-outline"></ion-icon> DESCARGAS POR DÍA</div>
+      <div class="eco-panel-title"><ion-icon name="bar-chart-outline"></ion-icon> ANUNCIOS VISTOS POR DÍA</div>
       <div class="eco-panel-badge" id="eco-chart-badge">— total</div>
     </div>
     <div class="eco-chart-wrap">
       <canvas id="eco-bar-chart" height="130"></canvas>
     </div>
     <div class="eco-chart-legend">
-      <span class="eco-legend-dot" style="background:var(--g)"></span>Descargas
+      <span class="eco-legend-dot" style="background:var(--g)"></span>Anuncios vistos
       <span class="eco-legend-dot" style="background:var(--cy);margin-left:14px"></span>Tendencia
     </div>
   </div>
@@ -820,7 +832,7 @@
           <div class="eco-fi-val" id="eco-rv-views">—</div>
         </div>
         <div class="eco-funnel-item">
-          <div class="eco-fi-label">Descargas</div>
+          <div class="eco-fi-label">Anuncios vistos</div>
           <div class="eco-fi-bar-wrap"><div class="eco-fi-bar eco-fi--b" id="eco-rb-interact" style="width:75%"></div></div>
           <div class="eco-fi-val" id="eco-rv-interact">—</div>
         </div>
@@ -835,7 +847,7 @@
           <div class="eco-fi-val" id="eco-rv-earn">—</div>
         </div>
         <div class="eco-cvr-row">
-          <span>De vista a descarga</span>
+          <span>De vista a anuncio</span>
           <strong id="eco-cvr">—%</strong>
         </div>
         <div class="eco-funnel-note" id="eco-funnel-nota">Cargando datos…</div>
@@ -848,7 +860,7 @@
   <div class="eco-panel">
     <div class="eco-panel-hdr">
       <div class="eco-panel-title"><ion-icon name="podium-outline"></ion-icon> TOP CONTENIDO</div>
-      <div class="eco-panel-badge">Por descargas</div>
+      <div class="eco-panel-badge">Por anuncios vistos</div>
     </div>
     <div id="eco-leaderboard">
       <div class="eco-spin"><ion-icon name="sync-outline"></ion-icon></div>
@@ -951,13 +963,13 @@
       <strong style="color:var(--g)">💡 Requisitos para retirar:</strong><br>
       • Mínimo 500 UpCoins ganados (US$10). Los UpCoins comprados no se retiran<br>
       • Verificación nivel 1+<br>
-      • Al menos 1 descarga efectiva en tus aportes, o ingresos de lives ya liberados<br>
+      • Al menos 1 visualización de publicidad en tus aportes, o ingresos de lives ya liberados<br>
       • Método de cobro configurado: PayPal, Nequi, Daviplata, cuenta bancaria o Mercado Pago<br>
       • Email de tu cuenta verificado<br>
       <strong style="color:var(--g)">💰 Cómo ganas UpCoins:</strong><br>
-      • 50 UC por cada 1.000 descargas efectivas por la página puente (las vistas no se pagan)<br>
+      • 75 UC (US$1,50) por cada 1.000 visualizaciones de publicidad en la página puente (las descargas y las vistas no se pagan)<br>
       • 25% de cada regalo en tus <a href="./live.html?estudio=1" style="color:var(--cy)">lives</a><br>
-      • 0,5 UC por la primera descarga efectiva de cada usuario Premium en tu publicación<br>
+      • 0,5 UC la primera vez que cada usuario Premium abre el enlace de tu publicación (Premium no ve publicidad)<br>
       • Regalos y Premium quedan 7 días en retención antes de ser retirables<br>
       <strong style="color:var(--g)">🪙 En qué gastarlos:</strong> regalos en lives, NEXUS IA, Premium, estilo del perfil y destacar tus publicaciones.
     </div>
@@ -1674,9 +1686,9 @@
           <div class="oba-kicker oba-kicker-cy oba-e">Crea, gana y disfruta</div>
           <h2 class="oba-titulo">Publica una vez.<br><span>Gana UpCoins para siempre.</span></h2>
           <div class="oba-panel oba-e">
-            <div class="oba-panel-h"><span>Descargas verificadas</span><b class="oba-num">0</b></div>
+            <div class="oba-panel-h"><span>Anuncios vistos</span><b class="oba-num">0</b></div>
             <div class="oba-barra"><i></i></div>
-            <div class="oba-premio">🪙 <b>+50 UpCoins</b> <small>por cada 1.000</small></div>
+            <div class="oba-premio">🪙 <b>+75 UpCoins</b> <small>US$1,50 por cada 1.000</small></div>
           </div>
           <div class="oba-fila oba-e"><span class="oba-ic">🎁</span><span>Regalos, Super Chats y apoyos de tus fans</span><b>25 % para ti</b></div>
           <div class="oba-fila oba-e"><span class="oba-ic">💸</span><span>Retira lo ganado</span><b>desde 500 UC</b></div>
@@ -1899,7 +1911,7 @@
 <script src="upgames-metricas.js?v=20261108a"></script>
 <script src="upgames-ranking.js?v=20261108c"></script>
 <script src="upgames-ux.js?v=20261108e"></script>
-<script src="script.js?v=bdbc5d6b65"></script>
+<script src="script.js?v=66aab8a536"></script>
 <script src="upgames-publicar.js?v=20261108a"></script>
 <script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>

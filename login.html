@@ -499,6 +499,15 @@
         }
         .ug-legal a { color: #A3A8B6; text-decoration: none; }
         .ug-legal a:hover { color: var(--primary); }
+        /* ═══ NEO · mismo lenguaje que la biblioteca ═══ */
+        .form-card { position: relative; background: rgba(13,19,32,.62); border-radius: 30px; box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 40px 90px -40px rgba(0,0,0,.95), 0 30px 80px -52px rgba(57,255,136,.6); }
+        .form-card::after { content: ''; position: absolute; left: 30px; right: 30px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #39FF88 30%, #5CE1FF 70%, transparent); pointer-events: none; }
+        #main-icon { color: #39FF88; background: linear-gradient(135deg, rgba(57,255,136,.18), rgba(92,225,255,.1)); border-color: rgba(57,255,136,.4); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 12px 30px -12px rgba(57,255,136,.6); }
+        h2 { font-family: 'Orbitron', 'Space Grotesk', sans-serif; font-weight: 900; font-size: 1.55rem; letter-spacing: .06em; text-transform: uppercase; background: linear-gradient(120deg, #fff 0%, #fff 30%, #39FF88 60%, #5CE1FF 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 500; }
+        input:focus { border-color: rgba(57,255,136,.7); box-shadow: 0 0 0 4px rgba(57,255,136,.12), 0 10px 30px -14px rgba(57,255,136,.5); }
+        #btnAction:not(:disabled) { background: linear-gradient(120deg, #39FF88 0%, #4BF0C4 55%, #5CE1FF 100%); font-family: 'Orbitron', 'Space Grotesk', sans-serif; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; color: #031109; }
+        .ug-scope span { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .64rem; letter-spacing: .04em; font-weight: 500; }
         @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
     </style>
 <link rel="manifest" href="./public/manifest.json?v=3">
@@ -507,6 +516,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./public/icons/icon-192.png?v=2">
 <script src="./public/upgames-errores.js?v=20261029i"></script>
 <script src="./public/upgames-metricas.js?v=20261108a"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./public/upgames-neo-paginas.css?v=20261112a">
 </head>
 <body>
 

@@ -8,7 +8,7 @@
  *   • fichas abiertas y clics en "Obtener link"
  *   • retención: cuántos vuelven al día siguiente (D1) y en la semana (D7)
  *   • embudo: visitaron → buscaron → abrieron una ficha → fueron a descargar → crearon cuenta
- * Las descargas efectivas, cuentas nuevas y publicaciones salen de la base de datos real.
+ * Los anuncios vistos (descargasEfectivas), cuentas nuevas y publicaciones salen de la base de datos real.
  *
  *   POST /m/e                  { vid, tipo, q?, n? }   (público, con límite por IP)
  *   GET  /admin/metricas?dias= (panel admin)

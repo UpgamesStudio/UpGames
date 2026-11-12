@@ -16,7 +16,7 @@ Si un módulo necesita algo que se crea más abajo en `index.js` (por ejemplo `l
 
 | Módulo | Qué hace |
 |---|---|
-| `rutas/economia.js` | Página puente: ticket y descargas efectivas, vistas, referidos, saldo y retiros |
+| `rutas/economia.js` | Página puente: ticket y visualizaciones de publicidad (lo único que se paga, US$1,50 por 1.000), vistas, referidos, saldo y retiros |
 | `rutas/tarjetas.js` | Tarjetas de pago y cola de retiros (procesar/rechazar) |
 | `rutas/auth.js` | Registro, login, identidad única (usuario/email) |
 | `rutas/admin.js` | Panel admin: estadísticas, saldos, acciones masivas, publicaciones |

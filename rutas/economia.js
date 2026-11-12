@@ -1,7 +1,7 @@
 /**
- * Economía: descargas efectivas, saldo, referidos y retiros
+ * Economía: visualizaciones de publicidad, saldo, referidos y retiros
  *
- * Ticket y validación de la página puente (pago por descargas efectivas), vistas, referidos, saldo, solicitud de retiro y estadísticas del creador.
+ * Ticket y validación de la página puente (pago por visualizaciones de publicidad: el campo descargasEfectivas las cuenta), vistas, referidos, saldo, solicitud de retiro y estadísticas del creador.
  * Extraído de index.js: recibe sus dependencias explícitas (ver la llamada en index.js).
  */
 module.exports = function economia({ AUTHOR_PERCENTAGE, CPM_VALUE, DescargaIP, EMAIL_NORMALIZE_OPTS, JWT_SECRET, Juego, Limites, MAX_DOWNLOADS_PER_IP_PER_DAY, MIN_WITHDRAWAL, Moderacion, Pago, Referidos, StatsItems, Usuario, app, body, calcularScoreRecomendacion, crearNotif, fraudDetector, gamification, logger, mongoose, recommendations, usuarioOpcional, validationResult, verificarAdmin, verificarToken }) {
@@ -39,7 +39,7 @@ app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req
 
         if (tieneAdBlocker === true) {
             logger.info(`Ad Blocker detectado — Juego: ${juegoId}, IP: ${ip}`);
-            return res.json({ success: true, descargaContada: false, adBlockerDetectado: true, link: juego.link, mensaje: "Acceso permitido, pero el bloqueador de anuncios impide que la descarga cuente para el autor" });
+            return res.json({ success: true, descargaContada: false, adBlockerDetectado: true, link: juego.link, mensaje: "Acceso permitido, pero con bloqueador de anuncios no hay visualización de publicidad y el autor no gana" });
         }
 
         let registroIP = await DescargaIP.findOne({ juegoId, ip });
@@ -127,7 +127,7 @@ app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req
             gamification.onItemViral(juego.usuario, juego.descargasEfectivas).catch(() => {});
         }
 
-        logger.info(`Descarga efectiva validada - Juego: ${juego.title}, Total: ${juego.descargasEfectivas}`);
+        logger.info(`Visualización de publicidad validada - Juego: ${juego.title}, Total: ${juego.descargasEfectivas}`);
 
         res.json({
             success: true, descargaContada: true, link: juego.link,
@@ -209,7 +209,7 @@ app.post('/economia/solicitar-pago', verificarToken, async (req, res) => {
         if (usuario.solicitudPagoPendiente) return res.status(400).json({ success: false, error: "Ya tienes una solicitud de pago pendiente" });
 
         const juegoElegible = await Juego.findOne({ usuario: usuario.usuario, category: { $ne: 'Video' }, descargasEfectivas: { $gt: 0 } }).select('_id').lean();
-        if (!juegoElegible && !(await live.tieneIngresosLive(usuario.usuario))) return res.status(403).json({ success: false, error: "Aún no tienes ingresos por descargas ni por regalos en tus lives" });
+        if (!juegoElegible && !(await live.tieneIngresosLive(usuario.usuario))) return res.status(403).json({ success: false, error: "Aún no tienes ingresos por visualizaciones de publicidad ni por regalos en tus lives" });
 
         // Reclamo atómico de la marca: un doble clic creaba dos solicitudes por el mismo saldo
         const marcado = await Usuario.updateOne({ _id: usuario._id, solicitudPagoPendiente: { $ne: true } }, { $set: { solicitudPagoPendiente: true } });

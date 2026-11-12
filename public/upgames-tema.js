@@ -3,7 +3,7 @@
    ───────────────────────────────────────────────────────────────
    Se carga en <head>, ANTES de pintar, para que no parpadee:
      • <html data-tema="cyber"> por defecto (localStorage 'ug_tema').
-     • El tema cyber carga sus fuentes (Orbitron, Rajdhani, Share Tech
+     • El tema cyber carga sus fuentes (Orbitron, Space Grotesk, JetBrains
        Mono) y una capa de líneas de escaneo.
      • window.UGTema.set('cyber' | 'clasico') cambia de tema y avisa con el
        evento 'ug:tema' (para la música de fondo y los temas que se
@@ -20,7 +20,7 @@
     if (document.getElementById('cb-fuentes')) return;
     const l = document.createElement('link');
     l.id = 'cb-fuentes'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap';
+    l.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap';
     document.head.appendChild(l);
   }
   function escaneo(on) {

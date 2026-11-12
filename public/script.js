@@ -1897,7 +1897,7 @@ async function renderEconomia() {
       <div class="empty-state" style="padding:40px 20px">
         <ion-icon name="person-circle-outline"></ion-icon>
         <h3>Inicia sesión</h3>
-        <p>Con una cuenta ganas dinero por cada descarga de lo que publicas, recibes regalos en tus lives y ganas UpCoins (la moneda de UpGames) que puedes gastar o retirar, y puedes hacerte Premium: sin anuncios y NEXUS ilimitado.</p><a href="${ugUrlLogin(true)}" class="btn-login-action" style="margin-top:14px;display:inline-flex">Crear cuenta gratis</a><p style="margin-top:10px;font-size:.82rem"><a href="${ugUrlLogin(false)}" style="color:#32D583">Ya tengo cuenta</a></p>
+        <p>Con una cuenta ganas dinero con la publicidad que ven quienes abren lo que publicas (US$1,50 por cada 1.000 visualizaciones), recibes regalos en tus lives y ganas UpCoins (la moneda de UpGames) que puedes gastar o retirar, y puedes hacerte Premium: sin anuncios y NEXUS ilimitado.</p><a href="${ugUrlLogin(true)}" class="btn-login-action" style="margin-top:14px;display:inline-flex">Crear cuenta gratis</a><p style="margin-top:10px;font-size:.82rem"><a href="${ugUrlLogin(false)}" style="color:#32D583">Ya tengo cuenta</a></p>
       </div>`;
     return;
   }
@@ -3028,7 +3028,7 @@ function pfOpenPostSheet(i) {
         <div class="pf2-sheet-cat">${ugEsc(catLabel(item.category))} · <span class="${isRejected ? 'bad' : isPending ? 'warn' : 'ok'}">${isRejected ? 'Rechazado' : isPending ? 'Pendiente de revisión' : 'Aprobado'}</span></div>
         <h3>${ugEsc(item.title || 'Sin título')}</h3>
         <div class="pf2-sheet-stats">
-          <div><b>${isVideo ? vistasVideo(item) : item.descargasEfectivas || 0}</b><span>${isVideo ? 'Vistas' : 'Descargas efectivas'}</span></div>
+          <div><b>${isVideo ? vistasVideo(item) : item.descargasEfectivas || 0}</b><span>${isVideo ? 'Vistas' : 'Anuncios vistos'}</span></div>
           <div><b>${item.likesCount || 0}</b><span>Likes</span></div>
           <div><b style="color:${(item.reportes || 0) >= 3 ? '#ff4343' : 'inherit'}">${item.reportes || 0}</b><span>Reportes</span></div>
           <div><b style="font-size:.78rem">${lsTxt}</b><span>Enlace</span></div>
@@ -3634,11 +3634,11 @@ function ecoUpdateDashboard(d) {
 
   // ── Trend badge ──
   const trendTxt = document.getElementById('eco-trend-txt');
-  if (trendTxt) trendTxt.textContent = totalDl > 0 ? `${pfFmt(totalDl)} descargas totales` : 'Sin descargas aún';
+  if (trendTxt) trendTxt.textContent = totalDl > 0 ? `${pfFmt(totalDl)} anuncios vistos en total` : 'Aún sin anuncios vistos';
 
   // ── RPM (revenue per download) ──
   const rpmEl = document.getElementById('eco-kpi-rpm');
-  if (rpmEl) rpmEl.textContent = totalDl > 0 ? (saldo / totalDl / 0.02).toFixed(3) + ' UC' : '0 UC';   // UpCoins por descarga
+  if (rpmEl) rpmEl.textContent = totalDl > 0 ? (saldo / totalDl / 0.02).toFixed(3) + ' UC' : '0 UC';   // UpCoins por anuncio visto
 
   // ── Content subtitle ──
   const ctEl = document.getElementById('eco-kpi-content-total');
@@ -3664,7 +3664,7 @@ function ecoUpdateDashboard(d) {
 
   // ── Chart badge ──
   const chartBadge = document.getElementById('eco-chart-badge');
-  if (chartBadge) chartBadge.textContent = pfFmt(totalDl) + ' descargas';
+  if (chartBadge) chartBadge.textContent = pfFmt(totalDl) + ' anuncios vistos';
 
   // ── Render sub-sections ──
   ecoDrawChart(totalDl, _ecoPeriodDays);
@@ -3788,7 +3788,7 @@ function ecoRenderLeaderboard(items) {
       </div>
       <div class="eco-lb-stats">
         <div class="eco-lb-dl">${pfFmt(dl)}</div>
-        <div class="eco-lb-dl-lbl">descargas</div>
+        <div class="eco-lb-dl-lbl">anuncios vistos</div>
       </div>
     </div>`;
   }).join('');
@@ -3886,15 +3886,15 @@ function ecoRenderGoals(saldo, totalDl, totalContent, elegibles) {
 
   const goals = [
     { icon: '💰', label: 'Primer UpCoin ganado',    target: 0.02,  curr: saldo,        fmt: v => '🪙 ' + (v / 0.02).toFixed(1) },
-    { icon: '📥', label: '50 descargas',             target: 50,    curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '📥', label: '50 anuncios vistos',            target: 50,    curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '📦', label: '5 publicaciones',          target: 5,     curr: totalContent, fmt: v => v },
-    { icon: '🚀', label: '100 descargas',            target: 100,   curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '🚀', label: '100 anuncios vistos',           target: 100,   curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '💸', label: 'Retiro disponible (500 UC)', target: 10,  curr: saldo,        fmt: v => '🪙 ' + Math.floor(v / 0.02) },
     { icon: '🏆', label: '10 publicaciones',         target: 10,    curr: totalContent, fmt: v => v },
-    { icon: '⭐', label: '500 descargas',            target: 500,   curr: totalDl,      fmt: v => pfFmt(v) },
-    { icon: '🔥', label: '1 000 descargas',          target: 1000,  curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '⭐', label: '500 anuncios vistos',           target: 500,   curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '🔥', label: '1 000 anuncios vistos',         target: 1000,  curr: totalDl,      fmt: v => pfFmt(v) },
     { icon: '👑', label: '10 contenidos monetizados',target: 10,    curr: elegibles,    fmt: v => v },
-    { icon: '💎', label: '5 000 descargas',          target: 5000,  curr: totalDl,      fmt: v => pfFmt(v) },
+    { icon: '💎', label: '5 000 anuncios vistos',         target: 5000,  curr: totalDl,      fmt: v => pfFmt(v) },
   ];
 
   el.innerHTML = goals.map(g => {
@@ -4667,7 +4667,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
       f.querySelector('.oba-brillo').style.transform = `translateX(${lerp(-120, 520, ((t - a - 2.9) % 2.6) / 2.6)}%) skewX(-20deg)`;
       f.querySelector('.obh-medalla').style.transform = reducido ? '' : `rotateY(${Math.max(0, 1 - en(t, a + 2.5, 1.2)) * 360}deg)`;
     }
-    // 3 · Publica una vez, gana UpCoins: contador de descargas → +50 UC, regalos y retiros
+    // 3 · Publica una vez, gana UpCoins: contador de anuncios vistos → +75 UC, regalos y retiros
     if (t > CAPS[3] - .5 && t < CAPS[4] + .5) {
       const a = CAPS[3];
       entra(caps[3].querySelector('.oba-kicker'), en(t, a + .1, .5));
@@ -4728,7 +4728,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
 
 // ── BIENVENIDA — animación + términos ───────────────────
 (function initOnboarding() {
-  const TERMINOS_VERSION = '7.3';   // súbela al cambiar los Términos o la Privacidad
+  const TERMINOS_VERSION = '7.4';   // súbela al cambiar los Términos o la Privacidad
   // La bienvenida animada (con la aceptación de términos y privacidad) es OBLIGATORIA:
   //  · sin cuenta: una vez al día (día de Colombia);
   //  · con cuenta: cada vez que inicia sesión (cada inicio trae un token nuevo; se guarda
@@ -4746,7 +4746,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
   }
   function avisoTerminosNuevos() {
     const a = document.createElement('div'); a.className = 'ug-terminos-aviso'; a.setAttribute('role', 'status');
-    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: ahora bajo la ley colombiana, a los creadores se les paga solo por descargas efectivas (no por vistas) y saltar la espera es solo con Premium.</span><button type="button">Entendido</button>`;
+    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: UpGames ya no paga por descargas. A los creadores se les paga por visualizaciones de publicidad, y la tarifa sube a US$1,50 por cada 1.000.</span><button type="button">Entendido</button>`;
     a.querySelector('button').onclick = () => { LS.set('upgames_terms_v', TERMINOS_VERSION); a.remove(); };
     setTimeout(() => document.body.appendChild(a), 2500);
   }
@@ -6350,7 +6350,7 @@ async function ecoCargarPlan(desplazar) {
         <span class="eco-plan-estado ${p ? 'on' : 'off'}">${p ? 'ACTIVO' : 'INACTIVO'}</span>
       </div>
       ${p ? `<div class="eco-plan-bar"><i style="width:${Math.max(4, Math.min(100, p.diasRestantes / p.dias * 100))}%"></i></div>` : ''}
-      ${`<ul class="eco-plan-ventajas">${(d.beneficios || []).map(x => `<li>✓ ${esc(x)}</li>`).join('')}<li>💚 Los creadores siguen cobrando por cada descarga</li></ul>`}
+      ${`<ul class="eco-plan-ventajas">${(d.beneficios || []).map(x => `<li>✓ ${esc(x)}</li>`).join('')}<li>💚 Los creadores siguen ganando con tus aperturas, aunque no veas anuncios</li></ul>`}
       <div class="eco-plan-acc">
         ${p ? `<button class="p" data-a="renovar">Renovar (+${p.dias} días)</button><button class="s" data-a="cambiar">Cambiar de plan</button>` : `<button class="p" data-a="cambiar">${d.vencido ? 'Renovar Premium' : 'Hazte Premium'}</button>`}
       </div>

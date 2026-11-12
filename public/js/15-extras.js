@@ -382,7 +382,7 @@ async function ecoCargarPlan(desplazar) {
         <span class="eco-plan-estado ${p ? 'on' : 'off'}">${p ? 'ACTIVO' : 'INACTIVO'}</span>
       </div>
       ${p ? `<div class="eco-plan-bar"><i style="width:${Math.max(4, Math.min(100, p.diasRestantes / p.dias * 100))}%"></i></div>` : ''}
-      ${`<ul class="eco-plan-ventajas">${(d.beneficios || []).map(x => `<li>✓ ${esc(x)}</li>`).join('')}<li>💚 Los creadores siguen cobrando por cada descarga</li></ul>`}
+      ${`<ul class="eco-plan-ventajas">${(d.beneficios || []).map(x => `<li>✓ ${esc(x)}</li>`).join('')}<li>💚 Los creadores siguen ganando con tus aperturas, aunque no veas anuncios</li></ul>`}
       <div class="eco-plan-acc">
         ${p ? `<button class="p" data-a="renovar">Renovar (+${p.dias} días)</button><button class="s" data-a="cambiar">Cambiar de plan</button>` : `<button class="p" data-a="cambiar">${d.vencido ? 'Renovar Premium' : 'Hazte Premium'}</button>`}
       </div>

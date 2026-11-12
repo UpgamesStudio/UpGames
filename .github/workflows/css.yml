@@ -14,6 +14,7 @@ on:
       - 'public/upgames-cyber.css'
       - 'public/upgames-videos.css'
       - 'public/upgames-ux.css'
+      - 'public/upgames-neo.css'
       - 'scripts/unir-css.js'
       - 'public/js/**'
       - 'scripts/unir-js.js'

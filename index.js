@@ -179,7 +179,7 @@ async function enviarPagoPayPal(paypalEmail, monto, pagoId) {
         sender_batch_header: {
             sender_batch_id: `UPGAMES_${pagoId}_${Date.now()}`,
             email_subject: '¡Tu pago de UpGames ha llegado!',
-            email_message: 'Has recibido un pago por tus descargas en UpGames. ¡Gracias por crear!'
+            email_message: 'Has recibido un pago por tus ganancias de creador en UpGames. ¡Gracias por crear!'
         },
         items: [{
             recipient_type: 'EMAIL',
@@ -535,7 +535,7 @@ const JuegoSchema = new mongoose.Schema({
     },
     category:           { type: String, default: "General", trim: true },
     tags:               [String],
-    descargasEfectivas: { type: Number, default: 0, min: 0 },   // solo descargas efectivas por la página puente (lo único que se paga)
+    descargasEfectivas: { type: Number, default: 0, min: 0 },   // visualizaciones de publicidad verificadas en la página puente (lo único que se paga)
     vistas:             { type: Number, default: 0, min: 0 },   // reproducciones de videos: no generan ganancia ni cuentan como descarga
     likesCount:         { type: Number, default: 0, min: 0 },
     scoreRecomendacion: { type: Number, default: 0 },
@@ -1113,7 +1113,7 @@ require('./rutas/adminNexus').registrar(app, { verificarAdmin, Juego, Usuario, C
 // ==========================================
 
 // Ticket de la página puente (modulos/ticketPuente.js): la espera se comprueba en el servidor
-const _economia = require('./rutas/economia')({ AUTHOR_PERCENTAGE, CPM_VALUE, DescargaIP, EMAIL_NORMALIZE_OPTS, JWT_SECRET, Juego, Limites, MAX_DOWNLOADS_PER_IP_PER_DAY, MIN_WITHDRAWAL, Moderacion, Pago, Referidos, StatsItems, Usuario, app, body, calcularScoreRecomendacion, crearNotif, fraudDetector, gamification, logger, mongoose, recommendations, usuarioOpcional, validationResult, verificarAdmin, verificarToken });   // Economía: descargas efectivas, saldo, referidos y retiros
+const _economia = require('./rutas/economia')({ AUTHOR_PERCENTAGE, CPM_VALUE, DescargaIP, EMAIL_NORMALIZE_OPTS, JWT_SECRET, Juego, Limites, MAX_DOWNLOADS_PER_IP_PER_DAY, MIN_WITHDRAWAL, Moderacion, Pago, Referidos, StatsItems, Usuario, app, body, calcularScoreRecomendacion, crearNotif, fraudDetector, gamification, logger, mongoose, recommendations, usuarioOpcional, validationResult, verificarAdmin, verificarToken });   // Economía: visualizaciones de publicidad, saldo, referidos y retiros
 
 // ── TARJETAS ──────────────────────────────────────────────────────────────────
 
@@ -1219,7 +1219,7 @@ app.get('/', (req, res) => {
         version: '4.0 - OPTIMIZADO',
         timestamp: new Date().toISOString(),
         features: [
-            'Sistema de economía CPM ($2.00/1000 descargas)',
+            'Sistema de economía CPM (US$1.50 por 1.000 visualizaciones de publicidad)',
             'Control de IPs anti-bots (TTL 24h)',
             'Login dual (usuario/email)',
             'Pagos PayPal automatizados',
@@ -1358,7 +1358,7 @@ const PORT = config.PORT;
 server.listen(PORT, () => {
     logger.info(`SERVIDOR CORRIENDO EN PUERTO ${PORT}`);
     logger.info(`Endpoint: http://localhost:${PORT}`);
-    logger.info(`Sistema de Economía: ACTIVO | el creador gana US$${(CPM_VALUE * AUTHOR_PERCENTAGE).toFixed(2)} (${Math.round(CPM_VALUE * AUTHOR_PERCENTAGE / 0.02)} UC) por 1.000 descargas`);
+    logger.info(`Sistema de Economía: ACTIVO | el creador gana US$${(CPM_VALUE * AUTHOR_PERCENTAGE).toFixed(2)} (${Math.round(CPM_VALUE * AUTHOR_PERCENTAGE / 0.02)} UC) por 1.000 visualizaciones de publicidad`);
     logger.info(`Anti-bots: Máx ${MAX_DOWNLOADS_PER_IP_PER_DAY} descargas/IP/día`);
     logger.info(`Detección de fraude: ACTIVA | Auto-lista negra: HABILITADA`);
 
