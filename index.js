@@ -362,6 +362,10 @@ app.use('/auth/register', authLimiter);
 app.use('/items/add', createLimiter);
 app.use('/economia/validar-descarga', downloadValidationLimiter);
 app.use(generalLimiter);
+// UpGames Blogs con dominio propio: en el dominio de un creador TODAS las rutas son de su blog,
+// así que se decide aquí, por el encabezado Host, antes que cualquier otra ruta (rutas/blogs.js)
+let blogsPorHost = null;
+app.use((req, res, next) => blogsPorHost ? blogsPorHost(req, res, next) : next());
 
 // ========== LOGGING DE REQUESTS ==========
 app.use((req, res, next) => {
@@ -1340,6 +1344,9 @@ _economia.vincularTarde({ cobros, live });   // rutas/economia.js usa estas depe
 // que las páginas, como exige Google).
 const { paginasSeoPronto } = require('./rutas/seo')({ Juego, Seo, Usuario, app, cacheado, gameDetector, logger, memCache });   // SEO: sitemap y datos de páginas estáticas
 _items.vincularTarde({ paginasSeoPronto });   // rutas/items.js usa estas dependencias, creadas después de registrar el módulo
+
+// UpGames Blogs: el creador arma su sitio (temas, entradas, páginas) y se sirve en /b/<direccion> o en su dominio
+blogsPorHost = require('./rutas/blogs').registrar(app, { verificarToken, Usuario, Juego, Limites, Moderacion, CeroTolerancia, logger, mongoose, APP_URL, API_URL_SELF }).porHost;
 
 // ========== MANEJO DE ERRORES ==========
 app.use((req, res) => {
