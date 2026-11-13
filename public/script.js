@@ -1708,19 +1708,11 @@ async function share(id) {
   const url = it ? ugUrlCompartir(it) : `${location.origin}${location.pathname}?id=${id}`;
   const titulo = it ? `${it.title} en UpGames` : 'Mira este contenido en UpGames';
   if(navigator.share) {
-    // En el celular se comparte la tarjeta como imagen + el enlace (WhatsApp, TikTok, historias…)
-    let files;
-    const img = ugTarjeta(it);
-    if (img && navigator.canShare) {
-      try {
-        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 4000);
-        const blob = await (await fetch(img, { signal: ctl.signal })).blob(); clearTimeout(to);
-        const f = new File([blob], 'upgames.jpg', { type: 'image/jpeg' });
-        if (navigator.canShare({ files: [f] })) files = [f];
-      } catch (_) {}
-    }
+    // Se comparte el ENLACE de la publicación (antes iba la tarjeta como archivo de imagen y
+    // WhatsApp y otras apps mandaban solo la foto, sin enlace). La vista previa con la portada
+    // la pone la app de destino a partir del enlace (páginas /p/).
     try {
-      await navigator.share(files ? { files, title: titulo, text: `${titulo}\n${url}` } : { url, title: titulo, text: titulo });
+      await navigator.share({ title: titulo, text: `${titulo} 👇`, url });
       toast('✅ Compartido');
     } catch(e) { if (e?.name !== 'AbortError') copyToClipboard(url); }
   } else {

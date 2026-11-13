@@ -1911,7 +1911,7 @@
 <script src="upgames-metricas.js?v=20261108a"></script>
 <script src="upgames-ranking.js?v=20261108c"></script>
 <script src="upgames-ux.js?v=20261108e"></script>
-<script src="script.js?v=66aab8a536"></script>
+<script src="script.js?v=99b58059d9"></script>
 <script src="upgames-publicar.js?v=20261108a"></script>
 <script src="upgames-extras.js?v=20261108a"></script>
 <script src="upgames-social.js?v=20261029i"></script>
@@ -2075,6 +2075,8 @@ async function pfSaveUsername() {
     /* Actualizar localStorage — user_admin es un string plano (el que confirmó el servidor) */
     localStorage.setItem('user_admin', data.nuevoUsuario || newUser);
     if (data.nuevoToken) localStorage.setItem('token', data.nuevoToken);
+    // La marca de Premium va ligada al nombre: se pasa al nuevo (si no, la página puente volvía a mostrar anuncios)
+    try { const m = String(localStorage.getItem('ug_pase_hasta') || '').split('|'); if (m[1]) localStorage.setItem('ug_pase_hasta', (data.nuevoUsuario || newUser) + '|' + m[1]); } catch (_) {}
     const lastUsernameChange = new Date().toISOString();
     pfSetMeta({ lastUsernameChange });
     document.getElementById('pf-username').textContent = '@' + newUser;
@@ -2102,6 +2104,7 @@ async function pfSaveEmail() {
     const data = await res.json();
     if (!data.success) { showToast(data.error || 'Error al cambiar email', 'error'); return; }
     localStorage.setItem('email', newEmail);
+    if (data.nuevoToken) localStorage.setItem('token', data.nuevoToken);
     const lastEmailChange = new Date().toISOString();
     pfSetMeta({ lastEmailChange });
     document.getElementById('pf-input-newemail').value = '';

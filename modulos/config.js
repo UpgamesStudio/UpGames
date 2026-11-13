@@ -67,7 +67,7 @@ const config = {
     RATE_LIMIT: {
         GENERAL: {
             windowMs: 15 * 60 * 1000,     // 15 minutos
-            max: 200,                      // 200 peticiones
+            max: Math.max(200, parseInt(process.env.RATE_LIMIT_GENERAL, 10) || 2000),   // por usuario (o IP si es invitado)
         },
         AUTH: {
             windowMs: 15 * 60 * 1000,     // 15 minutos
