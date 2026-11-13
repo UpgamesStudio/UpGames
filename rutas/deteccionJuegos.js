@@ -16,32 +16,13 @@ app.post('/items/detect-game', [body('title').notEmpty().trim()], async (req, re
                 detected:     true,
                 gameName:     det.gameName,
                 gameKey:      det.gameKey,
-                platform:     det.platform,
-                purchaseLink: det.purchaseLink
+                platform:     det.platform
             });
         }
         res.json({ detected: false });
     } catch(err) {
         logger.error(`[detect-game] ${err.message}`);
         res.status(500).json({ detected: false });
-    }
-});
-
-// POST /items/buy-intent/:id — registra intención de compra (analytics, no bloqueante)
-app.post('/items/buy-intent/:id', [param('id').isMongoId()], async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if(!errors.isEmpty()) return res.status(400).json({ ok: false });
-        if (!(await Limites.permitir(`buyIntent:${req.params.id}:${req.ip}`, [[Limites.DIA, 3]]))) return res.json({ ok: true });
-        const { usuario, gameName, purchaseLink } = req.body || {};
-        logger.info(`[BuyIntent] item=${req.params.id} | game="${gameName}" | user=${usuario||'anon'} | link=${purchaseLink}`);
-        // Guardar en extraData del juego para analytics futuros
-        await Juego.findByIdAndUpdate(req.params.id, {
-            $inc: { 'extraData.buyIntentCount': 1 }
-        }).catch(()=>{});
-        res.json({ ok: true });
-    } catch(err) {
-        res.status(500).json({ ok: false });
     }
 });
 

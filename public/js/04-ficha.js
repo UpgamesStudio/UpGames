@@ -283,11 +283,9 @@ function openDetail(item) {
     // Video: el player está embebido arriba — ningún botón de acción aplica
     dlBtn.style.display = 'none';
     dlBtn.onclick = null;
-    // Limpiar wrap y botón comprar que puedan haber quedado de una card anterior
+    // Limpia el wrapper que pudo quedar de una card anterior
     const _vWrap = document.getElementById('ds-action-wrap');
     if(_vWrap) _vWrap.remove();
-    const _vBuy = document.getElementById('ds-buy-btn');
-    if(_vBuy) _vBuy.remove();
   } else {
     dlBtn.style.display = '';
     const _puenteMedia = [item.image, ...(item.images||[])].filter(m=>m&&m.trim()).find(m=>
@@ -307,39 +305,9 @@ function openDetail(item) {
       }
     };
 
-    // Botones Acceder + Comprar lado a lado
+    // Limpia el wrapper de una card anterior
     const _existWrap = document.getElementById('ds-action-wrap');
     if(_existWrap) { _existWrap.parentNode.insertBefore(dlBtn, _existWrap); _existWrap.remove(); }
-    const _existBuy = document.getElementById('ds-buy-btn');
-    if(_existBuy) _existBuy.remove();
-
-    const _det = item.extraData && item.extraData.detectedGame
-      ? item.extraData.detectedGame
-      : clientDetectGame(item.title, item.description);
-
-    if(_det && _det.purchaseLink) {
-      // Crear wrapper flex que contiene ambos botones
-      const _wrap = document.createElement('div');
-      _wrap.id = 'ds-action-wrap';
-      _wrap.className = 'ds-action-wrap';
-
-      // Clonar dlBtn dentro del wrapper
-      const _cloudBtn = dlBtn.cloneNode(true);
-      _cloudBtn.onclick = dlBtn.onclick;
-      _wrap.appendChild(_cloudBtn);
-
-      // Botón comprar
-      const _buyBtn = document.createElement('button');
-      _buyBtn.id = 'ds-buy-btn';
-      _buyBtn.className = 'sheet-buy-btn';
-      _buyBtn.innerHTML = '<ion-icon name="cart-outline"></ion-icon> COMPRAR';
-      _buyBtn.onclick = function() { showBuyModal(item._id, _det.gameName, _det.purchaseLink); };
-      _wrap.appendChild(_buyBtn);
-
-      // Reemplazar dlBtn con el wrapper
-      dlBtn.parentNode.insertBefore(_wrap, dlBtn);
-      dlBtn.style.display = 'none';
-    }
   }
 
   // Fav button

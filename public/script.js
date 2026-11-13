@@ -1307,11 +1307,9 @@ function openDetail(item) {
     // Video: el player está embebido arriba — ningún botón de acción aplica
     dlBtn.style.display = 'none';
     dlBtn.onclick = null;
-    // Limpiar wrap y botón comprar que puedan haber quedado de una card anterior
+    // Limpia el wrapper que pudo quedar de una card anterior
     const _vWrap = document.getElementById('ds-action-wrap');
     if(_vWrap) _vWrap.remove();
-    const _vBuy = document.getElementById('ds-buy-btn');
-    if(_vBuy) _vBuy.remove();
   } else {
     dlBtn.style.display = '';
     const _puenteMedia = [item.image, ...(item.images||[])].filter(m=>m&&m.trim()).find(m=>
@@ -1331,39 +1329,9 @@ function openDetail(item) {
       }
     };
 
-    // Botones Acceder + Comprar lado a lado
+    // Limpia el wrapper de una card anterior
     const _existWrap = document.getElementById('ds-action-wrap');
     if(_existWrap) { _existWrap.parentNode.insertBefore(dlBtn, _existWrap); _existWrap.remove(); }
-    const _existBuy = document.getElementById('ds-buy-btn');
-    if(_existBuy) _existBuy.remove();
-
-    const _det = item.extraData && item.extraData.detectedGame
-      ? item.extraData.detectedGame
-      : clientDetectGame(item.title, item.description);
-
-    if(_det && _det.purchaseLink) {
-      // Crear wrapper flex que contiene ambos botones
-      const _wrap = document.createElement('div');
-      _wrap.id = 'ds-action-wrap';
-      _wrap.className = 'ds-action-wrap';
-
-      // Clonar dlBtn dentro del wrapper
-      const _cloudBtn = dlBtn.cloneNode(true);
-      _cloudBtn.onclick = dlBtn.onclick;
-      _wrap.appendChild(_cloudBtn);
-
-      // Botón comprar
-      const _buyBtn = document.createElement('button');
-      _buyBtn.id = 'ds-buy-btn';
-      _buyBtn.className = 'sheet-buy-btn';
-      _buyBtn.innerHTML = '<ion-icon name="cart-outline"></ion-icon> COMPRAR';
-      _buyBtn.onclick = function() { showBuyModal(item._id, _det.gameName, _det.purchaseLink); };
-      _wrap.appendChild(_buyBtn);
-
-      // Reemplazar dlBtn con el wrapper
-      dlBtn.parentNode.insertBefore(_wrap, dlBtn);
-      dlBtn.style.display = 'none';
-    }
   }
 
   // Fav button
@@ -5958,120 +5926,6 @@ window.switchTab = function (tab) {
   if (tab === 'main') setTimeout(() => { if (!document.getElementById('notif-btn')) ugnArrancar(); }, 300);
 };
 Object.assign(window, { ugnSuscribir, ugnDesuscribir, ugnAjustes, ugnProbar, ugnMarcarTodas, ugnVaciar, ugnCerrar });
-
-// ═══════════════════════════════════════════════════════════════
-// SISTEMA DE DETECCIÓN DE JUEGOS — UpGames
-// clientDetectGame() funciona sin depender de datos del servidor.
-// ═══════════════════════════════════════════════════════════════
-
-const _GAMESDB = [
-  { n:'Grand Theft Auto V',         l:'https://store.steampowered.com/app/271590/',  kw:['gta v','gta5','gta 5','grand theft auto v','grand theft auto 5','gtav'] },
-  { n:'GTA San Andreas',            l:'https://store.steampowered.com/app/12120/',   kw:['gta san andreas','san andreas','gtasa','gta sa'] },
-  { n:'Red Dead Redemption 2',      l:'https://store.steampowered.com/app/1174180/', kw:['red dead redemption 2','rdr2','red dead 2','red dead'] },
-  { n:'Dark Souls Remastered',      l:'https://store.steampowered.com/app/570940/',  kw:['dark souls','darksouls'] },
-  { n:'Dark Souls II',              l:'https://store.steampowered.com/app/335300/',  kw:['dark souls 2','dark souls ii','ds2'] },
-  { n:'Dark Souls III',             l:'https://store.steampowered.com/app/374320/',  kw:['dark souls 3','dark souls iii','ds3'] },
-  { n:'Elden Ring',                 l:'https://store.steampowered.com/app/1245620/', kw:['elden ring','eldenring'] },
-  { n:'Sekiro',                     l:'https://store.steampowered.com/app/814380/',  kw:['sekiro'] },
-  { n:'NFS Most Wanted 2005',       l:'https://store.steampowered.com/app/13520/',   kw:['need for speed most wanted','nfsmw','nfs most wanted','nfs mw','most wanted 2005'] },
-  { n:'NFS Underground 2',          l:'https://www.ea.com/games/need-for-speed/need-for-speed-underground-2', kw:['nfs underground 2','nfsu2','underground 2','need for speed underground'] },
-  { n:'NFS Heat',                   l:'https://store.steampowered.com/app/1222680/', kw:['nfs heat','need for speed heat'] },
-  { n:'NFS Unbound',                l:'https://store.steampowered.com/app/1846380/', kw:['nfs unbound','need for speed unbound'] },
-  { n:'Minecraft',                  l:'https://www.minecraft.net/en-us/store/minecraft-java-bedrock-edition-pc', kw:['minecraft'] },
-  { n:'pixARK',                     l:'https://store.steampowered.com/app/593380/',  kw:['pixark','pix ark'] },
-  { n:'ARK Survival Evolved',       l:'https://store.steampowered.com/app/346110/',  kw:['ark survival evolved','ark survival','ark evolved'] },
-  { n:'ARK Survival Ascended',      l:'https://store.steampowered.com/app/2399830/', kw:['ark survival ascended','ark ascended'] },
-  { n:'Project Zomboid',            l:'https://store.steampowered.com/app/108600/',  kw:['project zomboid','zomboid','zomdroid'] },
-  { n:'Terraria',                   l:'https://store.steampowered.com/app/105600/',  kw:['terraria'] },
-  { n:'Stardew Valley',             l:'https://store.steampowered.com/app/413150/',  kw:['stardew valley','stardew'] },
-  { n:'Valheim',                    l:'https://store.steampowered.com/app/892970/',  kw:['valheim'] },
-  { n:'Rust',                       l:'https://store.steampowered.com/app/252490/',  kw:['rust survival','rust game'] },
-  { n:'7 Days to Die',              l:'https://store.steampowered.com/app/251570/',  kw:['7 days to die','7dtd'] },
-  { n:'Cyberpunk 2077',             l:'https://store.steampowered.com/app/1091500/', kw:['cyberpunk 2077','cyberpunk','cp2077'] },
-  { n:'Skyrim',                     l:'https://store.steampowered.com/app/489830/',  kw:['skyrim','elder scrolls v','tesv'] },
-  { n:'The Witcher 3',              l:'https://store.steampowered.com/app/292030/',  kw:['witcher 3','the witcher 3'] },
-  { n:'Hogwarts Legacy',            l:'https://store.steampowered.com/app/990080/',  kw:['hogwarts legacy','harry potter game'] },
-  { n:'Fortnite',                   l:'https://www.epicgames.com/fortnite/en-US/download', kw:['fortnite'] },
-  { n:'PUBG',                       l:'https://store.steampowered.com/app/578080/',  kw:['pubg battlegrounds','pubg pc','pubg game'] },
-  { n:'Valorant',                   l:'https://playvalorant.com/en-us/download/',    kw:['valorant'] },
-  { n:'Counter-Strike 2',           l:'https://store.steampowered.com/app/730/',     kw:['counter-strike','cs2','csgo','cs go'] },
-  { n:'Call of Duty',               l:'https://store.steampowered.com/app/2602690/', kw:['call of duty','cod warzone','warzone','modern warfare'] },
-  { n:'Apex Legends',               l:'https://store.steampowered.com/app/1172470/', kw:['apex legends'] },
-  { n:'Overwatch 2',                l:'https://playoverwatch.com/en-us/download/',   kw:['overwatch 2','overwatch'] },
-  { n:'League of Legends',          l:'https://signup.leagueoflegends.com/en-us/signup/', kw:['league of legends'] },
-  { n:'Dota 2',                     l:'https://store.steampowered.com/app/570/',     kw:['dota 2','dota2'] },
-  { n:'Forza Horizon 5',            l:'https://store.steampowered.com/app/1551360/', kw:['forza horizon','fh5','forza 5'] },
-  { n:'EA Sports FC',               l:'https://store.steampowered.com/app/2195250/', kw:['ea sports fc','ea fc','fifa','fc 25','fc25'] },
-  { n:'BeamNG.drive',               l:'https://store.steampowered.com/app/284160/',  kw:['beamng','beam ng'] },
-  { n:'Resident Evil',              l:'https://store.steampowered.com/franchise/residentevil', kw:['resident evil','re village','re4','re2','re3'] },
-  { n:'Hollow Knight',              l:'https://store.steampowered.com/app/367520/',  kw:['hollow knight'] },
-  { n:'Among Us',                   l:'https://store.steampowered.com/app/945360/',  kw:['among us'] },
-  { n:'PUBG Mobile',                l:'https://play.google.com/store/apps/details?id=com.tencent.ig', kw:['pubg mobile'] },
-  { n:'COD Mobile',                 l:'https://play.google.com/store/apps/details?id=com.activision.callofduty.shooter', kw:['cod mobile','codm','call of duty mobile'] },
-  { n:'Mobile Legends',             l:'https://play.google.com/store/apps/details?id=com.mobile.legends', kw:['mobile legends','mlbb'] },
-  { n:'Free Fire',                  l:'https://play.google.com/store/apps/details?id=com.dts.freefireth', kw:['free fire','freefire','garena free fire'] },
-  { n:'Genshin Impact',             l:'https://genshin.hoyoverse.com/en/download',   kw:['genshin impact','genshin'] },
-];
-
-function clientDetectGame(title, description) {
-  if (!title) return null;
-  // palabras o frases completas: "apex legends" no salta con "APEX GP" ni "re4" dentro de otra palabra
-  var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9':]+/g, ' ').trim(); };
-  var text = ' ' + norm(title) + ' ' + norm(description) + ' ';
-  for (var i = 0; i < _GAMESDB.length; i++) {
-    var g = _GAMESDB[i];
-    for (var j = 0; j < g.kw.length; j++) {
-      if (text.indexOf(' ' + norm(g.kw[j]) + ' ') !== -1) {
-        return { gameName: g.n, purchaseLink: g.l };
-      }
-    }
-  }
-  return null;
-}
-
-function showBuyModal(itemId, gameName, purchaseLink) {
-  var existing = document.getElementById('buy-modal-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.id = 'buy-modal-overlay';
-
-  var storeName = 'Tienda Oficial';
-  if (purchaseLink.indexOf('steampowered.com') !== -1) storeName = 'Steam';
-  else if (purchaseLink.indexOf('epicgames.com') !== -1) storeName = 'Epic Games';
-  else if (purchaseLink.indexOf('rockstargames.com') !== -1) storeName = 'Rockstar Games';
-  else if (purchaseLink.indexOf('play.google.com') !== -1) storeName = 'Google Play';
-  else if (purchaseLink.indexOf('playstation.com') !== -1) storeName = 'PlayStation Store';
-  else if (purchaseLink.indexOf('xbox.com') !== -1) storeName = 'Xbox Store';
-  else if (purchaseLink.indexOf('minecraft.net') !== -1) storeName = 'Minecraft.net';
-
-  overlay.innerHTML =
-    '<div class="buy-modal">' +
-      '<button class="buy-modal-close" onclick="document.getElementById(\'buy-modal-overlay\').remove()">' +
-        '<ion-icon name="close"></ion-icon>' +
-      '</button>' +
-      '<div class="buy-modal-header">' +
-        '<div class="buy-modal-icon">🎮</div>' +
-        '<h2 class="buy-modal-title">' + gameName + '</h2>' +
-        '<p class="buy-modal-sub">Disponible en <strong>' + storeName + '</strong></p>' +
-      '</div>' +
-      '<div class="buy-modal-benefits">' +
-        '<div class="buy-modal-benefit"><ion-icon name="shield-checkmark"></ion-icon> Version 100% original y segura</div>' +
-        '<div class="buy-modal-benefit"><ion-icon name="headset"></ion-icon> Soporte oficial del desarrollador</div>' +
-        '<div class="buy-modal-benefit"><ion-icon name="refresh-circle"></ion-icon> Actualizaciones garantizadas</div>' +
-        '<div class="buy-modal-benefit"><ion-icon name="heart"></ion-icon> Apoya a los creadores del juego</div>' +
-      '</div>' +
-      '<div class="buy-modal-actions">' +
-        '<button class="buy-modal-btn-cancel" onclick="document.getElementById(\'buy-modal-overlay\').remove()">Cancelar</button>' +
-        '<button class="buy-modal-btn-go" onclick="window.open(\'' + purchaseLink + '\',\'_blank\');document.getElementById(\'buy-modal-overlay\').remove();">' +
-          '<ion-icon name="cart"></ion-icon> Ir a ' + storeName +
-        '</button>' +
-      '</div>' +
-    '</div>';
-
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
-}
 
 // ═══════════════════════════════════════════════════════════
 // PAGOS TAB — historial de retiros del creador

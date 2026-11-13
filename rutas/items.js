@@ -275,8 +275,7 @@ app.post("/items/add", [verificarToken, body('title').notEmpty().trim().isLength
             nuevoJuego.extraData.detectedGame = {
                 gameName:     deteccion.gameName,
                 gameKey:      deteccion.gameKey,
-                platform:     deteccion.platform,
-                purchaseLink: deteccion.purchaseLink
+                platform:     deteccion.platform
             };
             logger.info(`[GameDetector] "${nuevoJuego.title}" → ${deteccion.gameName}`);
         }
@@ -353,7 +352,7 @@ app.put("/items/:id", verificarToken, [
                 });
             }
             const det = gameDetector.detectGame(updates.title ?? item.title, updates.description ?? item.description);
-            if (det) ex.detectedGame = { gameName: det.gameName, gameKey: det.gameKey, platform: det.platform, purchaseLink: det.purchaseLink };
+            if (det) ex.detectedGame = { gameName: det.gameName, gameKey: det.gameKey, platform: det.platform };
             else delete ex.detectedGame;
             updates.extraData = ex;
         }

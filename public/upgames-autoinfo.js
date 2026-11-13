@@ -125,7 +125,7 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: titulo }), signal
           }).then(x => x.json());
-          if (d && d.detected) info.detectedGame = { gameName: d.gameName, purchaseLink: d.purchaseLink, platform: d.platform };
+          if (d && d.detected) info.detectedGame = { gameName: d.gameName, platform: d.platform };
         } catch (_) {}
       }
     }
