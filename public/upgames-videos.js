@@ -186,6 +186,8 @@
       v.src = ugVideoSrc(it.link);
       const t = $('.ugv-t', s.el), mmss = x => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
       v.addEventListener('timeupdate', () => { const b = $('.ugv-prog i', s.el); if (b && v.duration) { b.style.transform = `scaleX(${v.currentTime / v.duration})`; t.textContent = `${mmss(v.currentTime)} / ${mmss(v.duration)}`; } });
+      // Vertical → llena toda la pantalla; horizontal → se ve completo sobre el fondo difuminado de su póster
+      v.addEventListener('loadedmetadata', () => { v.classList.toggle('vertical', v.videoHeight >= v.videoWidth * 1.05); });
       v.addEventListener('waiting', () => s.el.classList.add('cargando')); v.addEventListener('playing', () => s.el.classList.remove('cargando'));
       m.appendChild(v); s.video = v;
     }

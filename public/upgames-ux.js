@@ -175,6 +175,101 @@
     }).catch(() => { blogsRecientes = []; });
   }
 
+
+  // ── Carrusel «Recomendados para ti» ──
+  // Tres entradas a la vez: la del centro crece y muestra sus acciones; las de los lados se ven
+  // atenuadas y se desvanecen hacia los bordes. Cada tarjeta es una «ficha» de cristal:
+  // portada a sangre, título grande, valoración real, precio («Gratis») y dos acciones.
+  const nfK = n => { n = +n || 0; return n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.0', '') + 'K' : String(n); };
+  const matiz = id => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+  function portadaCarrusel(it) {
+    let src = it.image || '';
+    try {
+      if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(src)) src = getYouTubeThumbnail(src);
+      else if (typeof ugEsVideoArchivo === 'function' && ugEsVideoArchivo(src)) src = (typeof ugVideoThumb === 'function' && ugVideoThumb(src)) || '';
+    } catch (_) {}
+    return typeof cldOpt === 'function' ? cldOpt(src, 'c_fill,g_auto,ar_3:4.4,w_640,q_auto,f_auto') : src;
+  }
+  function valoracion(it) {
+    const r = it.resenas;
+    if (r && r.n) { const p = +r.promedio || 0; return { txt: p >= 4.2 ? 'Muy positivas' : p >= 3.5 ? 'Mayormente positivas' : 'Opiniones mixtas', sub: `★ ${p.toFixed(1).replace('.', ',')} · ${nfK(r.n)} reseña${r.n === 1 ? '' : 's'}`, cls: p >= 3.5 ? '' : ' mixta' }; }
+    const d = it.descargasEfectivas || 0;
+    return { txt: Date.now() - new Date(it.createdAt || 0) < 30 * DIA ? 'Recién llegado' : 'Elegido para ti', sub: d ? `${nfK(d)} descargas` : 'Sé de los primeros en probarlo', cls: '' };
+  }
+  function filaCarrusel(items) {
+    if (items.length < 4 || typeof openDetail !== 'function') return null;
+    const n = items.length, reducir = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sec = document.createElement('section');
+    sec.className = 'ugx-car';
+    sec.setAttribute('aria-roledescription', 'carrusel'); sec.setAttribute('aria-label', 'Recomendados para ti');
+    const fav = id => typeof favIds !== 'undefined' && favIds.includes(id);
+    sec.innerHTML = `<div class="ugx-car-h"><span class="ugx-car-eyebrow">Recomendados para ti</span><h2>Elegidos por Nexus</h2></div>
+      <div class="ugx-car-vp" tabindex="0" aria-live="off">${items.map((it, i) => {
+        const v = valoracion(it), cat = it.category || 'General';
+        return `<article class="ugx-card" data-i="${i}" style="--h:${matiz(it._id)}" aria-label="${esc(it.title)}">
+          <img class="ugx-card-bg" src="${esc(portadaCarrusel(it))}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="this.onerror=null;this.src=window.UG_PH||''">
+          <div class="ugx-card-tint"></div>
+          <div class="ugx-card-top"><span class="ugx-chip">${esc(cat)}</span></div>
+          <div class="ugx-card-main">
+            <h3 class="ugx-card-t">${esc((it.serieInfo?.base || it.title || '').slice(0, 70))}</h3>
+            <p class="ugx-card-by">@${esc(it.usuario || '')}</p>
+            <div class="ugx-card-panel">
+              <div class="ugx-card-val${v.cls}"><b>${esc(v.txt)}</b><small>${esc(v.sub)}</small></div>
+              <div class="ugx-card-precio"><strong>Gratis</strong><small>Sin cuenta ni tarjeta</small></div>
+              <div class="ugx-card-acc">
+                <button type="button" class="ugx-btn ugx-btn--pri" data-ver tabindex="-1">Ver más</button>
+                <button type="button" class="ugx-btn ugx-btn--vidrio${fav(it._id) ? ' on' : ''}" data-fav aria-label="Guardar en favoritos" tabindex="-1"><ion-icon name="${fav(it._id) ? 'heart' : 'heart-outline'}"></ion-icon></button>
+              </div>
+            </div>
+          </div>
+        </article>`; }).join('')}</div>
+      <div class="ugx-car-dots" role="tablist">${items.map((_, i) => `<button type="button" role="tab" aria-label="Entrada ${i + 1}" data-dot="${i}"></button>`).join('')}</div>`;
+
+    const vp = sec.querySelector('.ugx-car-vp'), cards = [...sec.querySelectorAll('.ugx-card')], dots = [...sec.querySelectorAll('[data-dot]')];
+    let idx = 0, timer = null, arrastre = null, visible = true, quieto = false;
+    // Distancia circular: la entrada anterior a la primera es la última (carrusel sin fin)
+    const dist = i => { let d = (i - idx) % n; if (d > n / 2) d -= n; if (d < -n / 2) d += n; return d; };
+    function pintar() {
+      cards.forEach((c, i) => {
+        const d = dist(i);
+        c.style.setProperty('--d', d);
+        c.dataset.pos = d === 0 ? 'centro' : Math.abs(d) === 1 ? 'lado' : 'lejos';
+        c.setAttribute('aria-hidden', d === 0 ? 'false' : 'true');
+        c.querySelectorAll('button').forEach(b => { b.tabIndex = d === 0 ? 0 : -1; });
+      });
+      dots.forEach((b, i) => { b.classList.toggle('on', i === idx); b.setAttribute('aria-selected', i === idx); });
+    }
+    const ir = i => { idx = (i + n) % n; pintar(); };
+    pintar();
+    const arrancar = () => { clearTimeout(timer); if (reducir) return; timer = setTimeout(() => { if (!sec.isConnected) return; if (!document.hidden && visible && !quieto) ir(idx + 1); arrancar(); }, 5200); };
+    if ('IntersectionObserver' in window) new IntersectionObserver(e => { visible = e[0].isIntersecting; }, { threshold: .4 }).observe(sec);
+    arrancar();
+
+    // Toque: izquierda/derecha cambian de entrada; tocar una lateral la trae al centro
+    vp.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; arrastre = { x: e.clientX, y: e.clientY, mov: false }; quieto = true; });
+    vp.addEventListener('pointermove', e => { if (arrastre && Math.abs(e.clientX - arrastre.x) > 8) arrastre.mov = true; });
+    const soltar = e => {
+      if (!arrastre) return; const dx = e.clientX - arrastre.x, a = arrastre; arrastre = null;
+      setTimeout(() => { quieto = false; }, 4000);
+      if (a.mov && Math.abs(dx) > 36) { ir(idx + (dx < 0 ? 1 : -1)); a.mov = 'hecho'; vp._swipe = Date.now(); }
+    };
+    vp.addEventListener('pointerup', soltar); vp.addEventListener('pointercancel', () => { arrastre = null; quieto = false; });
+    vp.addEventListener('mouseenter', () => { quieto = true; }); vp.addEventListener('mouseleave', () => { quieto = false; });
+    vp.addEventListener('focusin', () => { quieto = true; }); vp.addEventListener('focusout', () => { quieto = false; });
+    vp.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { ir(idx + 1); e.preventDefault(); } else if (e.key === 'ArrowLeft') { ir(idx - 1); e.preventDefault(); } });
+    vp.addEventListener('click', e => {
+      if (vp._swipe && Date.now() - vp._swipe < 350) return;
+      const c = e.target.closest('.ugx-card'); if (!c) return;
+      const i = +c.dataset.i, it = items[i];
+      if (i !== idx) return ir(i);
+      const f = e.target.closest('[data-fav]');
+      if (f) { e.stopPropagation(); if (typeof window.fav === 'function') window.fav(it._id); const on = !f.classList.contains('on'); f.classList.toggle('on', on); f.querySelector('ion-icon')?.setAttribute('name', on ? 'heart' : 'heart-outline'); return; }
+      elegir(it, 'v'); openDetail(it);
+    });
+    sec.querySelector('.ugx-car-dots').addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) { ir(+b.dataset.dot); quieto = true; setTimeout(() => { quieto = false; }, 4000); } });
+    return sec;
+  }
+
   /** Agrega las filas a `frag` (antes del catálogo). Devuelve cuántas se agregaron. */
   function filas(frag, lista) {
     const hist = filaHistorial();
@@ -187,9 +282,15 @@
     const nuevos = [...base].filter(i => i.createdAt && Date.now() - new Date(i.createdAt) < 45 * DIA)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 12);
     const android = base.filter(esAndroid).sort((a, b) => (b.descargasSemana || 0) - (a.descargasSemana || 0) || (b.descargasEfectivas || 0) - (a.descargasEfectivas || 0)).slice(0, 12);
+    // Recomendados: lo que Nexus ya puso arriba en el orden de este usuario, sin repetir lo de las filas de arriba
+    const yaEnFilas = new Set([...masDesc, ...nuevos].map(i => i._id));
+    const conPortada = base.filter(i => i.image && !/\.(mp4|webm|mov)(\?|$)/i.test(i.image));
+    const recom = conPortada.filter(i => !yaEnFilas.has(i._id)).slice(0, 9);
+    const recomFinal = recom.length >= 4 ? recom : conPortada.slice(0, 9);
     const secs = [
       fila(hayTopSemana ? '🔥 Más descargados esta semana' : '🔥 Más descargados', hayTopSemana ? 'Lo que más baja la comunidad estos 7 días' : 'Lo favorito de la comunidad', masDesc, 'ugx-fila--top'),
       fila('🆕 Nuevos', 'Recién publicados', nuevos),
+      filaCarrusel(recomFinal),   // dos filas por debajo del carrusel principal, para que no compitan
       fila('📱 Para Android', 'Juegos, mods y apps para tu móvil', android),
       filaBlogs(),
     ].filter(Boolean);
