@@ -40,6 +40,16 @@ const TEMAS = {
         v: { bg: '#0B0B0E', bg2: '#141418', tarjeta: 'rgba(255,255,255,.04)', borde: 'rgba(255,90,60,.2)', txt: '#F5F3F0', txt2: '#A8A29E', acento: '#FF4D2E', acento2: '#FFB020', sobreAcento: '#1A0703', radio: '10px',
              fondo: 'radial-gradient(60% 45% at 100% 0%, rgba(255,77,46,.2), transparent 70%), radial-gradient(45% 40% at 0% 100%, rgba(255,176,32,.1), transparent 70%)' },
     },
+    // ── Exclusivos Premium ──
+    cristal: {
+        nombre: 'Cristal', descripcion: 'Cristal esmerilado de medianoche con un solo acento violeta.', oscuro: true, titulos: 'manrope', portada: 'rejilla', premium: true,
+        v: { bg: '#05060F', bg2: '#0B0D1C', tarjeta: 'rgba(186,214,247,.06)', borde: 'rgba(186,215,247,.16)', txt: '#E6EEFB', txt2: '#9DA7BA', acento: '#7C5CFF', acento2: '#B6D9FC', sobreAcento: '#FFFFFF', radio: '18px',
+             fondo: 'radial-gradient(50% 40% at 50% -8%, rgba(124,92,255,.28), transparent 72%), radial-gradient(40% 34% at 100% 30%, rgba(182,217,252,.10), transparent 70%)' },
+    },
+    lienzo: {
+        nombre: 'Lienzo', descripcion: 'Galería blanca con un solo índigo. Mucho aire, letra ligera.', oscuro: false, titulos: 'manrope', portada: 'lista', premium: true,
+        v: { bg: '#FFFFFF', bg2: '#F4F4F6', tarjeta: '#FFFFFF', borde: 'rgba(0,0,0,.1)', txt: '#0A0A0A', txt2: '#595959', acento: '#4D49FC', acento2: '#00B6FF', sobreAcento: '#FFFFFF', radio: '22px', fondo: 'none' },
+    },
 };
 const POR_DEFECTO = 'neon';
 
@@ -66,7 +76,7 @@ function sobre(hex) {
 
 /** Lista para el panel: lo necesario para dibujar la vista previa de cada tema. */
 function lista() {
-    return Object.entries(TEMAS).map(([id, t]) => ({ id, nombre: t.nombre, descripcion: t.descripcion, oscuro: t.oscuro,
+    return Object.entries(TEMAS).map(([id, t]) => ({ id, nombre: t.nombre, descripcion: t.descripcion, oscuro: t.oscuro, premium: !!t.premium,
         colores: { bg: t.v.bg, tarjeta: t.v.bg2, txt: t.v.txt, acento: t.v.acento, acento2: t.v.acento2 } }));
 }
 

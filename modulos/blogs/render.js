@@ -154,6 +154,7 @@ code{font-family:ui-monospace,'Share Tech Mono',Menlo,monospace;background:var(-
 .d-info{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}.d-info b{font-size:1.02rem;line-height:1.25}.d-info small{color:var(--txt2)}
 .d-boton{flex-shrink:0;background:var(--acento);color:var(--sobre-acento);font-weight:800;padding:11px 20px;border-radius:99px;box-shadow:0 10px 26px -12px var(--acento)}.d-boton:hover{text-decoration:none;filter:brightness(1.08)}
 @media(max-width:520px){.descarga{flex-wrap:wrap}.descarga img{width:64px;height:64px}.d-boton{width:100%;text-align:center}}
+.comentarios{margin-top:28px}.comentarios iframe{width:100%;border:0;background:transparent;color-scheme:normal;min-height:360px}
 .etiquetas{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
 .compartir{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:20px;border-top:1px solid var(--borde);align-items:center;color:var(--txt2);font-size:.9rem}
 aside.lateral{display:grid;gap:18px;align-content:start}
@@ -237,7 +238,7 @@ ${previa ? '<div class="previa">Vista previa · así se verá cuando la publique
 ${cuerpo}
 <footer class="pie"><div class="ancho">
 <span>© ${new Date().getUTCFullYear()} ${esc(blog.titulo)} · <a href="${esc(base)}/feed.xml">RSS</a> · <a href="${esc(ctx.appUrl)}/public/blog.html?reportar=${esc(blog.direccion)}" rel="nofollow">Reportar</a></span>
-${blog.sinMarca ? '' : `<a class="hecho" href="${esc(ctx.appUrl)}/public/blog.html" rel="noopener">Hecho con <b>UpGames</b> · crea tu blog gratis</a>`}
+${blog.sinMarca || ctx.sinMarca ? '' : `<a class="hecho" href="${esc(ctx.appUrl)}/public/blog.html" rel="noopener">Hecho con <b>UpGames</b> · crea tu blog gratis</a>`}
 </div></footer>
 </body>
 </html>`;
@@ -291,6 +292,14 @@ function inicio(ctx, { entradas, pagina = 1, hayMas = false, etiqueta = '' }) {
 }
 
 /** Una entrada (o una página fija, que no lleva fecha, etiquetas ni contador). */
+/** Comentarios: un marco aislado en el dominio de UpGames (la página del blog no lleva scripts). */
+function comentarios(ctx, e) {
+    const t = temaDe(ctx.blog.tema), a = ctx.blog.ajustes || {};
+    const acento = esColor(a.acento) ? a.acento : t.v.acento;
+    const src = `${ctx.appUrl}/public/blog-comentarios.html?e=${encodeURIComponent(e._id)}&t=${t.oscuro ? 'oscuro' : 'claro'}&c=${String(acento).replace('#', '')}`;
+    return `<section class="comentarios" aria-label="Comentarios"><iframe src="${esc(src)}" title="Comentarios" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" height="520"></iframe></section>`;
+}
+
 function entrada(ctx, e, { previa = false } = {}) {
     const { blog, base, origen } = ctx;
     const esPagina = e.tipo === 'pagina';
@@ -306,6 +315,7 @@ ${port ? `<div class="portada-entrada"><img src="${esc(img(port, 1400))}" alt=""
 <div class="contenido">${bloquesHtml(e.bloques, ctx)}</div>
 ${!esPagina && e.etiquetas?.length ? `<div class="etiquetas">${e.etiquetas.map(t => `<a class="chip" href="${esc(base)}/etiqueta/${esc(V.slug(t))}">#${esc(t)}</a>`).join('')}</div>` : ''}
 ${esPagina || previa ? '' : compartir}
+${esPagina || previa || !e._id ? '' : comentarios(ctx, e)}
 ${previa ? '' : anuncio(ctx)}
 </article></div></main>
 ${e._id && !previa ? `<img class="pixel" src="${esc(base)}/_v/${esc(e._id)}.gif" alt="" width="1" height="1">` : ''}`;

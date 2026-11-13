@@ -34,13 +34,15 @@ function enlaceProhibido(urls) {
 }
 
 function registrar(app, deps) {
-    const { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET } = deps;
+    const { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET, Comentario, Notificacion, crearNotif, gamification } = deps;
     const { Blog, Entrada, BlogVista, BlogReporte } = require('../modulos/blogs/modelos')(mongoose);
 
     const HOST_API = (() => { try { return new URL(API_URL_SELF).hostname; } catch (_) { return ''; } })();
     const BLOGS_DOMINIO = String(process.env.BLOGS_DOMINIO || '').toLowerCase().replace(/^\.+|\.+$/g, '');   // p. ej. upgames.site
     const DESTINO_CNAME = String(process.env.BLOGS_CNAME || HOST_API || '').toLowerCase();                  // a dónde apunta el dominio del creador
     const idOk = v => mongoose.isValidObjectId(v);
+    const premiumActivo = d => !!(d?.planHasta && new Date(d.planHasta) > new Date());
+    const esPremium = async usuario => premiumActivo(await Usuario.findOne({ usuario }).select('planHasta').lean());
     const fallo = (res, e, donde) => { logger.error(`[blogs] ${donde}: ${e.message}`); res.status(500).json({ success: false, error: 'No se pudo completar. Inténtalo de nuevo.' }); };
 
     // ── Caché en memoria (un blog se lee muchas más veces de las que cambia) ─────────────
@@ -149,7 +151,8 @@ function registrar(app, deps) {
             const blogs = await Blog.find({ usuario: req.usuario }).sort({ createdAt: 1 }).lean();
             const cuentas = await Entrada.aggregate([{ $match: { blog: { $in: blogs.map(b => b._id) }, tipo: 'entrada' } }, { $group: { _id: '$blog', n: { $sum: 1 } } }]);
             const n = Object.fromEntries(cuentas.map(c => [String(c._id), c.n]));
-            res.json({ success: true, blogs: blogs.map(b => ({ ...vistaBlog(b), entradas: n[String(b._id)] || 0 })), maximo: V.LIMITES.BLOGS_POR_CUENTA });
+            const premium = await esPremium(req.usuario);
+            res.json({ success: true, blogs: blogs.map(b => ({ ...vistaBlog(b), entradas: n[String(b._id)] || 0 })), maximo: premium ? V.LIMITES.BLOGS_PREMIUM : V.LIMITES.BLOGS_POR_CUENTA, premium });
         } catch (e) { fallo(res, e, 'mios'); }
     });
 
@@ -170,7 +173,9 @@ function registrar(app, deps) {
             if (!u) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
             if (!u.emailVerificado) return res.status(403).json({ success: false, code: 'EMAIL_SIN_VERIFICAR', error: 'Verifica tu correo para crear un blog. Lo haces desde tu perfil en UpGames.' });
             if (await CeroTolerancia.restringido(req.usuario)) return res.status(403).json({ success: false, code: 'RESTRINGIDO', error: 'Tu cuenta está restringida mientras el equipo de seguridad revisa un reporte.' });
-            if (await Blog.countDocuments({ usuario: req.usuario }) >= V.LIMITES.BLOGS_POR_CUENTA) return res.status(400).json({ success: false, error: `Puedes tener hasta ${V.LIMITES.BLOGS_POR_CUENTA} blogs.` });
+            const premium = await esPremium(req.usuario), maximo = premium ? V.LIMITES.BLOGS_PREMIUM : V.LIMITES.BLOGS_POR_CUENTA;
+            if (await Blog.countDocuments({ usuario: req.usuario }) >= maximo) return res.status(400).json({ success: false, code: premium ? undefined : 'PREMIUM', error: premium ? `Puedes tener hasta ${maximo} blogs.` : `Llegaste a ${maximo} blogs. Con Premium puedes tener hasta ${V.LIMITES.BLOGS_PREMIUM}.` });
+            if (Temas.TEMAS[req.body?.tema]?.premium && !premium) return res.status(403).json({ success: false, code: 'PREMIUM', error: 'Ese tema es exclusivo de Premium.' });
             const descripcion = V.linea(req.body?.descripcion, V.LIMITES.DESCRIPCION);
             const malo = revisar(req.usuario, titulo, [{ tipo: 'texto', texto: descripcion }], d.valor);
             if (malo) return res.status(400).json({ success: false, error: malo });
@@ -195,7 +200,10 @@ function registrar(app, deps) {
             if (c.titulo !== undefined) { const t = V.linea(c.titulo, V.LIMITES.TITULO); if (t.length < 2) return res.status(400).json({ success: false, error: 'El nombre del blog es muy corto.' }); b.titulo = t; }
             if (c.descripcion !== undefined) b.descripcion = V.linea(c.descripcion, V.LIMITES.DESCRIPCION);
             if (c.direccion !== undefined && c.direccion !== b.direccion) { const d = V.validarDireccion(c.direccion); if (d.error) return res.status(400).json({ success: false, error: d.error }); b.direccion = d.valor; }
-            if (c.tema !== undefined && Temas.TEMAS[c.tema]) b.tema = c.tema;
+            if (c.tema !== undefined && Temas.TEMAS[c.tema]) {
+                if (Temas.TEMAS[c.tema].premium && c.tema !== b.tema && !(await esPremium(req.usuario))) return res.status(403).json({ success: false, code: 'PREMIUM', error: 'Ese tema es exclusivo de Premium.' });
+                b.tema = c.tema;
+            }
             if (c.visibilidad !== undefined && ['publico', 'oculto'].includes(c.visibilidad)) b.visibilidad = c.visibilidad;
             if (typeof c.monetizar === 'boolean') b.monetizar = c.monetizar;   // el creador decide si su blog lleva publicidad
             if (c.ajustes !== undefined) { b.ajustes = limpiarAjustes({ ...(b.ajustes || {}), ...c.ajustes }, b.ajustes); b.markModified('ajustes'); }
@@ -267,12 +275,27 @@ function registrar(app, deps) {
         return '';
     }
 
-    /** NEXUS revisa lo publicado en segundo plano: si es claramente inaceptable, vuelve a borrador. */
+    /** Avisa a los seguidores del creador (una sola vez por entrada, y solo de blogs públicos). */
+    async function avisarSeguidores(e, blog) {
+        if (e.tipo !== 'entrada' || e.estado !== 'publicada' || e.avisada || blog.visibilidad !== 'publico' || !Notificacion) return;
+        const marcada = await Entrada.updateOne({ _id: e._id, avisada: { $ne: true } }, { $set: { avisada: true } });
+        if (!marcada.modifiedCount) return;
+        if (!(await Limites.permitir(`blog-aviso:${blog._id}`, [[Limites.DIA, 3]]))) return;
+        const autor = await Usuario.findOne({ usuario: blog.usuario }).select('listaSeguidores').lean();
+        const seguidores = (autor?.listaSeguidores || []).slice(0, 5000);
+        if (!seguidores.length) return;
+        const url = `${urlPublica(blog)}e/${e.slug}`, portada = e.portada || V.primeraImagen(e.bloques) || '';
+        await Notificacion.insertMany(seguidores.map(s => ({ destinatario: String(s).toLowerCase(), tipo: 'nueva_entrada', emisor: blog.usuario, itemId: url, itemTitle: e.titulo, itemImage: portada, mensaje: `publicó en su blog «${blog.titulo}»`, leida: false, fecha: new Date() })), { ordered: false });
+        logger.info(`[blogs] aviso de «${blog.direccion}/${e.slug}» a ${seguidores.length} seguidores`);
+    }
+
+    /** NEXUS revisa lo publicado en segundo plano: si es claramente inaceptable, vuelve a borrador; si no, se avisa a los seguidores. */
     function revisarConIA(e, blog) {
         const texto = `${e.titulo}\n${V.textoDe(e.bloques)}`.slice(0, 6000);
-        if (texto.length < 40 || typeof Moderacion.ia !== 'function') return;
+        const seguir = () => avisarSeguidores(e, blog).catch(err => logger.error(`[blogs] aviso: ${err.message}`));
+        if (texto.length < 40 || typeof Moderacion.ia !== 'function') return seguir();
         Limites.permitir('mod-ia-blog', [[Limites.MIN, 10]]).then(ok => ok && Moderacion.ia(texto, 'publicacion')).then(async v => {
-            if (!v || !Moderacion.debeQuitar(v)) return;
+            if (!v || !Moderacion.debeQuitar(v)) return seguir();
             await Entrada.updateOne({ _id: e._id }, { $set: { estado: 'borrador' } }); olvidar();
             Moderacion.registrar({ tipo: 'blog', usuario: blog.usuario, categoria: v.categoria, motivo: v.motivo, fuente: 'ia', texto: texto.slice(0, 600), ref: `${blog.direccion}/${e.slug}`, accion: 'quitado' });
             logger.warn(`[blogs] NEXUS devolvió a borrador «${blog.direccion}/${e.slug}» (${v.categoria})`);
@@ -449,9 +472,75 @@ function registrar(app, deps) {
         } catch (e) { fallo(res, e, 'admin estado'); }
     });
 
+    // ═══════════════ COMENTARIOS ═══════════════
+    // Las páginas del blog no llevan scripts: los comentarios se muestran y escriben en un marco aislado
+    // (public/blog-comentarios.html, en el dominio de UpGames, donde está la sesión) que usa estas rutas.
+    const refComentario = eid => `blog:${eid}`;
+    async function entradaComentable(eid) {
+        if (!idOk(eid)) return null;
+        const e = await Entrada.findOne({ _id: eid, tipo: 'entrada', $or: [{ estado: 'publicada' }, { estado: 'programada', publicadaEn: { $lte: new Date() } }] }).select('blog titulo slug usuario').lean();
+        const b = e && await Blog.findById(e.blog).select('direccion titulo usuario estado').lean();
+        return b && b.estado === 'activo' ? { e, b } : null;
+    }
+
+    app.get('/blogs/comentarios/:eid', async (req, res) => {
+        try {
+            const c = await entradaComentable(req.params.eid);
+            if (!c) return res.status(404).json({ success: false, comentarios: [] });
+            const lista = await Comentario.find({ itemId: refComentario(req.params.eid) }).sort({ fecha: -1 }).limit(100).select('usuario texto fecha').lean();
+            const autores = [...new Set(lista.map(x => x.usuario))];
+            const avatares = Object.fromEntries((await Usuario.find({ usuario: { $in: autores } }).select('usuario avatar').lean()).map(u => [u.usuario, u.avatar || '']));
+            res.set('Cache-Control', 'public, max-age=10').json({ success: true, dueno: c.b.usuario, comentarios: lista.map(x => ({ id: String(x._id), usuario: x.usuario, avatar: avatares[x.usuario] || '', texto: x.texto, fecha: x.fecha })) });
+        } catch (e) { fallo(res, e, 'comentarios'); }
+    });
+
+    app.post('/blogs/comentarios/:eid', verificarToken, async (req, res) => {
+        try {
+            const c = await entradaComentable(req.params.eid);
+            if (!c) return res.status(404).json({ success: false, error: 'Esa entrada ya no está disponible.' });
+            const texto = String(req.body?.texto || '').replace(/<[^>]*>/g, '').trim().slice(0, 500);
+            if (!texto) return res.status(400).json({ success: false, error: 'El comentario está vacío' });
+            if (await CeroTolerancia.restringido(req.usuario)) return res.status(403).json({ success: false, code: 'RESTRINGIDO', error: 'Tu cuenta está restringida mientras el equipo de seguridad revisa un reporte.' });
+            const mod = Moderacion.reglas(texto, 'comentario');
+            const ref = `${c.b.direccion}/${c.e.slug}`;
+            if (mod.bloquear) {
+                Moderacion.registrar({ tipo: 'comentario', usuario: req.usuario, categoria: mod.categoria, motivo: mod.motivo, fuente: 'reglas', texto, ref, accion: 'bloqueado-antes' });
+                return res.status(400).json({ success: false, error: `Tu comentario no se publicó porque ${Moderacion.MENSAJE[mod.categoria] || 'incumple las normas'}. Escríbelo de otra forma.` });
+            }
+            const enlace = enlaceProhibido((texto.match(/https?:\/\/[^\s]+/g) || []));
+            if (enlace) return res.status(400).json({ success: false, error: enlace });
+            if (!(await Limites.permitir(`coment:${req.usuario}`, [[10 * Limites.MIN, 15]]))) return res.status(429).json({ success: false, error: 'Vas muy rápido. Espera unos minutos para comentar de nuevo.' });
+            const nuevo = await Comentario.create({ itemId: refComentario(req.params.eid), texto, usuario: req.usuario });
+            gamification?.onComentario?.(req.usuario)?.catch?.(() => {});
+            if (texto.length >= 8 && (mod.dudoso || await Limites.permitir('mod-ia-coment', [[Limites.MIN, 20]]))) {
+                Moderacion.ia(texto, 'comentario').then(async v => {
+                    if (!Moderacion.debeQuitar(v)) return;
+                    await Comentario.deleteOne({ _id: nuevo._id });
+                    Moderacion.registrar({ tipo: 'comentario', usuario: req.usuario, categoria: v.categoria, motivo: v.motivo, fuente: 'NEXUS', texto, ref, accion: 'borrado' });
+                    crearNotif({ destinatario: req.usuario, tipo: 'sistema', emisor: 'UpGames', itemTitle: 'Revisión', mensaje: `🚫 Quitamos tu comentario porque ${Moderacion.MENSAJE[v.categoria]}. Mantengamos la comunidad sana.` });
+                }).catch(() => {});
+            }
+            crearNotif({ destinatario: c.b.usuario, tipo: 'comentario', emisor: req.usuario, itemTitle: c.e.titulo, mensaje: `@${req.usuario} comentó en tu entrada «${c.e.titulo}»` });
+            res.status(201).json({ success: true, comentario: { id: String(nuevo._id), usuario: req.usuario, avatar: '', texto, fecha: nuevo.fecha } });
+        } catch (e) { fallo(res, e, 'comentar'); }
+    });
+
+    // Lo borra quien lo escribió o el dueño del blog
+    app.delete('/blogs/comentarios/:eid/:cid', verificarToken, async (req, res) => {
+        try {
+            const c = await entradaComentable(req.params.eid);
+            if (!c || !idOk(req.params.cid)) return res.status(404).json({ success: false, error: 'No existe.' });
+            const filtro = { _id: req.params.cid, itemId: refComentario(req.params.eid) };
+            if (c.b.usuario !== req.usuario) filtro.usuario = req.usuario;
+            const r = await Comentario.deleteOne(filtro);
+            res.json({ success: !!r.deletedCount });
+        } catch (e) { fallo(res, e, 'borrar comentario'); }
+    });
+
     // ═══════════════ PÁGINAS PÚBLICAS ═══════════════
 
-    const CSP = "default-src 'none'; img-src 'self' https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self' https://www.youtube-nocookie.com https://open.spotify.com; base-uri 'none'; form-action 'none'";
+    const APP_ORIGEN = (() => { try { return new URL(APP_URL).origin; } catch (_) { return ''; } })();
+    const CSP = `default-src 'none'; img-src 'self' https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self' ${APP_ORIGEN} https://www.youtube-nocookie.com https://open.spotify.com; base-uri 'none'; form-action 'none'`;
     function html(res, estado, cuerpo, cacheSeg = 300) {
         if (!cacheSeg) return res.status(estado).set({ 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': CSP, 'Cache-Control': 'no-store' }).send(cuerpo);
         res.status(estado).set({ 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': CSP, 'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -503,12 +592,12 @@ function registrar(app, deps) {
     const contexto = (blog, base, origen) => conCache(`ctx:${blog._id}`, 60, async () => {
         const [paginas, autor, populares, nube] = await Promise.all([
             Entrada.find({ ...visibles(blog._id), tipo: 'pagina' }).sort({ createdAt: 1 }).limit(8).select('titulo slug').lean(),
-            Usuario.findOne({ usuario: blog.usuario }).select('usuario avatar bio').lean(),
+            Usuario.findOne({ usuario: blog.usuario }).select('usuario avatar bio planHasta').lean(),
             Entrada.find({ ...visibles(blog._id), tipo: 'entrada', vistas: { $gt: 0 } }).sort({ vistas: -1 }).limit(5).select('titulo slug').lean(),
             Entrada.aggregate([{ $match: { ...visibles(blog._id), tipo: 'entrada' } }, { $unwind: '$etiquetas' }, { $group: { _id: '$etiquetas', n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 20 }]),
         ]);
-        return { paginas, autor, populares, nube: nube.map(x => x._id) };
-    }).then(c => ({ ...c, blog, base, origen, appUrl: APP_URL, anuncio: !!blog.monetizar && blog.visibilidad === 'publico' }));
+        return { paginas, autor: autor && { usuario: autor.usuario, avatar: autor.avatar, bio: autor.bio }, premium: premiumActivo(autor), populares, nube: nube.map(x => x._id) };
+    }).then(({ premium, ...c }) => ({ ...c, blog: !premium && Temas.TEMAS[blog.tema]?.premium ? { ...blog, tema: Temas.POR_DEFECTO } : blog, sinMarca: premium, base, origen, appUrl: APP_URL, anuncio: !!blog.monetizar && blog.visibilidad === 'publico' }));
 
     async function juegosDe(bloques) {
         const ids = [...new Set((bloques || []).filter(b => b.tipo === 'juego' || b.tipo === 'descarga').map(b => b.id))].slice(0, 20);

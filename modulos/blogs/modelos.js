@@ -54,6 +54,7 @@ module.exports = function modelos(mongoose) {
         estado:    { type: String, enum: ['borrador', 'publicada', 'programada'], default: 'borrador' },
         publicadaEn: { type: Date, default: null },
         vistas:    { type: Number, default: 0 },
+        avisada:   { type: Boolean, default: false },   // ya se avisó a los seguidores del creador
     }, { timestamps: true });
     EntradaSchema.index({ blog: 1, tipo: 1, slug: 1 }, { unique: true });
     EntradaSchema.index({ blog: 1, estado: 1, publicadaEn: -1 });

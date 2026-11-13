@@ -65,7 +65,7 @@ const BASE = (process.env.APP_URL || 'https://upgames.games').replace(/\/+$/, ''
 
 /** Categoría de preferencias a la que pertenece una notificación (null = no se envía push). */
 function categoria(n) {
-    if (n.tipo === 'nueva_publicacion') return 'publicaciones';
+    if (n.tipo === 'nueva_publicacion' || n.tipo === 'nueva_entrada') return 'publicaciones';
     if (n.tipo === 'descarga') return null;                       // demasiadas: solo dentro de la app
     if (['seguidor', 'favorito', 'comentario', 'logro'].includes(n.tipo)) return 'social';
     const t = n.itemTitle || '';
@@ -85,6 +85,7 @@ function contenido(n) {
     const item = n.itemId && /^[a-f\d]{24}$/i.test(n.itemId) ? `${BASE}biblioteca.html?id=${n.itemId}` : `${BASE}biblioteca.html`;
     switch (n.tipo) {
         case 'nueva_publicacion': return { title: `${e} publicó algo nuevo`, body: recorta(titulo || 'Toca para verlo', 120), url: item, image: img, tag: `pub-${n.itemId}` };
+        case 'nueva_entrada':     return { title: `${e} publicó en su blog`, body: recorta(titulo || 'Toca para leerlo', 120), url: /^https:\/\//.test(n.itemId || '') ? n.itemId : `${BASE}biblioteca.html`, image: img, tag: `blog-${String(n.itemId).slice(-40)}` };
         case 'seguidor':          return { title: `${e} empezó a seguirte`, body: 'Toca para ver su perfil', url: `${BASE}perfil-publico.html?u=${encodeURIComponent(n.emisor)}`, tag: `seg-${n.emisor}` };
         case 'favorito':          return { title: `A ${e} le gustó tu publicación`, body: recorta(titulo, 120), url: item, image: img, tag: `fav-${n.itemId}` };
         case 'comentario':        return { title: `${e} comentó tu publicación`, body: recorta(msg || titulo, 140), url: item, tag: `com-${n.itemId}` };

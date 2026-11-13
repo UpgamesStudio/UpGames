@@ -21,7 +21,7 @@ const app = $('#app');
 const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ico = n => `<ion-icon name="${n}"></ion-icon>`;
 
-const S = { blogs: [], blog: null, vista: 'entradas', temas: [], fuentes: [], fondos: [], cpm: 0, maximo: 3 };
+const S = { blogs: [], blog: null, vista: 'entradas', temas: [], fuentes: [], fondos: [], cpm: 0, maximo: 3, premium: false };
 
 async function api(ruta, { metodo = 'GET', cuerpo, publico } = {}) {
   let r;
@@ -108,7 +108,7 @@ function bienvenida() {
 }
 
 function tarjetasTema(elegido) {
-  return `<div class="temas">${S.temas.map(t => `<button type="button" class="tema${t.id === elegido ? ' on' : ''}" data-tema="${h(t.id)}">
+  return `<div class="temas">${S.temas.map(t => `<button type="button" class="tema${t.id === elegido ? ' on' : ''}" data-tema="${h(t.id)}">${t.premium ? `<em class="pro">${S.premium ? 'PREMIUM' : '🔒 PREMIUM'}</em>` : ''}
     <div class="mini" style="background:${h(t.colores.bg)}"><i style="background:${h(t.colores.txt)};width:60%"></i><i style="background:${h(t.colores.acento)};width:34%"></i><u style="background:${h(t.colores.tarjeta)};border:1px solid ${h(t.colores.acento)}55"></u></div>
     <b>${h(t.nombre)}</b><span>${h(t.descripcion)}</span></button>`).join('')}</div>`;
 }
@@ -137,7 +137,7 @@ function asistente(puedeVolver) {
   };
   f.titulo.oninput = () => { if (!dirTocada) { f.direccion.value = limpiar(f.titulo.value).replace(/-+$/, ''); comprobar(); } };
   f.direccion.oninput = () => { dirTocada = true; f.direccion.value = limpiar(f.direccion.value); comprobar(); };
-  f.onclick = e => { const b = e.target.closest('[data-tema]'); if (b) { tema = b.dataset.tema; f.querySelectorAll('.tema').forEach(x => x.classList.toggle('on', x === b)); } };
+  f.onclick = e => { const b = e.target.closest('[data-tema]'); if (b && S.temas.find(x => x.id === b.dataset.tema)?.premium && !S.premium) return toast('Ese tema es exclusivo de Premium.', true); if (b) { tema = b.dataset.tema; f.querySelectorAll('.tema').forEach(x => x.classList.toggle('on', x === b)); } };
   if (puedeVolver) $('[data-volver]', f).onclick = () => panel();
   f.onsubmit = e => {
     e.preventDefault();
@@ -311,7 +311,7 @@ function vistaTema() {
       <button class="btn chico" id="enlaces-ok">Guardar enlaces</button></section>`;
   const aplicar = (cambios, msg) => guardarBlog(cambios, msg).then(vistaTema).catch(e => toast(e.message, true));
   v.onclick = async e => {
-    const t = e.target.closest('[data-tema]'); if (t && t.dataset.tema !== b.tema) return aplicar({ tema: t.dataset.tema }, 'Tema cambiado');
+    const t = e.target.closest('[data-tema]'); if (t && S.temas.find(x => x.id === t.dataset.tema)?.premium && !S.premium) return toast('Ese tema es exclusivo de Premium. Lo activas en Creator Studio → Premium.', true); if (t && t.dataset.tema !== b.tema) return aplicar({ tema: t.dataset.tema }, 'Tema cambiado');
     const s = e.target.closest('[data-subir]');
     if (s) { const f = await elegirImagen(); if (!f) return; return ocupado(s, async () => { const url = await subirImagen(f); await aplicar({ ajustes: { [s.dataset.subir]: url } }); }); }
     const q = e.target.closest('[data-quitar]'); if (q) return aplicar({ ajustes: { [q.dataset.quitar]: '' } });
@@ -693,7 +693,7 @@ async function editor(tipo, id) {
   try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
   try {
     const [t, m] = await Promise.all([api('/blogs/temas', { publico: true }), api('/blogs/mios')]);
-    S.temas = t.temas; S.fuentes = t.fuentes; S.fondos = t.fondos || []; S.cpm = t.cpm || 0; S.blogs = m.blogs; S.maximo = m.maximo;
+    S.temas = t.temas; S.fuentes = t.fuentes; S.fondos = t.fondos || []; S.cpm = t.cpm || 0; S.blogs = m.blogs; S.maximo = m.maximo; S.premium = !!m.premium;
     S.blog = S.blogs[0] || null;
     S.blog ? panel() : asistente(false);
   } catch (e) {

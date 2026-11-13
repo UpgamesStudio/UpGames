@@ -169,3 +169,21 @@ test('descarga: si la publicación no existe no pinta nada', () => {
     const h = R.entrada({ blog: { usuario: 'kale', tema: 'neon', ajustes: {}, titulo: 'B', direccion: 'kale' }, base: '/b/kale', origen: 'https://x.test', appUrl: 'https://app.test', paginas: [], populares: [], nube: [], juegos: {} }, { titulo: 'T', slug: 't', tipo: 'entrada', bloques: [{ tipo: 'descarga', id: 'b'.repeat(24) }], publicadaEn: new Date() });
     assert.ok(!h.includes('class="descarga"'));
 });
+
+console.log('comentarios, marca y Premium');
+const ctxB = (extra = {}, tema = 'neon') => ({ blog: { usuario: 'kale', tema, ajustes: {}, titulo: 'B', direccion: 'kale' }, base: '/b/kale', origen: 'https://x.test', appUrl: 'https://app.test', paginas: [], populares: [], nube: [], juegos: {}, ...extra });
+const ent = (extra = {}) => ({ _id: 'c'.repeat(24), titulo: 'T', slug: 't', tipo: 'entrada', bloques: [{ tipo: 'texto', texto: 'hola' }], publicadaEn: new Date(), ...extra });
+test('las entradas llevan el marco de comentarios (no las páginas ni la vista previa)', () => {
+    assert.ok(R.entrada(ctxB(), ent()).includes('https://app.test/public/blog-comentarios.html?e=' + 'c'.repeat(24)));
+    assert.ok(!R.entrada(ctxB(), ent({ tipo: 'pagina' })).includes('blog-comentarios'));
+    assert.ok(!R.entrada(ctxB(), ent(), { previa: true }).includes('blog-comentarios'));
+});
+test('«Hecho con UpGames»: aparece salvo en Premium', () => {
+    assert.ok(R.entrada(ctxB(), ent()).includes('Hecho con'));
+    assert.ok(!R.entrada(ctxB({ sinMarca: true }), ent()).includes('Hecho con'));
+});
+test('temas exclusivos: marcados Premium en la lista y se pintan con sus colores', () => {
+    const l = Temas.lista();
+    assert.ok(l.filter(t => t.premium).length >= 2 && !l.find(t => t.id === 'neon').premium);
+    assert.ok(R.entrada(ctxB({}, 'cristal'), ent()).includes('#7C5CFF'));
+});

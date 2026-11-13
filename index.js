@@ -761,7 +761,7 @@ const Favorito = mongoose.model('Favoritos', FavoritosSchema);
 
 const NotificacionSchema = new mongoose.Schema({
     destinatario: { type: String, required: true, index: true },
-    tipo:     { type: String, enum: ['nueva_publicacion', 'favorito', 'descarga', 'sistema', 'comentario', 'seguidor', 'logro'], required: true },
+    tipo:     { type: String, enum: ['nueva_publicacion', 'nueva_entrada', 'favorito', 'descarga', 'sistema', 'comentario', 'seguidor', 'logro'], required: true },
     emisor:   { type: String, required: true },
     itemId:   { type: String, default: '' },
     itemTitle:{ type: String, default: '' },
@@ -1346,7 +1346,7 @@ const { paginasSeoPronto } = require('./rutas/seo')({ Juego, Seo, Usuario, app, 
 _items.vincularTarde({ paginasSeoPronto });   // rutas/items.js usa estas dependencias, creadas después de registrar el módulo
 
 // UpGames Blogs: el creador arma su sitio (temas, entradas, páginas) y se sirve en /b/<direccion> o en su dominio
-blogsPorHost = require('./rutas/blogs').registrar(app, { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET }).porHost;
+blogsPorHost = require('./rutas/blogs').registrar(app, { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET, Comentario, Notificacion, crearNotif, gamification }).porHost;
 
 // ========== MANEJO DE ERRORES ==========
 app.use((req, res) => {
