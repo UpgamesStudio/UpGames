@@ -80,6 +80,7 @@ function permisoRequerido(method, path) {
     if (/^\/admin\/nexus\/(buscar|buscador)/.test(path)) return ['revision', 'contenido', 'estadisticas'];   // descubrir contenido para la comunidad
     if (/^\/admin\/sistema\/anuncio/.test(path)) return ['anuncios'];
     if (/^\/admin\/(sistema|cache)/.test(path)) return ['sistema'];
+    if (/^\/admin\/informes/.test(path)) return ['estadisticas', 'finanzas'];   // el informe mensual (pagos y equipo solo salen con su permiso)
     if (/^\/(admin\/stats|analytics\/admin)/.test(path)) return ['estadisticas'];
     if (method === 'GET' && /^\/admin\/finanzas\/economia/.test(path)) return ['finanzas', 'estadisticas'];
     if (/^\/admin\/(finanzas|payments-pending)/.test(path)) return ['finanzas'];
@@ -553,4 +554,4 @@ function registrar(app, { Usuario, Juego, Comentario, Notificacion, Pago, JWT_SE
     };
 }
 
-module.exports = { registrar, permisoRequerido, limiteRevision, normalizarPermisos, PERMISOS, ROLES };
+module.exports = { registrar, permisoRequerido, limiteRevision, normalizarPermisos, PERMISOS, ROLES, ownerEmails };

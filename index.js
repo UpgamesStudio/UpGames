@@ -1302,6 +1302,8 @@ require('./rutas/extrasUC').registrar(app, { verificarToken, verificarAdmin, Usu
 // Reseñas con estrellas y colecciones de publicaciones
 // Métricas de producto (eventos anónimos + panel admin)
 require('./rutas/metricas').registrar(app, { verificarAdmin, Usuario, Juego, Limites, logger });
+// Informe mensual de actividad (descarga en CSV/JSON y aviso al dueño al empezar cada mes)
+require('./rutas/informes').registrar(app, { verificarAdmin, Usuario, Juego, Comentario, Pago, Reporte, sendEmail, logger, ownerEmails: require('./rutas/adminPanel').ownerEmails });
 // Compatibilidad real por dispositivo ("funcionó en mi Snapdragon a 45 FPS")
 require('./rutas/compat').registrar(app, { verificarToken, Juego, Moderacion, Limites, logger });
 require('./rutas/social').registrar(app, { verificarToken, verificarAdmin, usuarioOpcional, Usuario, Juego, Moderacion, Limites, crearNotif, logger });
