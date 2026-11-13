@@ -602,6 +602,12 @@
             };
             api(`/acceso-directo/${encodeURIComponent(juegoId)}`).then(async est => {
                 try { est.pase ? localStorage.setItem('ug_pase_hasta', localStorage.getItem('user_admin') + '|' + (+new Date(est.pase.hasta))) : localStorage.removeItem('ug_pase_hasta'); } catch (_) {}
+                // Premium activo pero la página ya cargó anuncios (la marca local faltaba: Premium recién
+                // activado, otro dispositivo, o cambio de nombre de usuario): se recarga una sola vez, ya sin anuncios.
+                if (est.pase && !window.UG_SIN_ANUNCIOS && !/[?&]sp=1\b/.test(location.search)) {
+                    let guardada = false; try { guardada = String(localStorage.getItem('ug_pase_hasta') || '').split('|')[0] === localStorage.getItem('user_admin'); } catch (_) {}
+                    if (guardada) { clearInterval(interval); location.replace(location.href.split('#')[0] + '&sp=1'); return; }
+                }
                 if (est.desbloqueado && est.link) return listo(est.link, '✅ Ya tienes acceso directo a esta publicación');
                 // Premium activo: enlace sin esperas ni anuncios (el creador cobra del fondo Premium)
                 if (est.pase) {

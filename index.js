@@ -313,14 +313,23 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // ========== RATE LIMITING ==========
-// El general queda en memoria a propósito: es grueso (200/15 min) y en Mongo sumaría una escritura a CADA petición
+// El general queda en memoria a propósito: es grueso y en Mongo sumaría una escritura a CADA petición.
+// Antes eran 200 peticiones / 15 min POR IP: una sola persona usando la web con sesión (avisos, chats,
+// fichas, ajustes de cuenta…) lo agotaba, y también varias personas tras la misma IP (datos móviles).
+// A partir de ahí TODO respondía 429 hasta reiniciar el servidor (el contador vive en memoria): parecía
+// que producción se había caído. Ahora el tope es amplio y, con sesión, se cuenta por usuario y no por IP.
 const generalLimiter = rateLimit({
     windowMs: config.RATE_LIMIT.GENERAL.windowMs,
     max: config.RATE_LIMIT.GENERAL.max,
-    message: { error: "Demasiadas peticiones, intenta en 15 minutos" },
+    keyGenerator: req => {
+        const t = req.headers.authorization?.split(' ')[1];
+        if (t && t.length > 20) { try { return 'u:' + jwt.verify(t, JWT_SECRET).usuario; } catch (_) {} }
+        return req.ip;
+    },
+    message: { success: false, error: "Demasiadas peticiones seguidas. Espera un momento e inténtalo de nuevo.", code: 'RATE_LIMIT' },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => config.NODE_ENV === 'development'
+    skip: req => config.NODE_ENV === 'development' || req.path === '/salud'
 });
 
 const authLimiter = rateLimit({
