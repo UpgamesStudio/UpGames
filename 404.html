@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>No encontramos esa página · UpGames</title>
+<script>
+  // Enlaces compartidos de publicaciones (/public/p/<título>-<id>.html) cuyo archivo ya no existe
+  // (el título cambió o la página aún no se generó): se abre la publicación por su id.
+  (function () {
+    var m = location.pathname.match(/\/p\/(?:[a-z0-9-]*-)?([a-f0-9]{24})(?:\.html)?\/?$/i);
+    if (m) location.replace('/public/biblioteca.html?id=' + m[1].toLowerCase());
+    else { m = location.pathname.match(/\/u\/([a-z0-9_]{3,20})(?:\.html)?\/?$/i); if (m) location.replace('/public/perfil-publico.html?usuario=' + encodeURIComponent(m[1].toLowerCase())); }
+  })();
+</script>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#05080F;color:#F4F5F7;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-align:center;padding:24px}
+  b.l{font-size:1.1rem;letter-spacing:.08em;font-weight:900}b.l i{font-style:normal;color:#39FF88}
+  h1{font-size:1.6rem;margin:22px 0 10px}p{color:#A3A8B6;margin:0 auto 24px;max-width:400px;line-height:1.5}
+  a{display:inline-block;background:linear-gradient(120deg,#39FF88,#5CE1FF);color:#04160B;font-weight:800;padding:13px 26px;border-radius:99px;text-decoration:none}
+</style>
+</head>
+<body>
+<div>
+  <b class="l"><i>UP</i>GAMES</b>
+  <h1>No encontramos esa página</h1>
+  <p>Puede que el enlace esté mal escrito o que el contenido ya no exista.</p>
+  <a href="/public/biblioteca.html">Ir a UpGames</a>
+</div>
+</body>
+</html>

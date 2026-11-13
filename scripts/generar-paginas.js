@@ -27,10 +27,14 @@ const Seo = require('../modulos/seo');
         const f = Seo.archivo(it); quedan.add(f);
         const html = Seo.pagina(it, grupoDe.get(it.id)), ruta = path.join(dir, f);
         if (!fs.existsSync(ruta) || fs.readFileSync(ruta, 'utf8') !== html) fs.writeFileSync(ruta, html);
+        // Copia con nombre fijo (<id>.html): es el enlace que se comparte. No depende del título, así que
+        // sigue funcionando aunque el autor lo cambie (antes el enlace compartido daba 404). Su canónica es la de arriba.
+        const fijo = `${it.id}.html`, rutaFija = path.join(dir, fijo); quedan.add(fijo);
+        if (!fs.existsSync(rutaFija) || fs.readFileSync(rutaFija, 'utf8') !== html) fs.writeFileSync(rutaFija, html);
     }
     let borradas = 0;
     for (const f of fs.readdirSync(dir)) if (f.endsWith('.html') && !quedan.has(f)) { fs.unlinkSync(path.join(dir, f)); borradas++; }
-    console.log(`Páginas: ${quedan.size} · borradas: ${borradas}`);
+    console.log(`Páginas: ${quedan.size / 2} · borradas: ${borradas}`);
 
     // Juegos y temas → public/j/<slug>.html
     const dirJ = process.env.SEO_DIR_J || path.join(dir, '..', 'j');

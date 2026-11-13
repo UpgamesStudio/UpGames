@@ -236,7 +236,7 @@ function lateral(ctx) {
     const cajas = [];
     if (g.perfil && ctx.autor) {
         const au = ctx.autor;
-        cajas.push(`<section class="caja perfil">${au.avatar ? `<img src="${esc(img(au.avatar, 160))}" alt="">` : ''}<b>@${esc(au.usuario)}</b>${au.bio ? `<p>${esc(au.bio)}</p>` : ''}<p><a href="${esc(ctx.appUrl)}/public/perfil-publico.html?u=${encodeURIComponent(au.usuario)}" rel="noopener">Ver perfil en UpGames</a></p></section>`);
+        cajas.push(`<section class="caja perfil">${au.avatar ? `<img src="${esc(img(au.avatar, 160))}" alt="">` : ''}<b>@${esc(au.usuario)}</b>${au.bio ? `<p>${esc(au.bio)}</p>` : ''}<p><a href="${esc(ctx.appUrl)}/public/perfil-publico.html?usuario=${encodeURIComponent(au.usuario)}" rel="noopener">Ver perfil en UpGames</a></p></section>`);
     }
     if (g.populares && ctx.populares?.length)
         cajas.push(`<section class="caja"><h3>Lo más leído</h3><ul>${ctx.populares.map(e => `<li><a href="${esc(ctx.base)}/e/${esc(e.slug)}">${esc(e.titulo)}</a></li>`).join('')}</ul></section>`);
