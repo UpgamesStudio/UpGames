@@ -116,6 +116,7 @@ const UGR = (() => {
     subir: () => switchTab('upload'),
     premium: () => { switchTab('economia'); setTimeout(() => window.ecoCargarPlan?.(true), 350); },
     soporte: () => handleMail(),
+    blog: () => { window.location.href = './blog.html'; },
   };
   function colocar() {
     const r = raiz(), o = orbe(); if (!r || !o) return;

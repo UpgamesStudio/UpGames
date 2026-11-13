@@ -20,6 +20,7 @@ Guía para quien trabaja en el panel (`/admin/`). La misma información está de
 | Entradas / Videos | Todo el contenido publicado | contenido |
 | Verificación | Publicaciones con nombre de juego comercial | revisión o contenido |
 | Reportes | Contenido denunciado por la comunidad | revisión o contenido |
+| Blogs | Sitios de los usuarios (UpGames Blogs): reportados, en revisión y suspendidos; activar o suspender | revisión, contenido o sanciones (cambiar estado: contenido o sanciones) |
 | Comentarios / Moderación IA | Moderación | comentarios |
 | Usuarios | Cuentas, suspensiones y saldos | usuarios, sanciones o finanzas |
 | Anuncios | Mensajes a la comunidad | anuncios |

@@ -36,6 +36,7 @@ Si un módulo necesita algo que se crea más abajo en `index.js` (por ejemplo `l
 | `rutas/compat.js` | Compatibilidad real por dispositivo |
 | `rutas/tienda.js`, `extrasUC.js`, `accesoDirecto.js`, `cobros.js` | Pagos, UpCoins, Premium y métodos de cobro |
 | `rutas/live.js`, `grupos.js`, `social.js`, `nexus.js`, `apexgp.js`, `studio.js`, `upstar.js` | Lives, grupos, reseñas, Nexus IA y juegos propios |
+| `rutas/blogs.js` + `modulos/blogs/` | UpGames Blogs: el creador arma su sitio (temas, entradas y páginas por bloques) en `public/blog.html`; se sirve en `/b/<direccion>` o en su dominio propio (por `Host`). `validar.js` limpia lo que entra, `render.js` genera el HTML, `temas.js` los diseños |
 | `rutas/adminPanel.js`, `adminEconomia.js`, `adminNexus.js` | Sesión y vistas del panel admin |
 | `modulos/tareas.js` | Tareas automáticas (limpiezas, enlaces caídos, revisión diaria de enlaces, verificación de títulos comerciales, scores) |
 
