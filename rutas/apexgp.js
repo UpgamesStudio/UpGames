@@ -163,7 +163,7 @@ function registrar(app, deps) {
         });
     }
     const RELEASES = 'https://github.com/UpgamesStudio/UpGames/releases/download';
-    servirApk('/apexgp/apk', `${RELEASES}/apex-gp-latest/APEX-GP.apk`, 'APEX-GP.apk');
+    servirApk('/apexgp/apk', `${RELEASES}/apex-gp-latest/APEX-GP.apk`, 'UpGames-RACING.apk');   // (el archivo de la versión conserva su nombre interno)
     servirApk('/upstar/apk', `${RELEASES}/upstar-latest/UPSTAR.apk`, 'UPSTAR.apk');
 
     app.get('/apexgp/perfil', verificarToken, async (req, res) => {
