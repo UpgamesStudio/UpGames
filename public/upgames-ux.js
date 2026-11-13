@@ -200,32 +200,50 @@
     if (items.length < 4 || typeof openDetail !== 'function') return null;
     const n = items.length, reducir = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const sec = document.createElement('section');
-    sec.className = 'ugx-car';
+    sec.className = 'ugc';
     sec.setAttribute('aria-roledescription', 'carrusel'); sec.setAttribute('aria-label', 'Recomendados para ti');
     const fav = id => typeof favIds !== 'undefined' && favIds.includes(id);
-    sec.innerHTML = `<div class="ugx-car-h"><span class="ugx-car-eyebrow">Recomendados para ti</span><h2>Elegidos por Nexus</h2></div>
-      <div class="ugx-car-vp" tabindex="0" aria-live="off">${items.map((it, i) => {
+    sec.innerHTML = `<div class="ugc-h"><span class="ugc-eyebrow">Recomendados para ti</span><h2>Elegidos por Nexus</h2></div>
+      <div class="ugc-vp" tabindex="0" aria-live="off">${items.map((it, i) => {
         const v = valoracion(it), cat = it.category || 'General';
-        return `<article class="ugx-card" data-i="${i}" style="--h:${matiz(it._id)}" aria-label="${esc(it.title)}">
-          <img class="ugx-card-bg" src="${esc(portadaCarrusel(it))}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="this.onerror=null;this.src=window.UG_PH||''">
-          <div class="ugx-card-tint"></div>
-          <div class="ugx-card-top"><span class="ugx-chip">${esc(cat)}</span></div>
-          <div class="ugx-card-main">
-            <h3 class="ugx-card-t">${esc((it.serieInfo?.base || it.title || '').slice(0, 70))}</h3>
-            <p class="ugx-card-by">@${esc(it.usuario || '')}</p>
-            <div class="ugx-card-panel">
-              <div class="ugx-card-val${v.cls}"><b>${esc(v.txt)}</b><small>${esc(v.sub)}</small></div>
-              <div class="ugx-card-precio"><strong>Gratis</strong><small>Sin cuenta ni tarjeta</small></div>
-              <div class="ugx-card-acc">
-                <button type="button" class="ugx-btn ugx-btn--pri" data-ver tabindex="-1">Ver más</button>
-                <button type="button" class="ugx-btn ugx-btn--vidrio${fav(it._id) ? ' on' : ''}" data-fav aria-label="Guardar en favoritos" tabindex="-1"><ion-icon name="${fav(it._id) ? 'heart' : 'heart-outline'}"></ion-icon></button>
+        return `<article class="ugc-card" data-i="${i}" style="--h:${matiz(it._id)}" aria-label="${esc(it.title)}">
+          <img class="ugc-card-bg" src="${esc(portadaCarrusel(it))}" alt="" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="this.onerror=null;this.src=window.UG_PH||''">
+          <div class="ugc-card-tint"></div>
+          <div class="ugc-card-top"><span class="ugc-chip">${esc(cat)}</span></div>
+          <div class="ugc-card-main">
+            <h3 class="ugc-card-t">${esc((it.serieInfo?.base || it.title || '').slice(0, 70))}</h3>
+            <p class="ugc-card-by">@${esc(it.usuario || '')}</p>
+            <div class="ugc-card-panel">
+              <div class="ugc-card-val${v.cls}"><b>${esc(v.txt)}</b><small>${esc(v.sub)}</small></div>
+              <div class="ugc-card-precio"><strong>Gratis</strong><small>Sin cuenta ni tarjeta</small></div>
+              <div class="ugc-card-acc">
+                <button type="button" class="ugc-btn ugc-btn--pri" data-ver tabindex="-1">Ver más</button>
+                <button type="button" class="ugc-btn ugc-btn--vidrio${fav(it._id) ? ' on' : ''}" data-fav aria-label="Guardar en favoritos" tabindex="-1"><ion-icon name="${fav(it._id) ? 'heart' : 'heart-outline'}"></ion-icon></button>
               </div>
             </div>
           </div>
         </article>`; }).join('')}</div>
-      <div class="ugx-car-dots" role="tablist">${items.map((_, i) => `<button type="button" role="tab" aria-label="Entrada ${i + 1}" data-dot="${i}"></button>`).join('')}</div>`;
+      <div class="ugc-dots" role="tablist">${items.map((_, i) => `<button type="button" role="tab" aria-label="Entrada ${i + 1}" data-dot="${i}"></button>`).join('')}</div>`;
 
-    const vp = sec.querySelector('.ugx-car-vp'), cards = [...sec.querySelectorAll('.ugx-card')], dots = [...sec.querySelectorAll('[data-dot]')];
+    // El tinte de cada ficha toma el color dominante de su portada (si el servidor de la imagen lo permite)
+    const tonoDe = (card, src) => {
+      try {
+        const im = new Image(); im.crossOrigin = 'anonymous';
+        im.onload = () => { try {
+          const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0, 8, 8);
+          const d = x.getImageData(0, 0, 8, 8).data; let r = 0, g = 0, b = 0, w = 0;
+          for (let i = 0; i < d.length; i += 4) { const k = 1 + (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2])) / 40; r += d[i] * k; g += d[i + 1] * k; b += d[i + 2] * k; w += k; }
+          r /= w; g /= w; b /= w; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx - mn < 14) return;   // casi gris: se queda el tinte base
+          const h = mx === r ? ((g - b) / (mx - mn) + 6) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+          card.style.setProperty('--h', Math.round(h * 60));
+        } catch (_) {} };
+        im.src = src;
+      } catch (_) {}
+    };
+    const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
+    idle(() => sec.querySelectorAll('.ugc-card').forEach((c, i) => { const src = portadaCarrusel(items[i]); if (/^https:/.test(src)) tonoDe(c, src); }));
+
+    const vp = sec.querySelector('.ugc-vp'), cards = [...sec.querySelectorAll('.ugc-card')], dots = [...sec.querySelectorAll('[data-dot]')];
     let idx = 0, timer = null, arrastre = null, visible = true, quieto = false;
     // Distancia circular: la entrada anterior a la primera es la última (carrusel sin fin)
     const dist = i => { let d = (i - idx) % n; if (d > n / 2) d -= n; if (d < -n / 2) d += n; return d; };
@@ -259,14 +277,14 @@
     vp.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { ir(idx + 1); e.preventDefault(); } else if (e.key === 'ArrowLeft') { ir(idx - 1); e.preventDefault(); } });
     vp.addEventListener('click', e => {
       if (vp._swipe && Date.now() - vp._swipe < 350) return;
-      const c = e.target.closest('.ugx-card'); if (!c) return;
+      const c = e.target.closest('.ugc-card'); if (!c) return;
       const i = +c.dataset.i, it = items[i];
       if (i !== idx) return ir(i);
       const f = e.target.closest('[data-fav]');
       if (f) { e.stopPropagation(); if (typeof window.fav === 'function') window.fav(it._id); const on = !f.classList.contains('on'); f.classList.toggle('on', on); f.querySelector('ion-icon')?.setAttribute('name', on ? 'heart' : 'heart-outline'); return; }
       elegir(it, 'v'); openDetail(it);
     });
-    sec.querySelector('.ugx-car-dots').addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) { ir(+b.dataset.dot); quieto = true; setTimeout(() => { quieto = false; }, 4000); } });
+    sec.querySelector('.ugc-dots').addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) { ir(+b.dataset.dot); quieto = true; setTimeout(() => { quieto = false; }, 4000); } });
     return sec;
   }
 
