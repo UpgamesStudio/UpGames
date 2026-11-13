@@ -259,3 +259,11 @@ html[data-tema="cyber"] #pf-tab-publicar.pfw .pfw-cats .pf-cat-btn.active { colo
 .ucx-enviar { width: 100%; margin-top: 14px; min-height: 46px; border: 0; border-radius: 12px; background: var(--g, #32D583); color: #04140b; font: inherit; font-weight: 800; cursor: pointer; }
 .ucx-enviar[disabled] { opacity: .45; cursor: not-allowed; }
 html[data-tema="cyber"] .ucx, html[data-tema="cyber"] .ucx-tuyo, html[data-tema="cyber"] .ucx-btn, html[data-tema="cyber"] .ucx-ops button, html[data-tema="cyber"] .ucx-enviar { border-radius: 0 !important; }
+
+/* Fila «Del blog de los creadores» (UpGames Blogs) */
+.ugx-fila--blogs .ugx-fila-h a.ugx-fila-borrar { text-decoration: none; margin-left: auto; white-space: nowrap; }
+.ugx-blog { min-width: 0; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--txt); scroll-snap-align: start; }
+.ugx-blog-img { display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: 14px; background: rgba(255,255,255,.06) center / cover no-repeat; border: 1px solid rgba(255,255,255,.09); font-size: 1.8rem; transition: transform .2s, border-color .2s; }
+.ugx-blog:hover .ugx-blog-img { transform: translateY(-2px); border-color: rgba(57,255,136,.55); }
+.ugx-blog b { font-size: .88rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ugx-blog small { font-size: .72rem; color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
