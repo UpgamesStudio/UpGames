@@ -150,6 +150,31 @@
     window.UGX?.estilizarTiles?.(nueva);
   });
 
+  // ── Blogs de los creadores: lo último publicado en UpGames Blogs (se pide una vez por visita) ──
+  let blogsRecientes = null, blogsPedido = null;
+  const miniBlog = u => String(u || '').replace(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(?!.*\/(?:w_|c_))/, '$1f_auto,q_auto,w_480,c_limit/');
+  function filaBlogs() {
+    if (!blogsRecientes || blogsRecientes.length < 2) return null;
+    const sec = document.createElement('section');
+    sec.className = 'ugx-fila ugx-fila--blogs';
+    sec.setAttribute('aria-label', 'Del blog de los creadores');
+    sec.innerHTML = `<div class="ugx-fila-h"><h2>✍️ Del blog de los creadores</h2><small>Guías, reseñas y noticias</small><a class="ugx-fila-borrar" href="./blog.html">Crea el tuyo</a></div><div class="ugx-fila-track" role="list">`
+      + blogsRecientes.map(e => `<a class="ugx-blog" role="listitem" href="${esc(e.url)}" target="_blank" rel="noopener">
+          <span class="ugx-blog-img"${/^https:\/\//.test(e.portada || '') ? ` style="background-image:url('${esc(miniBlog(e.portada))}')"` : ''}>${e.portada ? '' : '✍️'}</span>
+          <b>${esc(e.titulo)}</b><small>${esc(e.blog)} · @${esc(e.usuario)}</small></a>`).join('') + '</div>';
+    return sec;
+  }
+  function pedirBlogs() {
+    if (blogsPedido) return;
+    blogsPedido = fetch(`${API}/blogs/recientes`).then(r => r.ok ? r.json() : null).then(d => {
+      blogsRecientes = d?.success && Array.isArray(d.entradas) ? d.entradas.filter(e => /^https:\/\//.test(e.url || '')) : [];
+      // Si la portada ya está pintada, la fila entra al final de las demás sin repintar el catálogo
+      const out = document.getElementById('output'), ult = out && [...out.querySelectorAll('.ugx-fila')].pop();
+      const sec = ult && !out.querySelector('.ugx-fila--blogs') ? filaBlogs() : null;
+      if (sec) ult.after(sec);
+    }).catch(() => { blogsRecientes = []; });
+  }
+
   /** Agrega las filas a `frag` (antes del catálogo). Devuelve cuántas se agregaron. */
   function filas(frag, lista) {
     const hist = filaHistorial();
@@ -166,7 +191,9 @@
       fila(hayTopSemana ? '🔥 Más descargados esta semana' : '🔥 Más descargados', hayTopSemana ? 'Lo que más baja la comunidad estos 7 días' : 'Lo favorito de la comunidad', masDesc, 'ugx-fila--top'),
       fila('🆕 Nuevos', 'Recién publicados', nuevos),
       fila('📱 Para Android', 'Juegos, mods y apps para tu móvil', android),
+      filaBlogs(),
     ].filter(Boolean);
+    pedirBlogs();
     secs.forEach(s => frag.appendChild(s));
     if (secs.length || hist) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
     return secs.length + (hist ? 1 : 0);

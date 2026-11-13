@@ -122,6 +122,28 @@ function registrar(app, deps) {
 
     app.get('/blogs/temas', (req, res) => res.json({ success: true, temas: Temas.lista(), fuentes: Object.entries(Temas.FUENTES).map(([id, f]) => ({ id, nombre: f.nombre })), fondos: Object.entries(Temas.FONDOS).map(([id, f]) => ({ id, nombre: f.nombre })), limites: V.LIMITES, cpm: Anuncios.CPM }));
 
+    // Lo último que publican los creadores en sus blogs: alimenta la fila «Del blog de los creadores» del inicio de UpGames
+    app.get('/blogs/recientes', async (req, res) => {
+        try {
+            const lista = await conCache('recientes', 120, async () => {
+                const entradas = await Entrada.find({ tipo: 'entrada', $or: [{ estado: 'publicada' }, { estado: 'programada', publicadaEn: { $lte: new Date() } }] })
+                    .sort({ publicadaEn: -1 }).limit(80).select('blog titulo slug portada resumen bloques publicadaEn usuario').lean();
+                const blogs = await Blog.find({ _id: { $in: [...new Set(entradas.map(e => String(e.blog)))] }, estado: 'activo', visibilidad: 'publico' }).lean();
+                const porId = new Map(blogs.map(b => [String(b._id), b])), cuenta = new Map(), out = [];
+                for (const e of entradas) {
+                    const b = porId.get(String(e.blog)); if (!b) continue;
+                    const n = cuenta.get(String(b._id)) || 0; if (n >= 3) continue;   // que un solo blog no llene la fila
+                    cuenta.set(String(b._id), n + 1);
+                    out.push({ titulo: e.titulo, resumen: e.resumen || V.resumen(e.bloques, 110), portada: e.portada || V.primeraImagen(e.bloques), url: `${urlPublica(b)}e/${e.slug}`,
+                        blog: b.titulo, usuario: b.usuario, fecha: e.publicadaEn });
+                    if (out.length >= 12) break;
+                }
+                return out;
+            });
+            res.set('Cache-Control', 'public, max-age=120').json({ success: true, entradas: lista });
+        } catch (e) { fallo(res, e, 'recientes'); }
+    });
+
     app.get('/blogs/mios', verificarToken, async (req, res) => {
         try {
             const blogs = await Blog.find({ usuario: req.usuario }).sort({ createdAt: 1 }).lean();
