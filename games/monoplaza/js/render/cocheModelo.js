@@ -1153,7 +1153,10 @@ export function crearModelo(opc) {
     posOrig = null; nrmOrig = null; nAbol = 0;          // las abolladuras se vuelven a tomar desde el coche entero
   }
 
-  const propia = (m) => { if (m.geometry.userData.compartida) { m.geometry = m.geometry.clone(); m.geometry.userData.compartida = false; } };
+  // (clone() copia userData por referencia: si se cambiara la marca ahí, la geometría compartida
+  // quedaría como «propia» para todos y el siguiente golpe la deformaría para siempre: los coches
+  // nuevos nacían ya abollados tras reiniciar, cambiar de coche o entrar a otra carrera)
+  const propia = (m) => { if (m.geometry.userData.compartida) { const g = m.geometry.clone(); g.userData = { ...m.geometry.userData, compartida: false }; m.geometry = g; } };
 
   let tPantalla = 0, tLlama = 0;
   const susp = { x: { p: 0, v: 0 }, z: { p: 0, v: 0 } };
