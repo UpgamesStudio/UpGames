@@ -24,7 +24,7 @@ const RESERVADOS = new Set(['www', 'admin', 'api', 'app', 'blog', 'blogs', 'upga
     'mail', 'correo', 'ftp', 'cdn', 'static', 'assets', 'nexus', 'live', 'studio', 'racing', 'premium', 'oficial', 'official',
     'root', 'null', 'undefined', 'test', 'dev', 'staging', 'status', 'docs', 'legal', 'terminos', 'privacidad']);
 
-const TIPOS = new Set(['texto', 'titulo', 'imagen', 'galeria', 'video', 'cita', 'boton', 'separador', 'codigo', 'juego', 'aviso', 'faq', 'ficha', 'audio']);
+const TIPOS = new Set(['texto', 'titulo', 'imagen', 'galeria', 'video', 'cita', 'boton', 'separador', 'codigo', 'juego', 'descarga', 'aviso', 'faq', 'ficha', 'audio']);
 const ESTILOS_AVISO = new Set(['info', 'exito', 'alerta', 'peligro']);
 
 /** Texto plano de una línea: sin etiquetas, sin saltos, recortado. */
@@ -131,6 +131,7 @@ function limpiarBloques(entrada) {
             case 'boton': { const url = urlSegura(b.url), t = linea(b.texto, 60); if (url && t) n = { tipo: 'boton', texto: t, url }; break; }
             case 'separador': n = { tipo: 'separador' }; break;
             case 'codigo': { const t = String(b.texto ?? '').replace(/\r\n?/g, '\n').replace(/\u0000/g, '').slice(0, 8000); if (t.trim()) n = { tipo: 'codigo', texto: t }; break; }
+            case 'descarga': { const id = String(b.id ?? ''); if (/^[a-f0-9]{24}$/i.test(id)) n = { tipo: 'descarga', id: id.toLowerCase() }; break; }
             case 'juego': { const id = String(b.id ?? ''); if (/^[a-f0-9]{24}$/i.test(id)) n = { tipo: 'juego', id: id.toLowerCase() }; break; }
         }
         if (n) out.push(n);

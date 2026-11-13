@@ -432,7 +432,7 @@ const crecer = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeig
 const idYouTube = s => { s = String(s || '').trim(); if (/^[\w-]{11}$/.test(s)) return s; const m = s.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
 
 const TIPOS = [['texto', 'text', 'Texto'], ['titulo', 'reorder-two', 'Subtítulo'], ['imagen', 'image', 'Imagen'], ['galeria', 'images', 'Galería'], ['video', 'logo-youtube', 'Video'],
-  ['cita', 'chatbox-ellipses', 'Cita'], ['aviso', 'alert-circle', 'Aviso'], ['ficha', 'list', 'Ficha / requisitos'], ['faq', 'help-circle', 'Preguntas'], ['audio', 'musical-notes', 'Spotify'], ['boton', 'radio-button-on', 'Botón'], ['juego', 'game-controller', 'Publicación de UpGames'], ['codigo', 'code-slash', 'Código'], ['separador', 'remove', 'Separador']];
+  ['cita', 'chatbox-ellipses', 'Cita'], ['aviso', 'alert-circle', 'Aviso'], ['ficha', 'list', 'Ficha / requisitos'], ['faq', 'help-circle', 'Preguntas'], ['audio', 'musical-notes', 'Spotify'], ['boton', 'radio-button-on', 'Botón'], ['juego', 'game-controller', 'Publicación de UpGames'], ['descarga', 'cloud-download-outline', 'Descarga'], ['codigo', 'code-slash', 'Código'], ['separador', 'remove', 'Separador']];
 const NOMBRE_TIPO = Object.fromEntries(TIPOS.map(([id, , n]) => [id, n]));
 
 let sucio = false, urlPreviaInicial = '';
@@ -554,7 +554,7 @@ async function editor(tipo, id) {
       el.innerHTML = barra() + `<div class="centro" style="text-align:center"><span class="muestra" contenteditable="true">${h(b.texto || 'Descargar')}</span></div><input placeholder="https://… a dónde lleva el botón" value="${h(b.url || '')}" inputmode="url">`;
       $('.muestra', el).addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain').replace(/\n/g, ' ')); });
       el.leer = () => ({ tipo: 'boton', texto: $('.muestra', el).textContent.trim(), url: $('input', el).value.trim() });
-    } else if (b.tipo === 'juego') {
+    } else if (b.tipo === 'juego' || b.tipo === 'descarga') {
       el.innerHTML = barra() + `<div class="tarj" hidden></div><input placeholder="Pega el enlace de una publicación de UpGames" value="${b.id ? h(b.id) : ''}">`;
       const inp = $('input', el), tarj = $('.tarj', el);
       const sacar = () => (inp.value.match(/[a-f0-9]{24}/i) || [''])[0].toLowerCase();
@@ -563,7 +563,7 @@ async function editor(tipo, id) {
           tarj.innerHTML = `${j.image ? `<img src="${h(mini(j.image, 200))}" alt="">` : ''}<span><b>${h(j.title)}</b><small>por @${h(j.usuario)}</small></span>`; tarj.hidden = false;
         } catch (_) { tarj.innerHTML = '<small>No encontramos esa publicación. Revisa el enlace.</small>'; tarj.hidden = false; } }, 400); };
       inp.oninput = ver; ver();
-      el.leer = () => { const jid = sacar(); return jid ? { tipo: 'juego', id: jid } : null; };
+      el.leer = () => { const jid = sacar(); return jid ? { tipo: b.tipo, id: jid } : null; };
     } else if (b.tipo === 'aviso') {
       let estilo = ['info', 'exito', 'alerta', 'peligro'].includes(b.estilo) ? b.estilo : 'info';
       const COL = { info: '#3B9EFF', exito: '#2FBF71', alerta: '#F5A524', peligro: '#F04438' };

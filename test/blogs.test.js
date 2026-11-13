@@ -155,3 +155,17 @@ test('marco del anuncio: lleva el ticket y avisa a la URL dada', () => {
 });
 
 console.log(`\n${passed} pruebas de blogs pasaron`);
+
+console.log('bloque de descarga');
+test('descarga: valida el id y pasa por la página puente', () => {
+    const id = 'a'.repeat(24);
+    assert.deepStrictEqual(V.limpiarBloques([{ tipo: 'descarga', id: id.toUpperCase() }, { tipo: 'descarga', id: 'x' }]), [{ tipo: 'descarga', id }]);
+    const h = R.entrada({ blog: { usuario: 'kale', tema: 'neon', ajustes: {}, titulo: 'B', direccion: 'kale' }, base: '/b/kale', origen: 'https://x.test', appUrl: 'https://app.test', paginas: [], populares: [], nube: [], juegos: { [id]: { title: 'GTA <V>', image: 'https://res.cloudinary.com/x/image/upload/a.jpg', usuario: 'leo' } } }, { titulo: 'T', slug: 't', tipo: 'entrada', bloques: [{ tipo: 'descarga', id }], publicadaEn: new Date() });
+    assert.ok(h.includes(`https://app.test/public/puente.html?id=${id}`), 'enlaza a puente.html');
+    assert.ok(!h.includes('GTA <V>') && h.includes('GTA &lt;V&gt;'), 'escapa el título');
+    assert.ok(!/href="[^"]*biblioteca\.html\?id=a{24}"[^>]*>Descargar/.test(h));
+});
+test('descarga: si la publicación no existe no pinta nada', () => {
+    const h = R.entrada({ blog: { usuario: 'kale', tema: 'neon', ajustes: {}, titulo: 'B', direccion: 'kale' }, base: '/b/kale', origen: 'https://x.test', appUrl: 'https://app.test', paginas: [], populares: [], nube: [], juegos: {} }, { titulo: 'T', slug: 't', tipo: 'entrada', bloques: [{ tipo: 'descarga', id: 'b'.repeat(24) }], publicadaEn: new Date() });
+    assert.ok(!h.includes('class="descarga"'));
+});

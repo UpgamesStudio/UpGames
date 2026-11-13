@@ -511,7 +511,7 @@ function registrar(app, deps) {
     }).then(c => ({ ...c, blog, base, origen, appUrl: APP_URL, anuncio: !!blog.monetizar && blog.visibilidad === 'publico' }));
 
     async function juegosDe(bloques) {
-        const ids = [...new Set((bloques || []).filter(b => b.tipo === 'juego').map(b => b.id))].slice(0, 20);
+        const ids = [...new Set((bloques || []).filter(b => b.tipo === 'juego' || b.tipo === 'descarga').map(b => b.id))].slice(0, 20);
         if (!ids.length) return {};
         const lista = await Juego.find({ _id: { $in: ids }, status: 'aprobado' }).select('title image usuario').lean();
         return Object.fromEntries(lista.map(j => [String(j._id), j]));

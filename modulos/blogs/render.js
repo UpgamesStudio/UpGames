@@ -54,6 +54,13 @@ function bloqueHtml(b, ctx) {
         case 'boton': return `<p class="centro"><a class="boton" href="${esc(b.url)}" target="_blank" rel="nofollow ugc noopener">${esc(b.texto)}</a></p>`;
         case 'separador': return '<hr>';
         case 'codigo': return `<pre><code>${esc(b.texto)}</code></pre>`;
+        case 'descarga': {
+            // La descarga pasa SIEMPRE por la página puente (espera + anuncios + ticket): así cuenta igual que una descarga normal
+            const j = ctx.juegos?.[b.id];
+            if (!j) return '';
+            const puente = `${ctx.appUrl}/public/puente.html?id=${encodeURIComponent(b.id)}&media=${encodeURIComponent(j.image || '')}&title=${encodeURIComponent(j.title || '')}`;
+            return `<div class="descarga">${j.image ? `<img src="${esc(img(j.image, 320))}" alt="" loading="lazy">` : ''}<div class="d-info"><b>${esc(j.title)}</b><small>por @${esc(j.usuario)} · descarga gratis</small></div><a class="d-boton" href="${esc(puente)}" target="_blank" rel="nofollow noopener">Descargar</a></div>`;
+        }
         case 'juego': {
             const j = ctx.juegos?.[b.id];
             if (!j) return '';
@@ -142,6 +149,11 @@ code{font-family:ui-monospace,'Share Tech Mono',Menlo,monospace;background:var(-
 .juego{display:flex;gap:14px;align-items:center;background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);padding:12px;color:var(--txt)}
 .juego:hover{border-color:var(--acento);text-decoration:none}.juego img{width:96px;height:64px;object-fit:cover;border-radius:10px;flex-shrink:0}
 .juego span{display:flex;flex-direction:column;min-width:0}.juego small{color:var(--txt2)}
+.descarga{display:flex;align-items:center;gap:14px;padding:14px;border-radius:calc(var(--radio) + 4px);background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid var(--borde);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 18px 40px -22px rgba(0,0,0,.6);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.descarga img{width:84px;height:84px;object-fit:cover;border-radius:16px;flex-shrink:0}
+.d-info{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}.d-info b{font-size:1.02rem;line-height:1.25}.d-info small{color:var(--txt2)}
+.d-boton{flex-shrink:0;background:var(--acento);color:var(--sobre-acento);font-weight:800;padding:11px 20px;border-radius:99px;box-shadow:0 10px 26px -12px var(--acento)}.d-boton:hover{text-decoration:none;filter:brightness(1.08)}
+@media(max-width:520px){.descarga{flex-wrap:wrap}.descarga img{width:64px;height:64px}.d-boton{width:100%;text-align:center}}
 .etiquetas{display:flex;gap:8px;flex-wrap:wrap;margin-top:28px}
 .compartir{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:20px;border-top:1px solid var(--borde);align-items:center;color:var(--txt2);font-size:.9rem}
 aside.lateral{display:grid;gap:18px;align-content:start}
