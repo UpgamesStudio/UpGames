@@ -155,6 +155,34 @@ select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%
 .alert .a-n{font-size:1.3rem;font-weight:800}.alert .a-l{font-size:.78rem;color:var(--tx2)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .ct{font-size:.86rem;font-weight:700;margin:0 0 2px}.cs{font-size:.74rem;color:var(--tx3);margin:0 0 12px}
+/* Informes */
+.inf-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.inf-top select{min-width:190px;width:auto;flex:0 0 auto}
+.inf-res{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.inf-res .card{padding:12px 14px}
+.inf-res b{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.4px;margin-top:2px}
+.inf-res span{font-size:.74rem;color:var(--tx2);font-weight:600}
+.inf-res small{font-size:.72rem;color:var(--tx3)}
+.inf-aviso{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px;border-color:rgba(57,255,136,.35)}
+/* Guía del panel */
+.ay-idx{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ay-sec{margin-bottom:12px;scroll-margin-top:80px}
+.ay-sec h3{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}
+.ay-sec h3 ion-icon{color:var(--g1)}
+.ay-sec p{margin:6px 0;color:var(--tx2);font-size:.86rem;line-height:1.55}
+.ay-sec ul{margin:6px 0 0;padding-left:18px;color:var(--tx2);font-size:.86rem;line-height:1.6}
+.ay-sec .ay-q{color:var(--tx3);font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:10px}
+.ay-sec.foco{border-color:rgba(57,255,136,.5)}
+/* Buscador de acciones (Ctrl+K) */
+#cmd{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;padding:12vh 14px 0}
+#cmd.on{display:flex}
+#cmd .caja{width:min(560px,100%);background:var(--bg2,#0c1016);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#cmd input{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--tx);padding:16px 18px;font-size:1rem;outline:none}
+#cmdL{max-height:50vh;overflow:auto;padding:6px}
+#cmdL button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:transparent;border:0;color:var(--tx2);padding:10px 12px;border-radius:10px;font-size:.9rem;cursor:pointer}
+#cmdL button.sel,#cmdL button:hover{background:rgba(255,255,255,.07);color:var(--tx)}
+#cmdL button small{margin-left:auto;color:var(--tx3);font-size:.72rem}
+#cmd .pie{padding:8px 14px;border-top:1px solid var(--line);font-size:.72rem;color:var(--tx3)}
 /* En vivo */
 @media(min-width:1000px){#dKpis{grid-template-columns:repeat(4,1fr)}}
 .vivo{display:grid;grid-template-columns:minmax(170px,230px) 1fr;gap:18px;align-items:stretch;margin-bottom:14px}
@@ -630,6 +658,7 @@ a{color:var(--g2)}
     <button class="btn icon ghost menu-btn" onclick="openMenu()" aria-label="Menú"><ion-icon name="menu-outline"></ion-icon></button>
     <div class="top-t" id="topT">Inicio</div>
     <div class="search"><ion-icon name="search-outline"></ion-icon><input class="in" id="q" placeholder="Buscar…" oninput="debRender()" autocomplete="off"></div>
+    <button class="btn icon ghost" onclick="ayudaDe(view)" title="¿Cómo funciona esta sección?" aria-label="Ayuda"><ion-icon name="help-circle-outline"></ion-icon></button>
     <span class="live" title="Se actualiza cada 30 s"><i></i><span id="liveT">En vivo</span></span>
     <button class="btn icon" onclick="sync(true)" title="Sincronizar"><ion-icon name="sync-outline" id="syncIco"></ion-icon></button>
   </header>
@@ -641,6 +670,7 @@ a{color:var(--g2)}
       <div class="vh"><div><h2 id="hola">Hola 👋</h2><p>Lo pendiente, quién está en la página ahora y las cifras del día</p></div></div>
       <div class="card dash-nx" id="dashNx"><div class="nx-av">✦</div><div class="grow"><div class="small" style="color:#c4b5fd;font-weight:700">Briefing de Nexus</div><p id="dashNxTxt">Nexus está revisando el panel…</p><div id="dashNxAct"></div>
         <button class="btn sm" style="margin-top:8px;border-color:rgba(167,139,250,.45);color:#d4c8ff" onclick="nxAbrir()">✦ Hablar con Nexus</button></div></div>
+      <div class="card inf-aviso" id="dInfAviso" style="display:none"></div>
       <p class="ct" style="margin:2px 0 8px">Por hacer</p>
       <div class="alerts" id="dAlerts"></div>
       <div class="card vivo" id="dVivo">
@@ -869,6 +899,28 @@ a{color:var(--g2)}
     </section>
 
     <!-- API TEST -->
+    <!-- INFORMES -->
+    <section class="view" id="v-inf">
+      <div class="vh"><div><h2>Informes</h2><p>Registro mensual de toda la actividad de UpGames, listo para descargar y archivar</p></div></div>
+      <div class="card inf-aviso" id="infAviso" style="display:none"></div>
+      <div class="inf-top">
+        <select class="in" id="infMes" onchange="loadInf()"></select>
+        <button class="btn pri" onclick="infDescargar('csv')"><ion-icon name="download-outline"></ion-icon> Descargar Excel (CSV)</button>
+        <button class="btn" onclick="infDescargar('json')"><ion-icon name="code-download-outline"></ion-icon> JSON</button>
+        <button class="btn" onclick="infImprimir()"><ion-icon name="print-outline"></ion-icon> Imprimir / PDF</button>
+        <label class="row small muted" style="cursor:pointer;gap:6px"><input type="checkbox" id="infAuto" onchange="infAutoCambio()" style="accent-color:#32D583"> Descargar solo cada mes en este dispositivo</label>
+      </div>
+      <div id="infCuerpo"><div class="skel"></div></div>
+    </section>
+
+    <!-- GUÍA DEL PANEL -->
+    <section class="view" id="v-ayuda">
+      <div class="vh"><div><h2>Guía del panel</h2><p>Qué es cada sección, qué se hace en ella y qué mirar primero. Pensada para quien entra por primera vez.</p></div>
+        <button class="btn sm" onclick="cmdAbrir()"><ion-icon name="search-outline"></ion-icon> Buscar una acción <span class="mono small muted">Ctrl K</span></button></div>
+      <div class="ay-idx" id="ayIdx"></div>
+      <div id="ayCuerpo"></div>
+    </section>
+
     <section class="view" id="v-api">
       <div class="vh"><div><h2>API Test</h2><p>Estado del servidor, base de datos, Nexus y consola de pruebas</p></div>
         <button class="btn pri" onclick="runDiag()"><ion-icon name="pulse-outline"></ion-icon> Ejecutar diagnóstico</button></div>
@@ -1012,6 +1064,7 @@ a{color:var(--g2)}
 
 <div id="toast"></div>
 <div id="tip"></div>
+<div id="cmd" onclick="if(event.target===this)cmdCerrar()"><div class="caja"><input id="cmdQ" placeholder="¿Qué quieres hacer? Escribe una sección o una acción…" autocomplete="off" oninput="cmdPintar()"><div id="cmdL"></div><div class="pie">↑ ↓ para moverte · Intro para abrir · Esc para cerrar</div></div></div>
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -1157,6 +1210,7 @@ async function entrar() {
   $('meAv').textContent = (S.admin.usuario || 'A')[0].toUpperCase();
   $('hola').textContent = `Hola, ${S.admin.usuario} 👋`;
   buildNav();
+  setTimeout(() => infRevisarMes().catch(() => {}), 2500);
   const h = (location.hash || '').slice(1);
   go(NAV.some(n => n.id === h && navOk(n)) ? h : inicioDeRol());
   sync();
@@ -1172,6 +1226,8 @@ function tickExp() { const r = S.exp - Date.now(); if (r <= 0) return logout('Tu
 const NAV = [
   { g: 'General' }, { id: 'dash', ic: 'grid-outline', t: 'Inicio', perm: 'estadisticas' },
   { id: 'metr', ic: 'analytics-outline', t: 'Métricas', perm: 'estadisticas' },
+  { id: 'inf', ic: 'document-attach-outline', t: 'Informes', perm: ['estadisticas', 'finanzas'] },
+  { id: 'ayuda', ic: 'help-circle-outline', t: 'Guía del panel', perm: null },
   { g: 'Contenido' },
   { id: 'revn', ic: 'alert-circle-outline', t: 'Revisión', perm: ['revision', 'contenido'], b: () => D.items.filter(enRev).length, hot: true },
   { id: 'apro', ic: 'albums-outline', t: 'Entradas', perm: 'contenido', b: () => D.items.length },
@@ -1237,6 +1293,8 @@ function go(v) {
   $('topT').textContent = NAV.find(x => x.id === v)?.t || 'Inicio';
   history.replaceState(null, '', '#' + v);
   closeMenu(); window.scrollTo({ top: 0 });
+  if (v === 'inf') infIniciar();
+  if (v === 'ayuda') ayPintar();
   if (v === 'equipo') loadEquipo();
   if (v === 'econ') loadEcon(true);
   if (v === 'extras') loadExtras();
@@ -1368,6 +1426,139 @@ function rGuia() {
       <span class="small mono" style="white-space:nowrap"><b>${x.pct} %</b> <span class="muted">· ${num(x.ll)} llévame</span></span></div>`).join('')
     + (peor ? `<p class="small" style="margin:10px 0 0;color:var(--warn)">⚠️ Donde más se atascan: <b>${peor.t.replace(/^\S+\s/, '')}</b> (${peor.pct} %). Conviene explicarlo mejor o hacerlo más visible.</p>` : '<p class="small muted" style="margin:10px 0 0">Con 5 o más personas se señala el paso donde más se atascan.</p>');
 }
+
+// ─────────── Informes mensuales (rutas/informes.js) ───────────
+let infMeses = null, infD = null;
+const infMesSel = () => $('infMes').value;
+async function infIniciar() {
+  $('infAuto').checked = localStorage.getItem('ug_inf_auto') === '1';
+  if (!infMeses) {
+    try { const { ok, d } = await api('/admin/informes/meses'); if (!ok || !d.success) throw new Error(); infMeses = d.meses; }
+    catch (_) { $('infCuerpo').innerHTML = '<div class="empty">No se pudo cargar la lista de meses</div>'; return; }
+    // por defecto, el último mes cerrado (el segundo de la lista: el primero es el mes en curso)
+    $('infMes').innerHTML = infMeses.map((m, i) => `<option value="${m.mes}"${i === 1 ? ' selected' : ''}>${m.nombre[0].toUpperCase() + m.nombre.slice(1)}${m.enCurso ? ' (en curso)' : ''}</option>`).join('');
+  }
+  loadInf();
+}
+async function loadInf() {
+  const el = $('infCuerpo'); el.innerHTML = '<div class="skel"></div>';
+  try { const { ok, d } = await api('/admin/informes/mensual?mes=' + infMesSel()); if (!ok || !d.success) throw new Error(d?.error || 'Error'); infD = d.informe; }
+  catch (e) { el.innerHTML = `<div class="empty">No se pudo generar el informe: ${esc(e.message)}</div>`; return; }
+  const I = infD, f = n => Number(n || 0).toLocaleString('es-CO');
+  const cambio = r => { if (!r.anterior) return '<small>sin datos del mes anterior</small>'; const p = Math.round((r.valor - r.anterior) / r.anterior * 100); return `<small style="color:${p >= 0 ? 'var(--ok)' : 'var(--bad)'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)} % vs. ${esc(I.anterior)}</small>`; };
+  const tabla = (titulo, sub, cab, filas) => `<div class="card" style="margin-bottom:14px"><p class="ct">${titulo}</p><p class="cs">${sub}</p>${filas.length ? `<div style="overflow:auto"><table class="tbl"><tr>${cab.map((c, i) => `<th${i ? ' class="num"' : ''}>${c}</th>`).join('')}</tr>${filas.map(fl => `<tr>${fl.map((c, i) => `<td${i ? ' class="num"' : ' class="ell"'}>${c}</td>`).join('')}</tr>`).join('')}</table></div>` : '<div class="empty" style="padding:16px">Sin datos en este mes</div>'}</div>`;
+  const max = Math.max(1, ...I.porDia.map(d => d.visitantes));
+  el.innerHTML = (I.enCurso ? '<div class="card" style="margin-bottom:14px;border-color:rgba(255,204,77,.4)"><span class="small">⏳ Mes en curso: las cifras siguen subiendo. El informe definitivo queda el día 1 del mes siguiente.</span></div>' : '')
+    + `<div class="inf-res">${I.resumen.map(r => `<div class="card"><span>${esc(r.nombre)}</span><b>${f(r.valor)}</b>${cambio(r)}</div>`).join('')}</div>`
+    + `<div class="card" style="margin-bottom:14px"><p class="ct">Visitantes por día</p><p class="cs">${esc(I.nombre)}</p><div class="bars">${I.porDia.map(d => `<div class="bar" style="height:${Math.max(2, d.visitantes / max * 100)}%" data-tip="${d.dia.slice(8)} · ${f(d.visitantes)} visitantes · ${f(d.cuentas)} cuentas · ${f(d.anuncios)} anuncios vistos"></div>`).join('')}</div><div class="bars-x"><span>1</span><span>${I.porDia.length}</span></div></div>`
+    + '<div class="grid2">'
+    + tabla('🏆 Creadores del mes', 'Por anuncios vistos en sus publicaciones', ['Creador', 'Anuncios vistos', 'Ganancia est.'], I.topCreadores.slice(0, 10).map(c => ['@' + esc(c.usuario), f(c.anuncios), money(c.ganancia)]))
+    + tabla('🔥 Publicaciones del mes', 'Las que más anuncios vistos generaron', ['Publicación', 'Anuncios vistos'], I.topPublicaciones.slice(0, 10).map(p => [esc(p.titulo), f(p.anuncios)]))
+    + tabla('🔎 Lo más buscado', 'Frases completas', ['Búsqueda', 'Veces'], I.busquedas.slice(0, 10).map(b => [esc(b.q), f(b.n)]))
+    + tabla('🕳️ Buscado y no encontrado', 'Contenido que falta en UpGames', ['Búsqueda', 'Veces'], I.busquedasVacias.slice(0, 10).map(b => [esc(b.q), f(b.vacias)]))
+    + (I.pagos ? tabla('💸 Pagos a creadores', 'Solicitudes del mes por estado', ['Estado', 'Solicitudes', 'Monto'], I.pagos.porEstado.map(p => [esc(p.estado), f(p.n), money(p.monto)])) : '')
+    + (I.equipo ? tabla('🛡️ Trabajo del equipo', 'Acciones registradas en la auditoría', ['Administrador', 'Acciones'], I.equipo.porAdmin.map(a => [esc(a.admin) + (a.rol ? ` <span class="muted">· ${esc(a.rol)}</span>` : ''), f(a.n)])) : '')
+    + '</div><p class="small muted">La descarga incluye además el detalle día a día, las categorías, los reportes por motivo' + (I.pagos ? ', cada pago' : '') + (I.equipo ? ' y cada acción del equipo' : '') + '. No contiene emails, IP ni datos de cobro.</p>';
+}
+async function infDescargar(formato, mes = infMesSel(), silencioso = false) {
+  try {
+    const r = await fetch(`${API}/admin/informes/mensual?mes=${mes}${formato === 'csv' ? '&formato=csv' : ''}`, { headers: { 'x-admin-token': S.token } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = formato === 'csv' ? await r.blob() : new Blob([JSON.stringify((await r.json()).informe, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `UpGames-informe-${mes}.${formato}`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    localStorage.setItem('ug_inf_ult', mes);
+    if (!silencioso) toast('Informe descargado', 'ok');
+    return true;
+  } catch (e) { if (!silencioso) toast('No se pudo descargar el informe', 'bad'); return false; }
+}
+function infImprimir() {
+  if (!infD) return;
+  const w = window.open('', '_blank'); if (!w) { toast('Permite las ventanas emergentes para imprimir', 'bad'); return; }
+  const f = n => Number(n || 0).toLocaleString('es-CO'), I = infD;
+  const t = (tit, cab, filas) => filas.length ? `<h2>${tit}</h2><table><tr>${cab.map(c => `<th>${c}</th>`).join('')}</tr>${filas.map(fl => `<tr>${fl.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</table>` : '';
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>UpGames · Informe de ${esc(I.nombre)}</title><style>body{font-family:system-ui,sans-serif;color:#111;margin:28px;font-size:12px}h1{margin:0}h2{font-size:14px;margin:22px 0 6px;border-bottom:2px solid #111;padding-bottom:3px}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #ddd;padding:4px 8px;text-align:left}td:not(:first-child),th:not(:first-child){text-align:right}p{color:#555}</style></head><body>
+    <h1>UpGames · Informe de ${esc(I.nombre)}</h1><p>${I.dias[0]} a ${I.dias[I.dias.length - 1]} (hora de Colombia) · generado el ${new Date(I.generado).toLocaleString('es-CO')}${I.enCurso ? ' · MES EN CURSO' : ''}</p>`
+    + t('Resumen', ['Indicador', 'Este mes', 'Mes anterior'], I.resumen.map(r => [esc(r.nombre), f(r.valor), f(r.anterior)]))
+    + t('Día a día', ['Día', 'Visitantes', 'Nuevos', 'Búsquedas', 'Anuncios vistos', 'Cuentas', 'Publicaciones', 'Comentarios', 'Reportes'], I.porDia.map(d => [d.dia, f(d.visitantes), f(d.nuevos), f(d.busquedas), f(d.anuncios), f(d.cuentas), f(d.publicaciones), f(d.comentarios), f(d.reportes)]))
+    + t('Creadores del mes', ['Creador', 'Anuncios vistos', 'Ganancia est. USD'], I.topCreadores.map(c => ['@' + esc(c.usuario), f(c.anuncios), c.ganancia]))
+    + t('Publicaciones del mes', ['Publicación', 'Creador', 'Anuncios vistos'], I.topPublicaciones.map(p => [esc(p.titulo), '@' + esc(p.usuario), f(p.anuncios)]))
+    + (I.pagos ? t('Pagos a creadores', ['Estado', 'Solicitudes', 'Monto USD'], I.pagos.porEstado.map(p => [esc(p.estado), f(p.n), p.monto])) : '')
+    + (I.equipo ? t('Trabajo del equipo', ['Administrador', 'Acciones'], I.equipo.porAdmin.map(a => [esc(a.admin), f(a.n)])) : '')
+    + '</body></html>');
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
+}
+function infAutoCambio() { localStorage.setItem('ug_inf_auto', $('infAuto').checked ? '1' : '0'); toast($('infAuto').checked ? 'Cada mes se descargará solo al entrar al panel' : 'Descarga automática desactivada', 'ok'); }
+// Al entrar: si hay un mes cerrado que este dispositivo aún no ha descargado, se avisa en Inicio
+// (y se descarga solo si la persona activó la descarga automática)
+async function infRevisarMes() {
+  if (!can(['estadisticas', 'finanzas'])) return;
+  const hoy = new Date(Date.now() - 5 * 3600e3), a = hoy.getUTCFullYear(), m = hoy.getUTCMonth();   // mes anterior en hora de Colombia
+  const mes = m === 0 ? `${a - 1}-12` : `${a}-${String(m).padStart(2, '0')}`;
+  if (localStorage.getItem('ug_inf_ult') >= mes) return;
+  const nombre = new Date(Date.UTC(m === 0 ? a - 1 : a, m === 0 ? 11 : m - 1, 15)).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  if (localStorage.getItem('ug_inf_auto') === '1') { if (await infDescargar('csv', mes, true)) toast(`Informe de ${nombre} descargado automáticamente`, 'ok'); return; }
+  const html = `<div><b>📄 El informe de ${nombre} está listo</b><div class="small muted">Registro completo del mes: visitas, cuentas, publicaciones, anuncios vistos, pagos y trabajo del equipo.</div></div><div class="row" style="gap:8px"><button class="btn sm pri" onclick="infDescargar('csv','${mes}').then(ok=>{if(ok)document.querySelectorAll('.inf-aviso').forEach(e=>e.style.display='none')})">Descargar</button><button class="btn sm" onclick="go('inf')">Ver</button></div>`;
+  for (const id of ['infAviso', 'dInfAviso']) { const el = $(id); if (el) { el.innerHTML = html; el.style.display = ''; } }
+}
+
+// ─────────── Guía del panel ───────────
+// Una ficha por sección: para qué sirve, qué se hace y consejos. El botón ? de la barra abre la de la sección actual.
+const AYUDA = {
+  dash: ['Inicio', 'Tu punto de partida cada día.', ['<b>Por hacer</b>: las cuatro tarjetas de arriba son el trabajo pendiente (revisión, reportes, pagos, cuentas suspendidas). Tócalas para ir directo.', '<b>En vivo</b>: cuántas personas hay ahora en la página y qué están haciendo, minuto a minuto.', '<b>Cifras</b>: usuarios, publicaciones, anuncios vistos y lo que se paga hoy a creadores. «Más cifras» despliega el resto.'], 'Si una tarjeta de «Por hacer» está en color, empieza por ahí.'],
+  metr: ['Métricas', 'Cómo se comporta la gente en la web: cuántos llegan, buscan, abren publicaciones, van a descargar y vuelven.', ['Elige el rango (7, 30 o 90 días) arriba a la derecha.', '<b>Embudo</b>: en qué paso se pierde más gente.', '<b>Búsquedas sin resultado</b>: contenido que la comunidad pide y no existe; son ideas para publicar.'], 'Los visitantes son anónimos: no se guarda IP ni cuenta.'],
+  inf: ['Informes', 'El registro mensual de toda la actividad, para descargar y archivar.', ['Elige el mes y pulsa <b>Descargar Excel (CSV)</b>: se abre con doble clic en Excel o Google Sheets.', '<b>Imprimir / PDF</b> genera una versión para guardar como PDF.', 'Marca <b>Descargar solo cada mes</b> y el informe del mes cerrado se bajará la primera vez que entres al panel ese mes.', 'El día 1 el dueño recibe además un correo con el resumen.'], 'Los pagos solo aparecen si tienes permiso de finanzas; las acciones del equipo, solo para el dueño. Nunca incluye emails, IP ni datos de cobro.'],
+  revn: ['Revisión', 'Publicaciones nuevas que esperan aprobación.', ['Abre cada una, comprueba que el enlace funciona y que el contenido es legítimo.', 'El botón <b>Nexus</b> da una recomendación de la IA antes de decidir.', 'Aprueba o rechaza. Con <b>Seleccionar</b> puedes hacerlo en bloque.'], 'Si no se aprueban en 2 días, el enlace se marca como caído. Las que llevan ⚡ pagaron revisión prioritaria: van primero.'],
+  apro: ['Entradas', 'Todo el contenido publicado.', ['Filtra por estado (aprobadas, pendientes, caídas, reportadas…).', 'Edita título, categoría o enlace, o cambia el estado del enlace.'], 'Usa el buscador de arriba para encontrar una publicación por título o creador.'],
+  vids: ['Videos', 'Tutoriales, gameplays y reseñas de la comunidad.', ['Filtra por tipo y revisa los marcados «En revisión».'], ''],
+  sosp: ['Verificación', 'Publicaciones con nombre de un juego comercial que no parecen un mod.', ['Siguen visibles, pero no generan pago al creador hasta que decidas.', 'Marca <b>Es un mod / legítimo</b> o retírala.'], 'Ante la duda, pide pruebas al creador antes de aprobar.'],
+  reportes: ['Reportes', 'Contenido denunciado por la comunidad, de más a menos reportes.', ['Comprueba el motivo (enlace caído, versión vieja, malware).', 'Corrige el estado del enlace o retira la publicación; luego reinicia los reportes.'], 'Un reporte de malware se atiende antes que cualquier otra cosa.'],
+  comt: ['Comentarios', 'Moderación de spam, insultos y enlaces sospechosos.', ['Borra lo que incumpla las normas.'], ''],
+  moder: ['Moderación IA', 'Lo que la IA ha ocultado o marcado automáticamente.', ['Revisa las decisiones y revierte las que sean un error.'], ''],
+  nxbus: ['Buscador Nexus', 'Descubre contenido que falta para proponerlo a la comunidad.', ['Escribe un tema y Nexus busca qué publicar.'], ''],
+  usrs: ['Usuarios', 'Las cuentas de la comunidad.', ['Busca por usuario o email, abre el detalle y revisa su actividad.', 'Según tu permiso: suspender, ajustar saldo o verificar.'], 'Toda suspensión queda en la auditoría: escribe siempre el motivo.'],
+  anun: ['Anuncios', 'Mensajes del equipo para toda la comunidad.', ['Escribe el anuncio, elige a quién llega y envíalo.'], 'Revisa la ortografía: no se puede editar después de enviado.'],
+  econ: ['Economía', 'Ingresos, UpCoins y Premium.', ['Consulta ventas por periodo y el catálogo de precios.'], ''],
+  extras: ['Extras UC', 'Usos extra de los UpCoins (apoyos, revisión prioritaria, misiones).', ['Consulta el movimiento y los reembolsos.'], ''],
+  pays: ['Pagos', 'Solicitudes de cobro de los creadores.', ['Abre la solicitud, paga por el método indicado y márcala como <b>completada</b> con la referencia.', 'Si algo no cuadra, <b>recházala</b> con un motivo claro: el saldo vuelve al creador.'], 'Comprueba el monto dos veces antes de transferir. Cada pago queda registrado.'],
+  tarj: ['Tarjetas', 'Tarjetas de regalo y canjes.', ['Consulta las emitidas y su estado.'], ''],
+  api: ['API Test', 'Diagnóstico del servidor.', ['Comprueba que cada servicio responde.'], 'Solo para quien lleva el sistema.'],
+  equipo: ['Equipo', 'Quién trabaja en el panel y qué puede hacer (solo el dueño).', ['Da acceso por rol (revisor, moderador, tesorero…) o permiso a permiso.', 'Pausa un acceso o cierra sus sesiones si hace falta.'], 'Da a cada persona solo los permisos que necesita.'],
+  audit: ['Auditoría', 'Registro de todo lo que hace el equipo (solo el dueño).', ['Filtra por persona y revisa los cambios.'], 'Se guarda 180 días; el informe mensual lo archiva más allá de ese plazo.'],
+};
+function ayPintar(foco) {
+  const visibles = NAV.filter(n => n.id && AYUDA[n.id] && navOk(n));
+  $('ayIdx').innerHTML = visibles.map(n => `<button class="chip" onclick="ayudaDe('${n.id}')">${n.t}</button>`).join('');
+  $('ayCuerpo').innerHTML = `<div class="card ay-sec"><h3><ion-icon name="flash-outline"></ion-icon>Empezar en 1 minuto</h3><ul><li>El menú de la izquierda agrupa las secciones; los grupos se pliegan tocando su título. Solo ves las secciones para las que tienes permiso.</li><li>Un número rojo en el menú significa <b>trabajo pendiente</b> en esa sección.</li><li><b>Ctrl + K</b> (o el botón «Buscar una acción») abre un buscador para ir a cualquier sitio escribiendo.</li><li>El botón <b>?</b> de la barra de arriba abre la explicación de la sección en la que estás.</li><li>El panel se actualiza solo cada 30 s; el botón ⟳ lo fuerza.</li></ul></div>`
+    + visibles.map(n => { const [t, que, pasos, ojo] = AYUDA[n.id]; return `<div class="card ay-sec${foco === n.id ? ' foco' : ''}" id="ay-${n.id}"><h3><ion-icon name="${n.ic}"></ion-icon>${t}</h3><p>${que}</p><div class="ay-q">Qué se hace aquí</div><ul>${pasos.map(p => `<li>${p}</li>`).join('')}</ul>${ojo ? `<p>💡 ${ojo}</p>` : ''}<button class="btn sm" style="margin-top:8px" onclick="go('${n.id}')">Ir a ${t} →</button></div>`; }).join('');
+}
+function ayudaDe(v) { if (view !== 'ayuda') go('ayuda'); ayPintar(v); setTimeout(() => $('ay-' + v)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }
+
+// ─────────── Buscador de acciones (Ctrl+K) ───────────
+let cmdSel = 0, cmdOps = [];
+function cmdLista() {
+  const ops = NAV.filter(n => n.id && navOk(n)).map(n => ({ t: n.t, ic: n.ic, s: 'Ir', f: () => go(n.id) }));
+  if (can(['estadisticas', 'finanzas'])) ops.push({ t: 'Descargar el informe del mes pasado', ic: 'download-outline', s: 'Acción', f: () => { const m = infMeses?.[1]?.mes; m ? infDescargar('csv', m) : go('inf'); } });
+  ops.push({ t: 'Sincronizar ahora', ic: 'sync-outline', s: 'Acción', f: () => sync(true) }, { t: 'Hablar con Nexus', ic: 'sparkles-outline', s: 'Acción', f: () => nxAbrir() }, { t: 'Cerrar sesión', ic: 'log-out-outline', s: 'Acción', f: () => logout() });
+  return ops;
+}
+const sinTildes = x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function cmdPintar() {
+  const q = sinTildes($('cmdQ').value.trim());
+  cmdOps = cmdLista().filter(o => !q || sinTildes(o.t).includes(q)); cmdSel = Math.min(cmdSel, Math.max(0, cmdOps.length - 1));
+  $('cmdL').innerHTML = cmdOps.length ? cmdOps.map((o, i) => `<button class="${i === cmdSel ? 'sel' : ''}" onclick="cmdHacer(${i})"><ion-icon name="${o.ic}"></ion-icon>${o.t}<small>${o.s}</small></button>`).join('') : '<div class="empty" style="padding:18px">Nada con ese nombre</div>';
+}
+function cmdAbrir() { if (!S.admin) return; $('cmd').classList.add('on'); $('cmdQ').value = ''; cmdSel = 0; cmdPintar(); setTimeout(() => $('cmdQ').focus(), 30); }
+function cmdCerrar() { $('cmd').classList.remove('on'); }
+function cmdHacer(i) { const o = cmdOps[i]; cmdCerrar(); o && o.f(); }
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('cmd').classList.contains('on') ? cmdCerrar() : cmdAbrir(); return; }
+  if (!$('cmd').classList.contains('on')) return;
+  if (e.key === 'Escape') cmdCerrar();
+  else if (e.key === 'ArrowDown') { e.preventDefault(); cmdSel = Math.min(cmdOps.length - 1, cmdSel + 1); cmdPintar(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSel = Math.max(0, cmdSel - 1); cmdPintar(); }
+  else if (e.key === 'Enter') { e.preventDefault(); cmdHacer(cmdSel); }
+});
 
 // ── En vivo: personas en la página ahora y actividad minuto a minuto (/admin/metricas/vivo) ──
 const VV_TXT = { v: '👀 Entró a la página', b: '🔎 Buscó', f: '📄 Abrió una publicación', d: '⬇️ Fue a descargar', r: '🎉 Creó su cuenta' };
