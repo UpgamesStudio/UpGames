@@ -144,7 +144,7 @@ function asistente(puedeVolver) {
     ocupado($('[type=submit]', f), async () => {
       const r = await api('/blogs', { metodo: 'POST', cuerpo: { titulo: f.titulo.value, direccion: f.direccion.value.replace(/-+$/, ''), descripcion: f.descripcion.value, tema } });
       S.blogs.push({ ...r.blog, entradas: 0 }); S.blog = S.blogs[S.blogs.length - 1]; S.vista = 'entradas';
-      panel(); toast('¡Tu blog está listo! Escribe tu primera entrada.');
+      JUEGO_INICIAL ? editor('entrada') : (panel(), toast('¡Tu blog está listo! Escribe tu primera entrada.'));
     });
   };
 }
@@ -436,6 +436,9 @@ const TIPOS = [['texto', 'text', 'Texto'], ['titulo', 'reorder-two', 'Subtítulo
 const NOMBRE_TIPO = Object.fromEntries(TIPOS.map(([id, , n]) => [id, n]));
 
 let sucio = false, urlPreviaInicial = '';
+// «Escribir sobre esto» (desde la ficha de una publicación): blog.html?juego=<id>
+let JUEGO_INICIAL = (new URLSearchParams(location.search).get('juego') || '').match(/^[a-f0-9]{24}$/i)?.[0].toLowerCase() || '';
+const tomarJuegoInicial = () => { const j = JUEGO_INICIAL; JUEGO_INICIAL = ''; if (j) try { history.replaceState(null, '', location.pathname); } catch (_) {} return j; };
 window.addEventListener('beforeunload', e => { if (sucio) { e.preventDefault(); e.returnValue = ''; } });
 
 // Plantillas: un punto de partida para no empezar con la hoja en blanco
@@ -457,7 +460,8 @@ function elegirPlantilla() {
 async function editor(tipo, id) {
   const esPag = tipo === 'pagina';
   let inicial = null;
-  if (!id && !esPag) { inicial = await elegirPlantilla(); if (inicial === null) return; }
+  const juegoDesde = !id && !esPag ? tomarJuegoInicial() : '';
+  if (!id && !esPag) { inicial = juegoDesde ? [{ tipo: 'juego', id: juegoDesde }, { tipo: 'texto', texto: '' }] : await elegirPlantilla(); if (inicial === null) return; }
   let E = { titulo: '', bloques: inicial?.length ? inicial : [{ tipo: 'texto', texto: '' }], etiquetas: [], portadaPropia: '', resumenPropio: '', estado: 'borrador', publicadaEn: null };
   urlPreviaInicial = '';
   app.innerHTML = '<div class="cargando"><span class="giro"></span></div>';
@@ -467,7 +471,7 @@ async function editor(tipo, id) {
   const publica = () => E.estado !== 'borrador';
 
   app.innerHTML = `<div class="editor">
-    <header class="barra"><button class="ico" id="salir" aria-label="Volver">${ico('chevron-back')}</button><b>${id ? 'Editar' : 'Nueva'} ${esPag ? 'página' : 'entrada'}</b><span class="chip estado" id="estado"></span><button class="btn chico" id="previa" style="margin-left:8px" aria-label="Vista previa">${ico('eye-outline')}<span>Vista previa</span></button></header>
+    <header class="barra"><button class="ico" id="salir" aria-label="Volver">${ico('chevron-back')}</button><b>${id ? 'Editar' : 'Nueva'} ${esPag ? 'página' : 'entrada'}</b><span class="chip estado" id="estado"></span><button class="btn chico nexus" id="nexus" style="margin-left:8px" aria-label="Nexus escribe un borrador"><b>✦</b><span>Nexus</span></button><button class="btn chico" id="previa" style="margin-left:8px" aria-label="Vista previa">${ico('eye-outline')}<span>Vista previa</span></button></header>
     <div class="lienzo">
       <textarea class="titulo-entrada" id="titulo" rows="1" maxlength="140" placeholder="${esPag ? 'Título de la página' : 'Título de la entrada'}">${h(E.titulo)}</textarea>
       <div id="bloques"></div>
@@ -640,6 +644,33 @@ async function editor(tipo, id) {
     $('#o-ok', c).onclick = () => { guardarCampos(); cerrarHoja(); pintarEstado(); };
   };
 
+  // ✦ Nexus escritor: arma el borrador con bloques a partir de una publicación de UpGames
+  $('#nexus').onclick = () => {
+    const actual = [...cont.children].map(x => x.leer?.()).find(b => b && (b.tipo === 'juego' || b.tipo === 'descarga'))?.id || juegoDesde || '';
+    const c = hoja(`<h3>✦ Nexus escribe por ti</h3><p style="color:var(--txt2)">Elige la publicación y qué quieres escribir. Nexus arma un borrador con bloques; tú lo revisas, lo completas con tu experiencia y lo publicas.</p>
+      <label class="campo"><span>Publicación de UpGames</span><input class="inp" id="n-id" placeholder="Pega el enlace de la publicación" value="${h(actual)}"></label>
+      <label class="campo"><span>Qué escribir</span><select class="inp" id="n-tipo"><option value="resena">Reseña</option><option value="guia">Guía de instalación</option><option value="noticia">Noticia</option></select></label>
+      <label class="campo"><span>Enfoque (opcional)</span><input class="inp" id="n-nota" maxlength="200" placeholder="Ej.: rendimiento en celulares de gama baja"></label>
+      <button class="btn pri ancho" id="n-ok">${ico('sparkles-outline')} Escribir borrador</button>`);
+    $('#n-ok', c).onclick = async ev => {
+      const jid = ($('#n-id', c).value.match(/[a-f0-9]{24}/i) || [''])[0].toLowerCase();
+      if (!jid) return toast('Pega el enlace de una publicación de UpGames.', true);
+      const hayTexto = [...cont.children].some(x => { const b = x.leer?.(); return b && b.tipo === 'texto' && String(b.texto || '').trim(); });
+      if (hayTexto && !(await confirmar('¿Reemplazar lo escrito?', 'El borrador de Nexus sustituirá los bloques que ya tienes.', 'Reemplazar', true))) return;
+      try {
+        await ocupado(ev.currentTarget, async () => {
+          const r = await api('/blogs/nexus/escribir', { metodo: 'POST', cuerpo: { juegoId: jid, tipo: $('#n-tipo', c).value, nota: $('#n-nota', c).value } });
+          cerrarHoja();
+          cont.innerHTML = ''; r.bloques.forEach(b => cont.appendChild(crearBloque(b)));
+          if (!tit.value.trim()) { tit.value = r.titulo; crecer(tit); }
+          meta.etiquetas = (r.etiquetas || []).join(', '); meta.resumen = r.resumen || ''; sucio = true;
+          toast('Borrador listo. Revísalo y complétalo con tu experiencia ✦');
+        });
+      } catch (e) { toast(e.message, true); }
+    };
+  };
+  if (juegoDesde) setTimeout(() => $('#nexus').click(), 350);
+
   let urlPrevia = urlPreviaInicial;
   async function guardar(estado, boton, callado) {
     const bloques = [...cont.children].map(el => el.leer()).filter(b => b && (b.tipo === 'separador' || [b.texto, b.url, b.id].some(v => String(v || '').trim()) || [b.urls, b.items, b.filas].some(a => a?.length)));
@@ -695,7 +726,7 @@ async function editor(tipo, id) {
     const [t, m] = await Promise.all([api('/blogs/temas', { publico: true }), api('/blogs/mios')]);
     S.temas = t.temas; S.fuentes = t.fuentes; S.fondos = t.fondos || []; S.cpm = t.cpm || 0; S.blogs = m.blogs; S.maximo = m.maximo; S.premium = !!m.premium;
     S.blog = S.blogs[0] || null;
-    S.blog ? panel() : asistente(false);
+    S.blog ? (JUEGO_INICIAL ? editor('entrada') : panel()) : asistente(false);
   } catch (e) {
     app.innerHTML = `<div class="portal">${LOGO}<div class="vacio" style="margin-top:40px"><b>No se pudo cargar</b>${h(e.message)}<br><br><button class="btn" onclick="location.reload()">Reintentar</button></div></div>`;
   }

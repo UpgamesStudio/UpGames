@@ -187,3 +187,23 @@ test('temas exclusivos: marcados Premium en la lista y se pintan con sus colores
     assert.ok(l.filter(t => t.premium).length >= 2 && !l.find(t => t.id === 'neon').premium);
     assert.ok(R.entrada(ctxB({}, 'cristal'), ent()).includes('#7C5CFF'));
 });
+
+console.log('Nexus escritor');
+const Escritor = require('../modulos/blogs/escritor');
+const juegoX = { _id: 'd'.repeat(24), title: 'Mod <b>X</b>', image: 'https://res.cloudinary.com/x/image/upload/a.jpg', category: 'Mods', tags: ['gta'], description: 'Mejora el rendimiento', extraData: { RAM: '4 GB', detectedGame: { gameName: 'GTA' } } };
+test('escritor: arma bloques válidos, agrega imagen y tarjeta, y descarta lo peligroso', () => {
+    const r = Escritor.armar({ titulo: 'Reseña', resumen: 'r', etiquetas: ['a', 'b'], bloques: [{ tipo: 'texto', texto: 'Intro', grande: true }, { tipo: 'boton', texto: 'x', url: 'https://evil.test' }, { tipo: 'codigo', texto: 'rm -rf' }, { tipo: 'titulo', texto: 'Lo mejor' }, { tipo: 'texto', texto: '- a\n- b' }, { tipo: 'script', texto: '<script>' }, { tipo: 'aviso', estilo: 'raro', texto: 'ojo' }] }, juegoX, 'resena');
+    assert.deepStrictEqual(r.bloques.map(b => b.tipo), ['texto', 'imagen', 'juego', 'titulo', 'texto', 'aviso']);
+    assert.strictEqual(r.bloques.find(b => b.tipo === 'aviso').estilo, 'info');
+    assert.strictEqual(r.bloques.find(b => b.tipo === 'juego').id, 'd'.repeat(24));
+});
+test('escritor: la guía termina con la descarga por la página puente; respuesta inútil → null', () => {
+    const b = [{ tipo: 'texto', texto: 'a' }, { tipo: 'titulo', texto: 'b' }, { tipo: 'texto', texto: 'c' }];
+    assert.strictEqual(Escritor.armar({ bloques: b }, juegoX, 'guia').bloques.at(-1).tipo, 'descarga');
+    assert.strictEqual(Escritor.armar({ bloques: [{ tipo: 'texto', texto: 'solo uno' }] }, juegoX, 'resena'), null);
+    assert.strictEqual(Escritor.armar(null, juegoX, 'resena'), null);
+});
+test('escritor: el pedido recorta datos y no filtra detectedGame', () => {
+    const p = Escritor.pedido(juegoX, 'resena', 'enfócate en el rendimiento');
+    assert.ok(p.includes('RAM') && !p.includes('detectedGame') && p.includes('rendimiento'));
+});

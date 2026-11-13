@@ -1343,6 +1343,7 @@ function openDetail(item) {
   btnFav.onclick=()=>{ fav(item._id); };
 
   document.getElementById('ds-btn-share').onclick=()=>share(item._id);
+  document.getElementById('ds-btn-write').onclick=()=>{ window.location.href='./blog.html?juego='+encodeURIComponent(item._id); };
   document.getElementById('ds-btn-report').onclick=()=>openReportModal(item._id);
 
   // Comments

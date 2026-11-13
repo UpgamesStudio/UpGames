@@ -18,6 +18,8 @@ const V = require('../modulos/blogs/validar');
 const R = require('../modulos/blogs/render');
 const Temas = require('../modulos/blogs/temas');
 const Anuncios = require('../modulos/blogs/anuncios');
+const Escritor = require('../modulos/blogs/escritor');
+const llm = require('../modulos/nexus/llm');
 
 const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 const ACORTADORES = /^(?:bit\.ly|tinyurl\.com|t\.co|goo\.gl|is\.gd|cutt\.ly|shorturl\.at|rb\.gy|ow\.ly|acortar\.link|shre\.ink|ouo\.io|adf\.ly|linkvertise\.com)$/i;
@@ -470,6 +472,24 @@ function registrar(app, deps) {
             logger.info(`[blogs] admin: «${b.direccion}» → ${estado}`);
             res.json({ success: true, estado: b.estado });
         } catch (e) { fallo(res, e, 'admin estado'); }
+    });
+
+    // ── Nexus escritor: borrador de una entrada a partir de una publicación ─────────────────
+    app.post('/blogs/nexus/escribir', verificarToken, async (req, res) => {
+        try {
+            const id = String(req.body?.juegoId || '');
+            if (!idOk(id)) return res.status(400).json({ success: false, error: 'Elige una publicación de UpGames.' });
+            if (!llm.disponible()) return res.status(503).json({ success: false, error: 'Nexus no está disponible ahora. Usa una plantilla y escribe tú.' });
+            if (!(await Limites.permitir(`blog-nexus:${req.usuario}`, [[Limites.HORA, 6], [Limites.DIA, 20]])) || !(await Limites.permitir('blog-nexus-global', [[Limites.MIN, 30]])))
+                return res.status(429).json({ success: false, error: 'Nexus está atendiendo a muchos creadores. Inténtalo en unos minutos.' });
+            const j = await Juego.findOne({ _id: id, status: 'aprobado' }).select('title description category tags image extraData').lean();
+            if (!j) return res.status(404).json({ success: false, error: 'No encontramos esa publicación.' });
+            const tipo = Escritor.TIPOS[req.body?.tipo] ? req.body.tipo : 'resena';
+            const o = await llm.json(Escritor.SISTEMA, Escritor.pedido(j, tipo, req.body?.nota), { temperatura: 0.6, maxTokens: 2200, timeout: 40000 });
+            const borrador = Escritor.armar(o, j, tipo);
+            if (!borrador) return res.status(502).json({ success: false, error: 'Nexus no pudo armar el borrador esta vez. Inténtalo de nuevo o usa una plantilla.' });
+            res.json({ success: true, ...borrador, fuente: o._fuente || 'Nexus' });
+        } catch (e) { fallo(res, e, 'nexus escribir'); }
     });
 
     // ═══════════════ COMENTARIOS ═══════════════
