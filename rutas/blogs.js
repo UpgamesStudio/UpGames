@@ -17,6 +17,7 @@ const crypto = require('crypto');
 const V = require('../modulos/blogs/validar');
 const R = require('../modulos/blogs/render');
 const Temas = require('../modulos/blogs/temas');
+const Anuncios = require('../modulos/blogs/anuncios');
 
 const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 const ACORTADORES = /^(?:bit\.ly|tinyurl\.com|t\.co|goo\.gl|is\.gd|cutt\.ly|shorturl\.at|rb\.gy|ow\.ly|acortar\.link|shre\.ink|ouo\.io|adf\.ly|linkvertise\.com)$/i;
@@ -33,7 +34,7 @@ function enlaceProhibido(urls) {
 }
 
 function registrar(app, deps) {
-    const { verificarToken, Usuario, Juego, Limites, Moderacion, CeroTolerancia, logger, mongoose, APP_URL, API_URL_SELF } = deps;
+    const { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET } = deps;
     const { Blog, Entrada, BlogVista, BlogReporte } = require('../modulos/blogs/modelos')(mongoose);
 
     const HOST_API = (() => { try { return new URL(API_URL_SELF).hostname; } catch (_) { return ''; } })();
@@ -59,10 +60,13 @@ function registrar(app, deps) {
         : BLOGS_DOMINIO ? `https://${b.direccion}.${BLOGS_DOMINIO}/` : `${API_URL_SELF}/b/${b.direccion}/`;
     const vistaBlog = b => ({ id: String(b._id), direccion: b.direccion, titulo: b.titulo, descripcion: b.descripcion, tema: b.tema, ajustes: b.ajustes || {},
         visibilidad: b.visibilidad, estado: b.estado, vistas: b.vistas || 0, url: urlPublica(b), creado: b.createdAt,
+        monetizar: !!b.monetizar, ingresos: Math.round((b.ingresos || 0) * 1e4) / 1e4, anunciosVistos: b.anunciosVistos || 0, cpm: Anuncios.CPM, motivoEstado: b.motivoEstado || '',
         dominio: b.dominio?.nombre ? { nombre: b.dominio.nombre, verificado: !!b.dominio.verificado, registros: registrosDns(b.dominio) } : null });
     const vistaEntrada = (e, completa) => ({ id: String(e._id), tipo: e.tipo, titulo: e.titulo, slug: e.slug, estado: e.estado, publicadaEn: e.publicadaEn,
         etiquetas: e.etiquetas || [], portada: e.portada || V.primeraImagen(e.bloques), resumen: e.resumen || V.resumen(e.bloques, 140), vistas: e.vistas || 0, actualizada: e.updatedAt,
         ...(completa ? { bloques: e.bloques || [], portadaPropia: e.portada || '', resumenPropio: e.resumen || '' } : {}) });
+    // Enlace privado para ver un borrador tal como quedará (solo lo conoce el autor)
+    const urlPrevia = (b, e) => `${API_URL_SELF}/b/${b.direccion}/_previa/${e._id}?k=${Anuncios.firmaPrevia(JWT_SECRET, String(e._id))}`;
 
     function registrosDns(d) {
         const partes = d.nombre.split('.');
@@ -81,6 +85,7 @@ function registrar(app, deps) {
             fuente: Temas.FUENTES[a.fuente] ? a.fuente : '',
             portada: V.urlSegura(a.portada), logo: V.urlSegura(a.logo),
             idioma: ['es', 'en', 'pt'].includes(a.idioma) ? a.idioma : 'es',
+            esquinas: Temas.ESQUINAS[a.esquinas] ? a.esquinas : '', fondo: Temas.FONDOS[a.fondo] ? a.fondo : '', portadaForma: Temas.PORTADAS.includes(a.portadaForma) ? a.portadaForma : '',
             gadgets: { perfil: g.perfil !== false, etiquetas: g.etiquetas !== false, populares: g.populares !== false },
             enlaces: (Array.isArray(a.enlaces) ? a.enlaces : []).map(e => ({ texto: V.linea(e?.texto, 40), url: V.urlSegura(e?.url) })).filter(e => e.texto && e.url).slice(0, 6),
         };
@@ -115,7 +120,7 @@ function registrar(app, deps) {
 
     // ═══════════════ PANEL DEL CREADOR ═══════════════
 
-    app.get('/blogs/temas', (req, res) => res.json({ success: true, temas: Temas.lista(), fuentes: Object.entries(Temas.FUENTES).map(([id, f]) => ({ id, nombre: f.nombre })), limites: V.LIMITES }));
+    app.get('/blogs/temas', (req, res) => res.json({ success: true, temas: Temas.lista(), fuentes: Object.entries(Temas.FUENTES).map(([id, f]) => ({ id, nombre: f.nombre })), fondos: Object.entries(Temas.FONDOS).map(([id, f]) => ({ id, nombre: f.nombre })), limites: V.LIMITES, cpm: Anuncios.CPM }));
 
     app.get('/blogs/mios', verificarToken, async (req, res) => {
         try {
@@ -170,6 +175,7 @@ function registrar(app, deps) {
             if (c.direccion !== undefined && c.direccion !== b.direccion) { const d = V.validarDireccion(c.direccion); if (d.error) return res.status(400).json({ success: false, error: d.error }); b.direccion = d.valor; }
             if (c.tema !== undefined && Temas.TEMAS[c.tema]) b.tema = c.tema;
             if (c.visibilidad !== undefined && ['publico', 'oculto'].includes(c.visibilidad)) b.visibilidad = c.visibilidad;
+            if (typeof c.monetizar === 'boolean') b.monetizar = c.monetizar;   // el creador decide si su blog lleva publicidad
             if (c.ajustes !== undefined) { b.ajustes = limpiarAjustes({ ...(b.ajustes || {}), ...c.ajustes }, b.ajustes); b.markModified('ajustes'); }
             const malo = revisar(req.usuario, b.titulo, [{ tipo: 'texto', texto: b.descripcion }], b.direccion);
             if (malo) return res.status(400).json({ success: false, error: malo });
@@ -206,7 +212,7 @@ function registrar(app, deps) {
             const b = await miBlog(req, res); if (!b) return;
             const e = idOk(req.params.eid) && await Entrada.findOne({ _id: req.params.eid, blog: b._id }).lean();
             if (!e) return res.status(404).json({ success: false, error: 'Esa entrada no existe.' });
-            res.json({ success: true, entrada: vistaEntrada(e, true) });
+            res.json({ success: true, entrada: vistaEntrada(e, true), previa: urlPrevia(b, e) });
         } catch (e) { fallo(res, e, 'entrada'); }
     });
 
@@ -262,7 +268,7 @@ function registrar(app, deps) {
             if (error) return res.status(400).json({ success: false, error });
             await e.save(); olvidar();
             if (e.estado !== 'borrador') revisarConIA(e, b);
-            res.json({ success: true, entrada: vistaEntrada(e, true), url: `${urlPublica(b)}${e.tipo === 'pagina' ? 'p' : 'e'}/${e.slug}` });
+            res.json({ success: true, entrada: vistaEntrada(e, true), url: `${urlPublica(b)}${e.tipo === 'pagina' ? 'p' : 'e'}/${e.slug}`, previa: urlPrevia(b, e) });
         } catch (e) {
             if (e.code === 11000) return res.status(409).json({ success: false, error: 'Ya hay otra con esa misma dirección. Cambia un poco el título.' });
             fallo(res, e, 'crear entrada');
@@ -279,7 +285,7 @@ function registrar(app, deps) {
             if (error) return res.status(400).json({ success: false, error });
             await e.save(); olvidar();
             if (e.estado !== 'borrador') revisarConIA(e, b);
-            res.json({ success: true, entrada: vistaEntrada(e, true), url: `${urlPublica(b)}${e.tipo === 'pagina' ? 'p' : 'e'}/${e.slug}` });
+            res.json({ success: true, entrada: vistaEntrada(e, true), url: `${urlPublica(b)}${e.tipo === 'pagina' ? 'p' : 'e'}/${e.slug}`, previa: urlPrevia(b, e) });
         } catch (e) {
             if (e.code === 11000) return res.status(409).json({ success: false, error: 'Ya hay otra con esa misma dirección. Cambia un poco el título.' });
             fallo(res, e, 'editar entrada');
@@ -307,7 +313,8 @@ function registrar(app, deps) {
             ]);
             const porDia = Object.fromEntries(dias.map(d => [d.dia, d.n]));
             const serie = Array.from({ length: 30 }, (_, i) => { const dia = new Date(Date.now() - (29 - i) * 864e5).toISOString().slice(0, 10); return { dia, n: porDia[dia] || 0 }; });
-            res.json({ success: true, total: b.vistas || 0, mes: serie.reduce((s, d) => s + d.n, 0), hoy: serie[29].n, publicadas, serie,
+            const r4 = n => Math.round(n * 1e4) / 1e4;
+            res.json({ success: true, monetizar: !!b.monetizar, cpm: Anuncios.CPM, ingresos: r4(b.ingresos || 0), ingresosMes: r4(dias.reduce((s, d) => s + (d.g || 0), 0)), anunciosMes: dias.reduce((s, d) => s + (d.a || 0), 0), total: b.vistas || 0, mes: serie.reduce((s, d) => s + d.n, 0), hoy: serie[29].n, publicadas, serie,
                 top: top.map(e => ({ titulo: e.titulo, vistas: e.vistas, tipo: e.tipo })) });
         } catch (e) { fallo(res, e, 'estadisticas'); }
     });
@@ -382,10 +389,49 @@ function registrar(app, deps) {
         } catch (e) { fallo(res, e, 'reportar'); }
     });
 
+    // ═══════════════ PANEL DE ADMINISTRACIÓN ═══════════════
+    // Blogs reportados o en revisión: el equipo los reactiva o los suspende (admin/index.html → Blogs)
+    app.get('/admin/blogs', verificarAdmin, async (req, res) => {
+        try {
+            const f = req.query.filtro, q = V.linea(req.query.q, 60).toLowerCase();
+            const filtro = { ...(f === 'todos' ? {} : f === 'monetizados' ? { monetizar: true } : { $or: [{ estado: { $ne: 'activo' } }, { reportes: { $gt: 0 } }] }),
+                ...(q ? { $and: [{ $or: [{ direccion: { $regex: q.replace(/[^a-z0-9-]/g, '') || '^$' } }, { usuario: q.replace(/^@/, '') }] }] } : {}) };
+            const [blogs, pendientes, total] = await Promise.all([
+                Blog.find(filtro).sort({ reportes: -1, updatedAt: -1 }).limit(100).lean(),
+                Blog.countDocuments({ estado: 'revision' }), Blog.countDocuments({}),
+            ]);
+            const ids = blogs.map(b => b._id);
+            const [cuentas, reportes] = await Promise.all([
+                Entrada.aggregate([{ $match: { blog: { $in: ids } } }, { $group: { _id: '$blog', n: { $sum: 1 } } }]),
+                BlogReporte.find({ blog: { $in: ids } }).sort({ createdAt: -1 }).limit(400).select('blog motivo detalle createdAt').lean(),
+            ]);
+            const n = Object.fromEntries(cuentas.map(c => [String(c._id), c.n]));
+            res.json({ success: true, pendientes, total, blogs: blogs.map(b => ({ id: String(b._id), direccion: b.direccion, titulo: b.titulo, usuario: b.usuario, estado: b.estado, reportes: b.reportes || 0,
+                vistas: b.vistas || 0, monetizar: !!b.monetizar, ingresos: Math.round((b.ingresos || 0) * 1e4) / 1e4, anunciosVistos: b.anunciosVistos || 0, entradas: n[String(b._id)] || 0, url: urlPublica(b),
+                dominio: b.dominio?.verificado ? b.dominio.nombre : '', motivoEstado: b.motivoEstado || '', creado: b.createdAt,
+                ultimosReportes: reportes.filter(r => String(r.blog) === String(b._id)).slice(0, 5).map(r => ({ motivo: r.motivo, detalle: r.detalle || '', fecha: r.createdAt })) })) });
+        } catch (e) { fallo(res, e, 'admin lista'); }
+    });
+
+    app.put('/admin/blogs/:id/estado', verificarAdmin, async (req, res) => {
+        try {
+            const estado = req.body?.estado;
+            if (!['activo', 'suspendido'].includes(estado)) return res.status(400).json({ success: false, error: 'Estado inválido' });
+            const b = await Blog.findById(req.params.id);
+            if (!b) return res.status(404).json({ success: false, error: 'Ese blog no existe' });
+            b.estado = estado; b.motivoEstado = estado === 'suspendido' ? V.linea(req.body?.motivo, 200) : '';
+            if (estado === 'activo') { b.reportes = 0; await BlogReporte.deleteMany({ blog: b._id }); }
+            await b.save(); olvidar();
+            logger.info(`[blogs] admin: «${b.direccion}» → ${estado}`);
+            res.json({ success: true, estado: b.estado });
+        } catch (e) { fallo(res, e, 'admin estado'); }
+    });
+
     // ═══════════════ PÁGINAS PÚBLICAS ═══════════════
 
-    const CSP = "default-src 'none'; img-src 'self' https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com; base-uri 'none'; form-action 'none'";
+    const CSP = "default-src 'none'; img-src 'self' https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src 'self' https://www.youtube-nocookie.com https://open.spotify.com; base-uri 'none'; form-action 'none'";
     function html(res, estado, cuerpo, cacheSeg = 300) {
+        if (!cacheSeg) return res.status(estado).set({ 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': CSP, 'Cache-Control': 'no-store' }).send(cuerpo);
         res.status(estado).set({ 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': CSP, 'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Cache-Control': estado === 200 ? `public, max-age=60, s-maxage=${cacheSeg}, stale-while-revalidate=600` : 'public, max-age=30' }).send(cuerpo);
     }
@@ -404,6 +450,33 @@ function registrar(app, deps) {
         ]).catch(() => {});
     }
 
+    // ── Monetización: pagar al creador por cada anuncio realmente visto ────────────────
+    const ticketsUsados = new Map();   // ticket → ms (cada ticket paga una sola vez)
+    async function pagarAnuncio(blog, ticket, ip) {
+        if (!blog.monetizar || blog.visibilidad !== 'publico' || blog.estado !== 'activo') return;
+        if (!Anuncios.verificar(JWT_SECRET, ticket, blog._id, ip).ok || ticketsUsados.has(ticket)) return;
+        if (ticketsUsados.size > 200000) ticketsUsados.clear();
+        ticketsUsados.set(ticket, Date.now());
+        // Por persona: 3 anuncios pagados al día en un mismo blog y 25 entre todos los blogs
+        if (!(await Limites.permitir(`blog-ad:${blog._id}:${ip}`, [[Limites.DIA, 3]])) || !(await Limites.permitir(`blog-ad-ip:${ip}`, [[Limites.DIA, 25]]))) return;
+        const dia = new Date().toISOString().slice(0, 10);
+        const autor = await Usuario.findOne({ usuario: blog.usuario }).select('usuario listaNegraAdmin').lean();
+        let ganancia = autor && !autor.listaNegraAdmin ? Anuncios.CPM / 1000 : 0;
+        if (ganancia) {
+            await Usuario.updateOne({ usuario: autor.usuario }, { $inc: { saldo: ganancia } });
+            const fr = fraudDetector ? await fraudDetector.analyzeDownloadBehavior(autor.usuario, String(blog._id), ip, ganancia).catch(() => null) : null;
+            if (fr?.suspicious && fr.autoFlag && await fraudDetector.autoFlagUser(Usuario, autor.usuario, `Blog «${blog.direccion}»: ${fr.reasons.join(', ')}`)) {
+                await Usuario.updateOne({ usuario: autor.usuario, saldo: { $gte: ganancia } }, { $inc: { saldo: -ganancia } });
+                logger.warn(`[blogs] anuncios de «${blog.direccion}»: @${autor.usuario} marcado por fraude, ganancia revertida`);
+                ganancia = 0;
+            }
+        }
+        await Promise.all([
+            Blog.updateOne({ _id: blog._id }, { $inc: { anunciosVistos: 1, ingresos: ganancia } }),
+            BlogVista.updateOne({ blog: blog._id, dia }, { $inc: { a: 1, g: ganancia } }, { upsert: true }),
+        ]);
+    }
+
     /** Lo que rodea a cualquier página del blog: menú de páginas, autor, lo más leído y etiquetas. */
     const contexto = (blog, base, origen) => conCache(`ctx:${blog._id}`, 60, async () => {
         const [paginas, autor, populares, nube] = await Promise.all([
@@ -413,7 +486,7 @@ function registrar(app, deps) {
             Entrada.aggregate([{ $match: { ...visibles(blog._id), tipo: 'entrada' } }, { $unwind: '$etiquetas' }, { $group: { _id: '$etiquetas', n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 20 }]),
         ]);
         return { paginas, autor, populares, nube: nube.map(x => x._id) };
-    }).then(c => ({ ...c, blog, base, origen, appUrl: APP_URL }));
+    }).then(c => ({ ...c, blog, base, origen, appUrl: APP_URL, anuncio: !!blog.monetizar && blog.visibilidad === 'publico' }));
 
     async function juegosDe(bloques) {
         const ids = [...new Set((bloques || []).filter(b => b.tipo === 'juego').map(b => b.id))].slice(0, 20);
@@ -427,7 +500,7 @@ function registrar(app, deps) {
         // Detrás del proxy de Railway el dominio real llega en X-Forwarded-Host (req.hostname ya lo tiene en cuenta)
         const reenviado = String(req.get('x-forwarded-host') || '').split(',')[0].trim();
         const origen = `${req.protocol}://${reenviado && reenviado.split(':')[0].toLowerCase() === req.hostname ? reenviado : req.get('host')}`;
-        if (blog.estado !== 'activo') return html(res, 451, R.aviso('Blog no disponible', 'Este blog está en revisión por el equipo de UpGames.', APP_URL));
+        if (blog.estado !== 'activo') return html(res, 451, R.aviso('Blog no disponible', blog.estado === 'suspendido' ? 'Este blog fue suspendido por incumplir las normas de UpGames.' : 'Este blog está en revisión por el equipo de UpGames.', APP_URL));
         ruta = ruta.replace(/\/+$/, '') || '/';
         let m;
 
@@ -435,7 +508,24 @@ function registrar(app, deps) {
             contarVista(blog, m[1], req.ip || '');
             return res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' }).send(GIF);
         }
+        // Monetización: el marco del anuncio y el aviso de «anuncio visto» que paga al creador
+        if (ruta === '/_anuncio') {
+            if (!blog.monetizar) return res.status(404).end();
+            res.removeHeader('X-Frame-Options');
+            return res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }).send(Anuncios.pagina(Anuncios.emitir(JWT_SECRET, blog._id, req.ip || ''), `${origen}${base}/_av`));
+        }
+        if (ruta === '/_av') {
+            pagarAnuncio(blog, String(req.query.t || ''), req.ip || '').catch(e => logger.error(`[blogs] anuncio: ${e.message}`));
+            return res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' }).send(GIF);
+        }
         const ctx = await contexto(blog, base, origen);
+        if ((m = ruta.match(/^\/_previa\/([a-f0-9]{24})$/))) {
+            const k = String(req.query.k || ''), buena = Anuncios.firmaPrevia(JWT_SECRET, m[1]);
+            const e = k.length === buena.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(buena)) && await Entrada.findOne({ _id: m[1], blog: blog._id }).lean();
+            if (!e) return html(res, 404, R.noEncontrada(ctx));
+            res.set('X-Robots-Tag', 'noindex');
+            return html(res, 200, R.entrada({ ...ctx, anuncio: false, juegos: await juegosDe(e.bloques) }, { ...e, publicadaEn: e.publicadaEn || new Date() }, { previa: true }), 0);
+        }
 
         if (ruta === '/' || (m = ruta.match(/^\/etiqueta\/([a-z0-9-]{1,40})$/))) {
             const pagina = Math.min(500, Math.max(1, parseInt(req.query.pagina, 10) || 1));

@@ -145,7 +145,7 @@ select.inp option { background: var(--bg2); }
 
 /* ── Estadísticas ─────────────────────────────────────── */
 .cifras { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 14px; }
-.cifra { padding: 16px; } .cifra b { display: block; font-size: 1.7rem; font-weight: 800; font-family: var(--ft); } .cifra span { color: var(--txt2); font-size: .8rem; }
+.cifra { padding: 16px; } .cifra b { display: block; font-size: 1.35rem; font-weight: 800; font-family: var(--ft); overflow-wrap: anywhere; line-height: 1.25; } .cifra span { color: var(--txt2); font-size: .8rem; }
 .grafica { display: flex; align-items: flex-end; gap: 3px; height: 130px; }
 .grafica i { flex: 1; min-height: 3px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--g), rgba(var(--cy-rgb), .5)); opacity: .85; }
 .grafica i.cero { background: rgba(255,255,255,.08); }
@@ -163,6 +163,8 @@ select.inp option { background: var(--bg2); }
 /* ── Editor ───────────────────────────────────────────── */
 .editor { min-height: 100dvh; display: flex; flex-direction: column; }
 .editor .barra .estado { margin-left: auto; }
+.editor .barra > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+@media (max-width: 520px) { #previa span { display: none; } #previa { padding: 0 12px; } }
 .lienzo { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 20px 14px 150px; }
 .titulo-entrada { width: 100%; background: none; border: 0; outline: none; font-size: clamp(1.6rem, 6vw, 2.3rem); font-weight: 800; line-height: 1.2; letter-spacing: -.01em; resize: none; overflow: hidden; margin-bottom: 10px; }
 .titulo-entrada::placeholder { color: var(--txt3); }
@@ -191,6 +193,13 @@ select.inp option { background: var(--bg2); }
 .b-cita textarea, .b-codigo textarea { width: 100%; background: none; border: 0; outline: none; resize: none; font-size: 1.05rem; line-height: 1.6; font-style: italic; overflow: hidden; }
 .b-codigo textarea { font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: .88rem; background: var(--bg2); border: 1px solid var(--bd); border-radius: 12px; padding: 12px; overflow: auto; min-height: 90px; }
 .b-boton .muestra { display: inline-block; background: var(--g); color: #04160B; font-weight: 800; padding: 11px 24px; border-radius: 99px; margin-bottom: 6px; min-width: 60px; outline: none; }
+.b-aviso textarea { width: 100%; border: 0; border-left: 4px solid; border-radius: 10px; outline: none; resize: none; padding: 12px 14px; font-size: 1rem; line-height: 1.55; overflow: hidden; }
+.par { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; }
+.par input, .par textarea, .b-ficha > input, .b-audio input { flex: 1; min-width: 0; width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--bd); border-radius: 10px; outline: none; padding: 9px 10px; font-size: .92rem; resize: vertical; }
+.par input:first-child { flex: .7; font-weight: 700; }
+.par-faq { flex-wrap: wrap; } .par-faq input:first-child { flex: 1 1 calc(100% - 44px); } .par-faq textarea { flex: 1 1 100%; order: 3; }
+.par button { width: 36px; height: 36px; border-radius: 10px; color: var(--txt3); display: grid; place-items: center; flex-shrink: 0; }
+.par button:hover { color: var(--red); background: rgba(255,90,90,.1); }
 .b-separador hr { border: 0; height: 1px; background: var(--bd2); margin: 14px 0; }
 .b-juego .tarj { display: flex; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--bd); border-radius: 14px; margin-bottom: 6px; }
 .b-juego .tarj img { width: 86px; height: 58px; object-fit: cover; border-radius: 10px; } .b-juego .tarj small { color: var(--txt3); display: block; }

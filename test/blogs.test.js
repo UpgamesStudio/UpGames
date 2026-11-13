@@ -9,6 +9,7 @@ const V = require('../modulos/blogs/validar');
 const R = require('../modulos/blogs/render');
 const Temas = require('../modulos/blogs/temas');
 const { enlaceProhibido } = require('../rutas/blogs');
+const Anuncios = require('../modulos/blogs/anuncios');
 
 let passed = 0;
 function test(name, fn) {
@@ -102,6 +103,55 @@ test('feed y sitemap', () => {
     const e = [{ titulo: 'A & B', slug: 'a-b', tipo: 'entrada', bloques: [], publicadaEn: new Date('2026-01-02') }];
     assert.ok(R.feed(ctx, e).includes('<title>A &amp; B</title>') && R.feed(ctx, e).includes('<link>https://x.test/b/kale/e/a-b</link>'));
     assert.ok(R.sitemap(ctx, e).includes('<loc>https://x.test/b/kale/e/a-b</loc><lastmod>2026-01-02</lastmod>'));
+});
+
+console.log('herramientas creativas');
+test('bloques nuevos: aviso, preguntas, ficha y Spotify', () => {
+    const b = V.limpiarBloques([{ tipo: 'aviso', texto: 'ojo', estilo: 'x"><script>' }, { tipo: 'faq', items: [{ p: '¿Sirve?', r: 'Sí' }, { p: '', r: 'sin pregunta' }] },
+        { tipo: 'ficha', titulo: 'Requisitos', filas: [{ k: 'RAM', v: '4 GB' }, { k: '', v: 'x' }] }, { tipo: 'audio', url: 'https://open.spotify.com/intl-es/track/4cOdK2wGLETKBW3PvgPWqT?si=1' },
+        { tipo: 'audio', url: 'https://evil.com/track/4cOdK2wGLETKBW3PvgPWqT' }, { tipo: 'texto', texto: 'a', centro: 1, grande: 'sí' }, { tipo: 'imagen', url: 'https://a.com/i.png', enlace: 'javascript:alert(1)' }]);
+    assert.deepStrictEqual(b.map(x => x.tipo), ['aviso', 'faq', 'ficha', 'audio', 'texto', 'imagen']);
+    assert.strictEqual(b[0].estilo, 'info'); assert.strictEqual(b[1].items.length, 1); assert.strictEqual(b[2].filas.length, 1);
+    assert.deepStrictEqual(b[3], { tipo: 'audio', clase: 'track', id: '4cOdK2wGLETKBW3PvgPWqT' });
+    assert.strictEqual(b[5].enlace, '');
+    const html = R.bloquesHtml(b, ctx);
+    assert.ok(html.includes('class="aviso aviso-info"') && html.includes('<details><summary>¿Sirve?</summary>') && html.includes('<dt>RAM</dt><dd>4 GB</dd>')
+        && html.includes('https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT') && html.includes('class="t-centro t-grande"') && !html.includes('<script'));
+});
+test('diseño: fondo, esquinas y forma del inicio', () => {
+    const html = R.inicio({ ...ctx, blog: { ...ctx.blog, ajustes: { fondo: 'rejilla', esquinas: 'rectas', portadaForma: 'revista' } } }, { entradas: [] });
+    assert.ok(html.includes('--radio:2px') && html.includes('--fondo-rep:repeat'));
+    const e = [{ titulo: 'Uno', slug: 'uno', bloques: [], publicadaEn: new Date() }];
+    assert.ok(R.inicio({ ...ctx, blog: { ...ctx.blog, ajustes: { portadaForma: 'revista' } } }, { entradas: e }).includes('class="rejilla revista"'));
+    assert.ok(R.inicio({ ...ctx, blog: { ...ctx.blog, ajustes: { portadaForma: 'x' } } }, { entradas: e }).includes('class="rejilla"'));
+});
+test('vista previa: avisa, no se indexa y no cuenta visitas ni anuncios', () => {
+    const html = R.entrada({ ...ctx, anuncio: true }, { _id: 'b'.repeat(24), tipo: 'entrada', titulo: 'Borrador', slug: 'borrador', bloques: [] }, { previa: true });
+    assert.ok(html.includes('Vista previa') && html.includes('noindex') && !html.includes('/_v/') && !html.includes('_anuncio'));
+});
+
+console.log('monetización');
+test('el anuncio solo sale si el creador lo activó, en un marco aislado', () => {
+    const e = { _id: 'c'.repeat(24), tipo: 'entrada', titulo: 'T', slug: 't', bloques: [], publicadaEn: new Date() };
+    assert.ok(!R.entrada(ctx, e).includes('_anuncio'));
+    const html = R.entrada({ ...ctx, anuncio: true }, e);
+    assert.ok(html.includes('<iframe src="/b/kale/_anuncio"') && html.includes('sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"'));
+    assert.strictEqual((html.match(/<script/g) || []).length, 1);   // solo los datos estructurados: la página del blog sigue sin scripts
+});
+test('ticket del anuncio: firma, espera, IP y vigencia', () => {
+    const S = 'secreto', t0 = 1_800_000_000_000, tk = Anuncios.emitir(S, 'blog1', '1.2.3.4', t0);
+    assert.strictEqual(Anuncios.verificar(S, tk, 'blog1', '1.2.3.4', t0 + 2000).motivo, 'pronto');
+    assert.strictEqual(Anuncios.verificar(S, tk, 'blog1', '1.2.3.4', t0 + Anuncios.ESPERA_MS + 1).ok, true);
+    assert.strictEqual(Anuncios.verificar(S, tk, 'blog2', '1.2.3.4', t0 + 9000).motivo, 'invalido');
+    assert.strictEqual(Anuncios.verificar(S, tk, 'blog1', '9.9.9.9', t0 + 9000).motivo, 'invalido');
+    assert.strictEqual(Anuncios.verificar('otro', tk, 'blog1', '1.2.3.4', t0 + 9000).motivo, 'invalido');
+    assert.strictEqual(Anuncios.verificar(S, tk, 'blog1', '1.2.3.4', t0 + 21 * 60e3).motivo, 'vencido');
+    assert.strictEqual(Anuncios.verificar(S, '', 'blog1', '1.2.3.4').motivo, 'falta');
+    assert.strictEqual(Anuncios.verificar(S, 'x'.repeat(200), 'blog1', '1.2.3.4').motivo, 'falta');
+});
+test('marco del anuncio: lleva el ticket y avisa a la URL dada', () => {
+    const p = Anuncios.pagina('abc.def', 'https://x.test/b/kale/_av');
+    assert.ok(p.includes('var T="abc.def"') && p.includes('U="https://x.test/b/kale/_av"') && p.includes('highperformanceformat.com'));
 });
 
 console.log(`\n${passed} pruebas de blogs pasaron`);

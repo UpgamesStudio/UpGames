@@ -757,6 +757,13 @@ a{color:var(--g2)}
       <div class="list" id="sospList"><div class="empty">Cargando…</div></div>
     </section>
 
+    <section class="view" id="v-blogs">
+      <div class="vh"><div><h2>Blogs</h2><p>Sitios creados por los usuarios en UpGames Blogs: reportados, en revisión y suspendidos</p></div>
+        <button class="btn sm" onclick="loadBlogs()"><ion-icon name="refresh-outline"></ion-icon> Recargar</button></div>
+      <div class="row" id="blF" style="margin-bottom:12px;flex-wrap:wrap"><button class="chip on" data-f="">Por revisar</button><button class="chip" data-f="monetizados">Con publicidad</button><button class="chip" data-f="todos">Todos</button></div>
+      <div class="list" id="blList"></div>
+    </section>
+
     <section class="view" id="v-reportes">
       <div class="vh"><div><h2>Reportes</h2><p>Contenido denunciado por la comunidad, de más a menos reportes</p></div></div>
       <div class="list" id="repList"></div>
@@ -1234,6 +1241,7 @@ const NAV = [
   { id: 'vids', ic: 'videocam-outline', t: 'Videos', perm: 'contenido', b: () => D.items.filter(isVid).length },
   { id: 'sosp', ic: 'eye-outline', t: 'Verificación', perm: ['revision', 'contenido'], b: () => (D.sosp || []).length, hot: true },
   { id: 'reportes', ic: 'flag-outline', t: 'Reportes', perm: ['revision', 'contenido'], b: () => D.items.filter(i => i.reportes > 0).length, hot: true },
+  { id: 'blogs', ic: 'globe-outline', t: 'Blogs', perm: ['revision', 'contenido', 'sanciones'], b: () => BL?.pendientes || 0, hot: true },
   { id: 'comt', ic: 'chatbubbles-outline', t: 'Comentarios', perm: 'comentarios', b: () => D.comments.length },
   { id: 'moder', ic: 'shield-half-outline', t: 'Moderación IA', perm: ['comentarios', 'contenido', 'sanciones'] },
   { id: 'nxbus', ic: 'telescope-outline', t: 'Buscador Nexus', perm: ['revision', 'contenido', 'estadisticas'] },
@@ -1299,6 +1307,7 @@ function go(v) {
   if (v === 'econ') loadEcon(true);
   if (v === 'extras') loadExtras();
   if (v === 'moder') loadModer();
+  if (v === 'blogs') loadBlogs();
   if (v === 'nxbus') nbIniciar();
   if (v === 'anun') emailEstado();
   else if (v === 'audit') loadAudit();
@@ -2138,6 +2147,35 @@ async function segEstado(i, estado, quitarRestriccion) {
   toast('Guardado', 'ok'); loadSeg();
 }
 document.addEventListener('click', e => { const b = e.target.closest('#segF .chip'); if (!b) return; document.querySelectorAll('#segF .chip').forEach(c => c.classList.toggle('on', c === b)); segF = b.dataset.f; loadSeg(); });
+// ── Blogs de los usuarios (UpGames Blogs): reportados, en revisión y suspendidos ──
+let BL = null, blF = '';
+async function loadBlogs() {
+  try { const { ok, d } = await api('/admin/blogs' + (blF ? '?filtro=' + blF : '')); if (!ok || !d.success) return toast(d.error || 'No se pudo cargar', 'err'); BL = d; rBlogs(); } catch (_) {}
+}
+function rBlogs() {
+  if (!BL) return;
+  const est = { activo: ['t-ok', 'Activo'], revision: ['t-warn', 'En revisión'], suspendido: ['t-bad', 'Suspendido'] };
+  const mot = { estafa: '🎣 Estafa', malware: '🛡️ Malware', sexual: '🔞 Sexual', odio: '🔥 Odio', copia: '©️ Copia', otro: '❓ Otro' };
+  const puede = can(['contenido', 'sanciones']);
+  $('blList').innerHTML = BL.blogs.length ? BL.blogs.map(b => `<div class="card">
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><div class="grow"><div style="font-weight:700">${esc(b.titulo)}</div>
+      <div class="small muted">/b/${esc(b.direccion)} · por <span style="color:var(--g1)">@${esc(b.usuario)}</span>${b.dominio ? ' · ' + esc(b.dominio) : ''}</div>
+      <div class="small muted">${num(b.entradas)} entradas · ${num(b.vistas)} visitas${b.monetizar ? ` · 💵 con publicidad (${num(b.anunciosVistos)} anuncios, US$${Number(b.ingresos).toFixed(2)})` : ''}</div></div>
+      <div style="text-align:right"><span class="tag ${est[b.estado][0]}">${est[b.estado][1]}</span>${b.reportes ? `<div style="margin-top:5px"><span class="tag t-bad">${b.reportes} reportes</span></div>` : ''}</div></div>
+    ${b.ultimosReportes.length ? `<div class="rep-b" style="flex-direction:column;align-items:flex-start;gap:4px">${b.ultimosReportes.map(r => `<span>${mot[r.motivo] || esc(r.motivo)}${r.detalle ? ': ' + esc(r.detalle) : ''}</span>`).join('')}</div>` : ''}
+    ${b.motivoEstado ? `<div class="small muted">Motivo de la suspensión: ${esc(b.motivoEstado)}</div>` : ''}
+    <div class="row"><a class="btn sm ghost" href="${esc(safeUrl(b.url) || '#')}" target="_blank" rel="noopener noreferrer"><ion-icon name="open-outline"></ion-icon> Ver blog</a>
+      ${puede && (b.estado !== 'activo' || b.reportes) ? `<button class="btn sm ok" onclick="blogEstado('${b.id}','activo')"><ion-icon name="checkmark-circle-outline"></ion-icon> Está bien (activar)</button>` : ''}
+      ${puede && b.estado !== 'suspendido' ? `<button class="btn sm bad" onclick="blogEstado('${b.id}','suspendido')"><ion-icon name="ban-outline"></ion-icon> Suspender</button>` : ''}</div></div>`).join('')
+    : '<div class="empty"><ion-icon name="shield-checkmark-outline"></ion-icon>' + (blF ? 'No hay blogs en esta lista' : 'Ningún blog por revisar') + '</div>';
+}
+async function blogEstado(id, estado) {
+  let motivo = '';
+  if (estado === 'suspendido') { motivo = prompt('Motivo de la suspensión (lo verá el equipo):', ''); if (motivo === null) return; }
+  try { const { ok, d } = await api(`/admin/blogs/${id}/estado`, { method: 'PUT', body: { estado, motivo } }); if (!ok || !d.success) return toast(d.error || 'No se pudo cambiar', 'err'); toast(estado === 'activo' ? '✓ Blog activo, reportes limpiados' : 'Blog suspendido'); loadBlogs(); } catch (_) {}
+}
+document.addEventListener('click', e => { const b = e.target.closest('#blF .chip'); if (!b) return; document.querySelectorAll('#blF .chip').forEach(c => c.classList.toggle('on', c === b)); blF = b.dataset.f; loadBlogs(); });
+
 async function loadModer() {
   loadSeg();
   try { const { ok, d } = await api('/admin/moderacion' + (mdF ? '?tipo=' + mdF : '')); if (!ok || !d.success) return toast(d.error || 'No se pudo cargar', 'err'); MD = d; rModer(); } catch (_) {}

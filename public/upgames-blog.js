@@ -21,7 +21,7 @@ const app = $('#app');
 const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ico = n => `<ion-icon name="${n}"></ion-icon>`;
 
-const S = { blogs: [], blog: null, vista: 'entradas', temas: [], fuentes: [], maximo: 3 };
+const S = { blogs: [], blog: null, vista: 'entradas', temas: [], fuentes: [], fondos: [], cpm: 0, maximo: 3 };
 
 async function api(ruta, { metodo = 'GET', cuerpo, publico } = {}) {
   let r;
@@ -170,7 +170,7 @@ function reporte(direccion) {
 }
 
 // ── 3. PANEL ────────────────────────────────────────────────────────
-const SECCIONES = [['entradas', 'document-text', 'Entradas'], ['paginas', 'copy', 'Páginas'], ['estadisticas', 'stats-chart', 'Estadísticas'], ['tema', 'color-palette', 'Tema'], ['ajustes', 'settings', 'Ajustes']];
+const SECCIONES = [['entradas', 'document-text', 'Entradas'], ['paginas', 'copy', 'Páginas'], ['estadisticas', 'stats-chart', 'Estadísticas'], ['ingresos', 'cash', 'Ingresos'], ['tema', 'color-palette', 'Tema'], ['ajustes', 'settings', 'Ajustes']];
 
 function panel() {
   const b = S.blog;
@@ -185,7 +185,7 @@ function panel() {
   </div>`;
   $('.nav', app).onclick = e => { const x = e.target.closest('[data-v]'); if (x) { S.vista = x.dataset.v; panel(); } };
   $('#cambiar').onclick = menuBlogs;
-  ({ entradas: () => vistaLista('entrada'), paginas: () => vistaLista('pagina'), estadisticas: vistaEstadisticas, tema: vistaTema, ajustes: vistaAjustes })[S.vista]();
+  ({ entradas: () => vistaLista('entrada'), paginas: () => vistaLista('pagina'), estadisticas: vistaEstadisticas, ingresos: vistaIngresos, tema: vistaTema, ajustes: vistaAjustes })[S.vista]();
 }
 
 function menuBlogs() {
@@ -256,6 +256,27 @@ async function vistaEstadisticas() {
       ${d.top.length ? `<div class="top">${d.top.map(t => `<div><b>${h(t.titulo)}</b><span>${num(t.vistas)} visitas</span></div>`).join('')}</div>` : '<p>Cuando tus entradas reciban visitas aparecerán aquí.</p>'}</section>`;
 }
 
+async function vistaIngresos() {
+  const v = $('#vista'), b = S.blog;
+  let d;
+  try { d = await api(`/blogs/${b.id}/estadisticas`); } catch (e) { v.innerHTML = `<div class="vacio"><b>No se pudo cargar</b>${h(e.message)}</div>`; return; }
+  const usd = n => 'US$' + Number(n || 0).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: Number(n) > 0 && Number(n) < 0.1 ? 4 : 2 });
+  v.innerHTML = `<h1>Ingresos</h1><p class="sub">Tú decides si tu blog lleva publicidad. Si la activas, ganas dinero con cada anuncio que ven tus visitantes.</p>
+    <section class="seccion glass"><h2>${ico('cash')} Monetizar con UpGames</h2>
+      <label class="interruptor"><span><b>Mostrar publicidad en mi blog</b><br><small style="color:var(--txt3)">Un anuncio al final de cada entrada y del inicio.</small></span><input type="checkbox" id="monetizar"${b.monetizar ? ' checked' : ''}></label>
+      <p>Ganas <b style="color:var(--g)">${usd(d.cpm)}</b> por cada 1.000 anuncios vistos. Se suma a tu saldo de UpGames, el mismo de tus publicaciones, y lo retiras desde <a href="./biblioteca.html">tu perfil → Economía</a>.</p>
+      ${b.visibilidad !== 'publico' ? '<p style="color:var(--amber)">Tu blog está oculto: los anuncios solo se muestran en blogs públicos.</p>' : ''}
+    </section>
+    <div class="cifras"><div class="cifra glass"><b>${usd(d.ingresosMes)}</b><span>Últimos 30 días</span></div><div class="cifra glass"><b>${usd(d.ingresos)}</b><span>Desde siempre</span></div><div class="cifra glass"><b>${num(d.anunciosMes)}</b><span>Anuncios vistos (30 días)</span></div></div>
+    <section class="seccion glass"><h2>${ico('shield-checkmark')} Cómo se cuenta</h2>
+      <p>Un anuncio cuenta cuando una persona real lo tuvo a la vista unos segundos y no usa bloqueador. Cada visitante cuenta hasta 3 veces al día en tu blog. Las visitas falsas o hechas por ti mismo no pagan y pueden suspender la monetización.</p></section>`;
+  $('#monetizar').onchange = async e => {
+    const quiere = e.target.checked;
+    if (quiere && !(await confirmar('¿Activar la publicidad?', 'Tus visitantes verán un anuncio al final de cada entrada. Puedes quitarla cuando quieras.', 'Activar'))) { e.target.checked = false; return; }
+    try { await guardarBlog({ monetizar: quiere }, quiere ? 'Publicidad activada' : 'Publicidad desactivada'); } catch (err) { e.target.checked = !quiere; toast(err.message, true); }
+  };
+}
+
 async function guardarBlog(cambios, mensaje = 'Guardado') {
   const r = await api(`/blogs/${S.blog.id}`, { metodo: 'PUT', cuerpo: cambios });
   ponerBlog(r.blog); toast(mensaje);
@@ -276,6 +297,9 @@ function vistaTema() {
     <section class="seccion glass"><h2>${ico('color-fill')} Personalizar</h2>
       <div class="campo"><span>Color principal</span><div class="fila"><input type="color" id="acento" value="${h(a.acento || tema.colores.acento)}" style="width:56px;height:46px;border-radius:12px;border:1px solid var(--bd2);background:none;padding:3px"><button class="btn chico" id="acento-ok">Aplicar color</button>${a.acento ? '<button class="btn chico" id="acento-no">Usar el del tema</button>' : ''}</div></div>
       <label class="campo"><span>Letra de los títulos</span><select class="inp" id="fuente"><option value="">La del tema</option>${S.fuentes.map(f => `<option value="${h(f.id)}"${a.fuente === f.id ? ' selected' : ''}>${h(f.nombre)}</option>`).join('')}</select></label>
+      <label class="campo"><span>Fondo</span><select class="inp" data-aj="fondo"><option value="">El del tema</option>${S.fondos.map(f => `<option value="${h(f.id)}"${a.fondo === f.id ? ' selected' : ''}>${h(f.nombre)}</option>`).join('')}</select></label>
+      <label class="campo"><span>Esquinas</span><select class="inp" data-aj="esquinas">${[['', 'Las del tema'], ['rectas', 'Rectas'], ['suaves', 'Suaves'], ['redondas', 'Muy redondas']].map(([k, n]) => `<option value="${k}"${(a.esquinas || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="campo"><span>Cómo se ven las entradas en el inicio</span><select class="inp" data-aj="portadaForma">${[['', 'Como el tema'], ['rejilla', 'Tarjetas en rejilla'], ['lista', 'Lista con foto al lado'], ['revista', 'Revista: la última en grande']].map(([k, n]) => `<option value="${k}"${(a.portadaForma || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       ${foto('logo', 'Logo', 'Sale junto al nombre del blog y como icono de la pestaña.')}
       ${foto('portada', 'Foto de portada', 'Fondo grande de la parte de arriba del inicio.')}
     </section>
@@ -301,6 +325,7 @@ function vistaTema() {
   };
   v.onchange = e => {
     if (e.target.id === 'fuente') return aplicar({ ajustes: { fuente: e.target.value } });
+    if (e.target.dataset.aj) return aplicar({ ajustes: { [e.target.dataset.aj]: e.target.value } }, 'Diseño actualizado');
     if (e.target.dataset.gadget) {
       const gadgets = Object.fromEntries([...v.querySelectorAll('[data-gadget]')].map(x => [x.dataset.gadget, x.checked]));
       guardarBlog({ ajustes: { gadgets } }).catch(err => toast(err.message, true));
@@ -407,23 +432,42 @@ const crecer = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeig
 const idYouTube = s => { s = String(s || '').trim(); if (/^[\w-]{11}$/.test(s)) return s; const m = s.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
 
 const TIPOS = [['texto', 'text', 'Texto'], ['titulo', 'reorder-two', 'Subtítulo'], ['imagen', 'image', 'Imagen'], ['galeria', 'images', 'Galería'], ['video', 'logo-youtube', 'Video'],
-  ['cita', 'chatbox-ellipses', 'Cita'], ['boton', 'radio-button-on', 'Botón'], ['juego', 'game-controller', 'Publicación de UpGames'], ['codigo', 'code-slash', 'Código'], ['separador', 'remove', 'Separador']];
+  ['cita', 'chatbox-ellipses', 'Cita'], ['aviso', 'alert-circle', 'Aviso'], ['ficha', 'list', 'Ficha / requisitos'], ['faq', 'help-circle', 'Preguntas'], ['audio', 'musical-notes', 'Spotify'], ['boton', 'radio-button-on', 'Botón'], ['juego', 'game-controller', 'Publicación de UpGames'], ['codigo', 'code-slash', 'Código'], ['separador', 'remove', 'Separador']];
 const NOMBRE_TIPO = Object.fromEntries(TIPOS.map(([id, , n]) => [id, n]));
 
-let sucio = false;
+let sucio = false, urlPreviaInicial = '';
 window.addEventListener('beforeunload', e => { if (sucio) { e.preventDefault(); e.returnValue = ''; } });
+
+// Plantillas: un punto de partida para no empezar con la hoja en blanco
+const PLANTILLAS = [
+  ['blanco', 'document-outline', 'En blanco', 'Empieza desde cero', []],
+  ['resena', 'star-outline', 'Reseña de juego', 'Opinión, ficha y nota final', [{ tipo: 'texto', texto: 'Cuenta en dos frases de qué va el juego y por qué lo probaste.', grande: true }, { tipo: 'imagen' }, { tipo: 'titulo', texto: 'Lo mejor' }, { tipo: 'texto', texto: '- Punto fuerte 1\n- Punto fuerte 2\n- Punto fuerte 3' }, { tipo: 'titulo', texto: 'Lo peor' }, { tipo: 'texto', texto: '- Punto débil 1\n- Punto débil 2' }, { tipo: 'ficha', titulo: 'Ficha', filas: [{ k: 'Género', v: 'Acción' }, { k: 'Plataforma', v: 'Android' }, { k: 'Peso', v: '1,2 GB' }] }, { tipo: 'aviso', estilo: 'exito', texto: '**Nota final: 8/10.** Recomendado si te gusta…' }]],
+  ['guia', 'construct-outline', 'Guía de instalación', 'Requisitos y pasos numerados', [{ tipo: 'texto', texto: 'Qué vas a conseguir con esta guía y cuánto tiempo toma.' }, { tipo: 'ficha', titulo: 'Requisitos', filas: [{ k: 'Android', v: '10 o superior' }, { k: 'RAM', v: '4 GB' }, { k: 'Espacio libre', v: '3 GB' }] }, { tipo: 'titulo', texto: 'Paso a paso' }, { tipo: 'texto', texto: '1. Descarga los archivos.\n2. Instala la APK.\n3. Copia la carpeta OBB.\n4. Abre el juego.' }, { tipo: 'aviso', estilo: 'alerta', texto: 'Haz una copia de tu partida antes de empezar.' }, { tipo: 'video' }, { tipo: 'faq', items: [{ p: '¿Sirve en mi celular?', r: 'Funciona en la mayoría de equipos con…' }, { p: 'Me sale pantalla negra, ¿qué hago?', r: 'Prueba a…' }] }]],
+  ['noticia', 'megaphone-outline', 'Noticia', 'Titular, imagen y lo importante', [{ tipo: 'texto', texto: 'Lo más importante de la noticia en una o dos frases.', grande: true }, { tipo: 'imagen' }, { tipo: 'texto', texto: 'Desarrolla la noticia: qué pasó, cuándo y qué significa.' }, { tipo: 'cita', texto: 'Una frase destacada de la fuente.', autor: 'Fuente' }]],
+  ['top', 'trophy-outline', 'Top 5', 'Una lista con tus favoritos', [{ tipo: 'texto', texto: 'Explica cómo elegiste esta lista.' }, ...[5, 4, 3, 2, 1].flatMap(n => [{ tipo: 'titulo', texto: `${n}. Nombre` }, { tipo: 'texto', texto: 'Por qué está en la lista.' }]), { tipo: 'boton', texto: 'Ver más en UpGames', url: 'https://upgames.games' }]],
+];
+function elegirPlantilla() {
+  return new Promise(ok => {
+    const c = hoja(`<h3>¿Cómo quieres empezar?</h3><div class="opciones">${PLANTILLAS.map(([id, i, n, d]) => `<button data-p="${id}">${ico(i)}<span>${n}<small>${d}</small></span></button>`).join('')}</div>`);
+    $('#hoja').onclick = e => { if (e.target.id === 'hoja') { cerrarHoja(); ok(null); } };
+    c.onclick = e => { const x = e.target.closest('[data-p]'); if (!x) return; cerrarHoja(); ok(PLANTILLAS.find(p => p[0] === x.dataset.p)[4]); };
+  });
+}
 
 async function editor(tipo, id) {
   const esPag = tipo === 'pagina';
-  let E = { titulo: '', bloques: [{ tipo: 'texto', texto: '' }], etiquetas: [], portadaPropia: '', resumenPropio: '', estado: 'borrador', publicadaEn: null };
+  let inicial = null;
+  if (!id && !esPag) { inicial = await elegirPlantilla(); if (inicial === null) return; }
+  let E = { titulo: '', bloques: inicial?.length ? inicial : [{ tipo: 'texto', texto: '' }], etiquetas: [], portadaPropia: '', resumenPropio: '', estado: 'borrador', publicadaEn: null };
+  urlPreviaInicial = '';
   app.innerHTML = '<div class="cargando"><span class="giro"></span></div>';
-  if (id) { try { E = (await api(`/blogs/${S.blog.id}/entradas/${id}`)).entrada; } catch (e) { toast(e.message, true); return panel(); } }
+  if (id) { try { const r = await api(`/blogs/${S.blog.id}/entradas/${id}`); E = r.entrada; urlPreviaInicial = r.previa || ''; } catch (e) { toast(e.message, true); return panel(); } }
   const meta = { etiquetas: (E.etiquetas || []).join(', '), portada: E.portadaPropia || '', resumen: E.resumenPropio || '', programar: E.estado === 'programada' && new Date(E.publicadaEn) > new Date() ? E.publicadaEn : '' };
   sucio = false;
   const publica = () => E.estado !== 'borrador';
 
   app.innerHTML = `<div class="editor">
-    <header class="barra"><button class="ico" id="salir" aria-label="Volver">${ico('chevron-back')}</button><b>${id ? 'Editar' : 'Nueva'} ${esPag ? 'página' : 'entrada'}</b><span class="chip estado" id="estado"></span></header>
+    <header class="barra"><button class="ico" id="salir" aria-label="Volver">${ico('chevron-back')}</button><b>${id ? 'Editar' : 'Nueva'} ${esPag ? 'página' : 'entrada'}</b><span class="chip estado" id="estado"></span><button class="btn chico" id="previa" style="margin-left:8px" aria-label="Vista previa">${ico('eye-outline')}<span>Vista previa</span></button></header>
     <div class="lienzo">
       <textarea class="titulo-entrada" id="titulo" rows="1" maxlength="140" placeholder="${esPag ? 'Título de la página' : 'Título de la entrada'}">${h(E.titulo)}</textarea>
       <div id="bloques"></div>
@@ -450,8 +494,11 @@ async function editor(tipo, id) {
     const subida = async (boton, hecho) => { const f = await elegirImagen(); if (!f) return; await ocupado(boton, async () => { hecho(await subirImagen(f)); sucio = true; }); };
 
     if (b.tipo === 'texto') {
-      el.innerHTML = barra(`<button data-cmd="bold" aria-label="Negrita"><b>B</b></button><button data-cmd="italic" aria-label="Cursiva"><i>I</i></button><button data-cmd="link" aria-label="Enlace">${ico('link')}</button><button data-cmd="insertUnorderedList" aria-label="Lista">${ico('list')}</button>`) + `<div class="rico" contenteditable="true" data-ph="Escribe aquí…"></div>`;
-      const rico = $('.rico', el);
+      el.innerHTML = barra(`<button data-cmd="bold" aria-label="Negrita"><b>B</b></button><button data-cmd="italic" aria-label="Cursiva"><i>I</i></button><button data-cmd="link" aria-label="Enlace">${ico('link')}</button><button data-cmd="insertUnorderedList" aria-label="Lista">${ico('list')}</button><button data-op="centro" aria-label="Centrar">${ico('reorder-three')}</button><button data-op="grande" aria-label="Letra grande">${ico('text')}</button>`) + `<div class="rico" contenteditable="true" data-ph="Escribe aquí…"></div>`;
+      const rico = $('.rico', el), op = { centro: !!b.centro, grande: !!b.grande };
+      const pintarOp = () => { rico.style.textAlign = op.centro ? 'center' : ''; rico.style.fontSize = op.grande ? '1.3rem' : ''; el.querySelectorAll('[data-op]').forEach(x => { x.style.color = op[x.dataset.op] ? 'var(--g)' : ''; }); };
+      el.querySelectorAll('[data-op]').forEach(x => { x.onmousedown = e => e.preventDefault(); x.onclick = () => { op[x.dataset.op] = !op[x.dataset.op]; sucio = true; pintarOp(); }; });
+      pintarOp();
       rico.innerHTML = aHtml(b.texto);
       rico.addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); });
       el.querySelectorAll('[data-cmd]').forEach(x => {
@@ -467,21 +514,23 @@ async function editor(tipo, id) {
           sucio = true;
         };
       });
-      el.leer = () => ({ tipo: 'texto', texto: aMarcas(rico) });
+      el.leer = () => ({ tipo: 'texto', texto: aMarcas(rico), centro: op.centro, grande: op.grande });
     } else if (b.tipo === 'titulo') {
-      let nivel = b.nivel === 3 ? 3 : 2;
-      el.innerHTML = barra(`<button data-nivel aria-label="Cambiar tamaño">${ico('text')}</button>`) + `<input maxlength="160" placeholder="Subtítulo" value="${h(b.texto || '')}">`;
+      let nivel = b.nivel === 3 ? 3 : 2, centro = !!b.centro;
+      el.innerHTML = barra(`<button data-nivel aria-label="Cambiar tamaño">${ico('text')}</button><button data-centro aria-label="Centrar">${ico('reorder-three')}</button>`) + `<input maxlength="160" placeholder="Subtítulo" value="${h(b.texto || '')}">`;
       el.classList.toggle('n3', nivel === 3);
       $('[data-nivel]', el).onclick = () => { nivel = nivel === 2 ? 3 : 2; el.classList.toggle('n3', nivel === 3); sucio = true; };
-      el.leer = () => ({ tipo: 'titulo', texto: $('input', el).value, nivel });
+      const pintarC = () => { $('input', el).style.textAlign = centro ? 'center' : ''; $('[data-centro]', el).style.color = centro ? 'var(--g)' : ''; };
+      $('[data-centro]', el).onclick = () => { centro = !centro; sucio = true; pintarC(); }; pintarC();
+      el.leer = () => ({ tipo: 'titulo', texto: $('input', el).value, nivel, centro });
     } else if (b.tipo === 'imagen') {
       let url = b.url || '';
       const pintar = () => {
-        el.innerHTML = barra(url ? `<button data-cambiar aria-label="Cambiar imagen">${ico('swap-horizontal')}</button>` : '') + (url ? `<img src="${h(mini(url, 1000))}" alt=""><input maxlength="200" placeholder="Pie de foto (opcional)" value="${h(b.pie || '')}">` : `<button class="subiendo" data-cambiar style="width:100%">${ico('cloud-upload-outline')}<span>Toca para subir una imagen</span></button>`);
-        el.querySelectorAll('[data-cambiar]').forEach(x => { x.onclick = () => subida(x, u => { b.pie = $('input', el)?.value || b.pie; url = u; pintar(); }); });
+        el.innerHTML = barra(url ? `<button data-cambiar aria-label="Cambiar imagen">${ico('swap-horizontal')}</button>` : '') + (url ? `<img src="${h(mini(url, 1000))}" alt=""><input data-pie maxlength="200" placeholder="Pie de foto (opcional)" value="${h(b.pie || '')}"><input data-enlace placeholder="Enlace al tocar la imagen (opcional): https://…" value="${h(b.enlace || '')}" inputmode="url">` : `<button class="subiendo" data-cambiar style="width:100%">${ico('cloud-upload-outline')}<span>Toca para subir una imagen</span></button>`);
+        el.querySelectorAll('[data-cambiar]').forEach(x => { x.onclick = () => subida(x, u => { b.pie = $('[data-pie]', el)?.value || b.pie; b.enlace = $('[data-enlace]', el)?.value || b.enlace; url = u; pintar(); }); });
       };
       pintar();
-      el.leer = () => url ? { tipo: 'imagen', url, pie: $('input', el)?.value || '' } : null;
+      el.leer = () => url ? { tipo: 'imagen', url, pie: $('[data-pie]', el)?.value || '', enlace: ($('[data-enlace]', el)?.value || '').trim() } : null;
     } else if (b.tipo === 'galeria') {
       const urls = [...(b.urls || [])];
       const pintar = () => {
@@ -515,6 +564,36 @@ async function editor(tipo, id) {
         } catch (_) { tarj.innerHTML = '<small>No encontramos esa publicación. Revisa el enlace.</small>'; tarj.hidden = false; } }, 400); };
       inp.oninput = ver; ver();
       el.leer = () => { const jid = sacar(); return jid ? { tipo: 'juego', id: jid } : null; };
+    } else if (b.tipo === 'aviso') {
+      let estilo = ['info', 'exito', 'alerta', 'peligro'].includes(b.estilo) ? b.estilo : 'info';
+      const COL = { info: '#3B9EFF', exito: '#2FBF71', alerta: '#F5A524', peligro: '#F04438' };
+      el.innerHTML = barra(Object.keys(COL).map(k => `<button data-est="${k}" aria-label="Color ${k}"><span style="width:16px;height:16px;border-radius:50%;background:${COL[k]};display:block"></span></button>`).join('')) + `<textarea rows="1" maxlength="1500" placeholder="Un aviso importante: versión, advertencia, consejo…">${h(b.texto || '')}</textarea>`;
+      const ta = $('textarea', el);
+      const pintarA = () => { ta.style.borderLeftColor = COL[estilo]; ta.style.background = COL[estilo] + '18'; };
+      el.querySelectorAll('[data-est]').forEach(x => { x.onclick = () => { estilo = x.dataset.est; sucio = true; pintarA(); }; });
+      ta.oninput = () => crecer(ta); setTimeout(() => crecer(ta)); pintarA();
+      el.leer = () => ({ tipo: 'aviso', texto: ta.value, estilo });
+    } else if (b.tipo === 'faq' || b.tipo === 'ficha') {
+      // Listas de pares: pregunta/respuesta (faq) o dato/valor (ficha de requisitos)
+      const esFaq = b.tipo === 'faq';
+      const filas = (esFaq ? (b.items || []).map(i => [i.p, i.r]) : (b.filas || []).map(f => [f.k, f.v]));
+      if (!filas.length) filas.push(...(esFaq ? [['', '']] : [['Sistema', ''], ['RAM', ''], ['Almacenamiento', '']]));
+      const leerFilas = () => [...el.querySelectorAll('.par')].map(p => [p.children[0].value, p.children[1].value]);
+      const pintar = () => {
+        el.innerHTML = barra() + (esFaq ? '' : `<input data-tit maxlength="80" placeholder="Título de la ficha (ej.: Requisitos)" value="${h(b.titulo || '')}" style="font-weight:800">`)
+          + filas.map(([k, v], i) => `<div class="par${esFaq ? ' par-faq' : ''}"><input maxlength="${esFaq ? 200 : 60}" placeholder="${esFaq ? 'Pregunta' : 'Dato'}" value="${h(k)}">${esFaq ? `<textarea rows="2" maxlength="1500" placeholder="Respuesta">${h(v)}</textarea>` : `<input maxlength="200" placeholder="Valor" value="${h(v)}">`}<button data-fuera="${i}" aria-label="Quitar">${ico('close')}</button></div>`).join('')
+          + (filas.length < 20 ? `<button class="btn chico" data-otra style="margin-top:8px">${ico('add')} ${esFaq ? 'Otra pregunta' : 'Otro dato'}</button>` : '');
+        el.querySelectorAll('[data-fuera]').forEach(x => { x.onclick = () => { const f = leerFilas(); b.titulo = $('[data-tit]', el)?.value; f.splice(+x.dataset.fuera, 1); filas.splice(0, filas.length, ...f); sucio = true; pintar(); }; });
+        const otra = $('[data-otra]', el); if (otra) otra.onclick = () => { const f = leerFilas(); b.titulo = $('[data-tit]', el)?.value; filas.splice(0, filas.length, ...f, ['', '']); sucio = true; pintar(); el.querySelectorAll('.par')[filas.length - 1].children[0].focus(); };
+      };
+      pintar();
+      el.leer = () => esFaq ? { tipo: 'faq', items: leerFilas().filter(([p, r]) => p.trim() && r.trim()).map(([p, r]) => ({ p, r })) }
+        : { tipo: 'ficha', titulo: $('[data-tit]', el).value, filas: leerFilas().filter(([k, v]) => k.trim() && v.trim()).map(([k, v]) => ({ k, v })) };
+    } else if (b.tipo === 'audio') {
+      el.innerHTML = barra() + `<div class="marco" style="aspect-ratio:auto;height:84px;font-size:2.2rem;background:#1DB95422;color:#1DB954">${ico('musical-notes')}</div><input placeholder="Pega el enlace de Spotify (canción, álbum, lista o podcast)" value="${b.id ? `https://open.spotify.com/${h(b.clase)}/${h(b.id)}` : ''}" inputmode="url">`;
+      const inp = $('input', el);
+      const ok = () => /^https:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist|episode|show)\/[A-Za-z0-9]{22}/.test(inp.value.trim());
+      el.leer = () => ok() ? { tipo: 'audio', url: inp.value.trim() } : null;
     } else if (b.tipo === 'codigo') {
       el.innerHTML = barra() + `<textarea rows="4" maxlength="8000" spellcheck="false" placeholder="Pega aquí el código o los comandos">${h(b.texto || '')}</textarea>`;
       el.leer = () => ({ tipo: 'codigo', texto: $('textarea', el).value });
@@ -561,8 +640,9 @@ async function editor(tipo, id) {
     $('#o-ok', c).onclick = () => { guardarCampos(); cerrarHoja(); pintarEstado(); };
   };
 
-  async function guardar(estado, boton) {
-    const bloques = [...cont.children].map(el => el.leer()).filter(b => b && (b.tipo === 'separador' || Object.entries(b).some(([k, v]) => k !== 'tipo' && k !== 'nivel' && (Array.isArray(v) ? v.length : String(v).trim()))));
+  let urlPrevia = urlPreviaInicial;
+  async function guardar(estado, boton, callado) {
+    const bloques = [...cont.children].map(el => el.leer()).filter(b => b && (b.tipo === 'separador' || [b.texto, b.url, b.id].some(v => String(v || '').trim()) || [b.urls, b.items, b.filas].some(a => a?.length)));
     const titulo = tit.value.trim();
     if (!titulo) { tit.focus(); return toast('Ponle un título.', true); }
     if (estado !== 'borrador' && !bloques.length) return toast('La entrada está vacía. Escribe algo antes de publicar.', true);
@@ -573,7 +653,8 @@ async function editor(tipo, id) {
     await ocupado(boton, async () => {
       const r = await api(`/blogs/${S.blog.id}/entradas${id ? '/' + id : ''}`, { metodo: id ? 'PUT' : 'POST', cuerpo });
       const antes = E.estado;
-      E = r.entrada; id = E.id; sucio = false; pintarEstado();
+      E = r.entrada; id = E.id; urlPrevia = r.previa || ''; sucio = false; pintarEstado();
+      if (callado) return;
       if (E.estado === 'publicada' && antes !== 'publicada') {
         const c = hoja(`<h3>¡Publicada! 🎉</h3><p>Tu ${esPag ? 'página' : 'entrada'} ya está en internet.</p><code style="word-break:break-all;color:var(--cy);font-size:.86rem">${h(r.url)}</code>
           <div class="fila"><button class="btn" data-c style="flex:1">${ico('copy-outline')} Copiar enlace</button><a class="btn pri" style="flex:1" href="${h(r.url)}" target="_blank" rel="noopener">${ico('open-outline')} Verla</a></div><button class="btn ancho" data-l>Volver a la lista</button>`);
@@ -583,6 +664,14 @@ async function editor(tipo, id) {
     });
   }
   $('#publicar').onclick = e => guardar('publicada', e.currentTarget);
+  // Vista previa: guarda lo que hay (sin cambiar si está publicada o no) y abre el enlace privado
+  $('#previa').onclick = async e => {
+    const boton = e.currentTarget, w = window.open('', '_blank');
+    // Un borrador se guarda antes de verlo. Lo ya publicado no: guardarlo publicaría los cambios.
+    if (E.estado === 'borrador') await guardar('borrador', boton, true);
+    else if (sucio) toast('Se muestra lo último guardado. Toca «Actualizar» para ver tus cambios.');
+    if (urlPrevia && (E.estado !== 'borrador' || !sucio)) { if (w) w.location = urlPrevia; else location.href = urlPrevia; } else w?.close();
+  };
   $('#borrador').onclick = async e => {
     const boton = e.currentTarget;
     if (publica() && !(await confirmar('¿Pasar a borrador?', 'Dejará de verse en tu blog hasta que la publiques otra vez.', 'Pasar a borrador'))) return;
@@ -604,7 +693,7 @@ async function editor(tipo, id) {
   try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
   try {
     const [t, m] = await Promise.all([api('/blogs/temas', { publico: true }), api('/blogs/mios')]);
-    S.temas = t.temas; S.fuentes = t.fuentes; S.blogs = m.blogs; S.maximo = m.maximo;
+    S.temas = t.temas; S.fuentes = t.fuentes; S.fondos = t.fondos || []; S.cpm = t.cpm || 0; S.blogs = m.blogs; S.maximo = m.maximo;
     S.blog = S.blogs[0] || null;
     S.blog ? panel() : asistente(false);
   } catch (e) {

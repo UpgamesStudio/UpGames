@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { TEMAS, FUENTES, temaDe, esColor, sobre } = require('./temas');
+const { TEMAS, FUENTES, ESQUINAS, PORTADAS, FONDOS, temaDe, esColor, sobre } = require('./temas');
 const V = require('./validar');
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,9 +38,16 @@ const img = (url, ancho) => String(url).replace(/^(https:\/\/res\.cloudinary\.co
 
 function bloqueHtml(b, ctx) {
     switch (b.tipo) {
-        case 'texto': return textoHtml(b.texto);
-        case 'titulo': return `<h${b.nivel === 3 ? 3 : 2}>${esc(b.texto)}</h${b.nivel === 3 ? 3 : 2}>`;
-        case 'imagen': return `<figure><img src="${esc(img(b.url, 1200))}" alt="${esc(b.alt || b.pie || '')}" loading="lazy" decoding="async">${b.pie ? `<figcaption>${esc(b.pie)}</figcaption>` : ''}</figure>`;
+        case 'texto': return b.centro || b.grande ? `<div class="${[b.centro && 't-centro', b.grande && 't-grande'].filter(Boolean).join(' ')}">${textoHtml(b.texto)}</div>` : textoHtml(b.texto);
+        case 'titulo': return `<h${b.nivel === 3 ? 3 : 2}${b.centro ? ' class="t-centro"' : ''}>${esc(b.texto)}</h${b.nivel === 3 ? 3 : 2}>`;
+        case 'imagen': {
+            const foto = `<img src="${esc(img(b.url, 1200))}" alt="${esc(b.alt || b.pie || '')}" loading="lazy" decoding="async">`;
+            return `<figure>${b.enlace ? `<a href="${esc(b.enlace)}" target="_blank" rel="nofollow ugc noopener">${foto}</a>` : foto}${b.pie ? `<figcaption>${esc(b.pie)}</figcaption>` : ''}</figure>`;
+        }
+        case 'aviso': return `<div class="aviso aviso-${esc(b.estilo)}">${textoHtml(b.texto)}</div>`;
+        case 'faq': return `<div class="faq">${b.items.map(i => `<details><summary>${esc(i.p)}</summary><div>${textoHtml(i.r)}</div></details>`).join('')}</div>`;
+        case 'ficha': return `<div class="ficha">${b.titulo ? `<b class="ficha-t">${esc(b.titulo)}</b>` : ''}<dl>${b.filas.map(f => `<div><dt>${esc(f.k)}</dt><dd>${esc(f.v)}</dd></div>`).join('')}</dl></div>`;
+        case 'audio': return `<div class="audio"><iframe src="https://open.spotify.com/embed/${esc(b.clase)}/${esc(b.id)}" height="${b.clase === 'track' || b.clase === 'episode' ? 152 : 352}" title="Spotify" loading="lazy" allow="encrypted-media; clipboard-write; fullscreen; picture-in-picture"></iframe></div>`;
         case 'galeria': return `<div class="galeria">${b.urls.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(img(u, 600))}" alt="" loading="lazy" decoding="async"></a>`).join('')}</div>`;
         case 'video': return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${esc(b.id)}" title="Video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
         case 'cita': return `<blockquote>${textoHtml(b.texto)}${b.autor ? `<cite>${esc(b.autor)}</cite>` : ''}</blockquote>`;
@@ -68,6 +75,9 @@ function variables(blog) {
     const t = temaDe(blog.tema), a = blog.ajustes || {};
     const v = { ...t.v };
     if (esColor(a.acento)) { v.acento = a.acento; v.sobreAcento = sobre(a.acento); }
+    if (ESQUINAS[a.esquinas]) v.radio = ESQUINAS[a.esquinas];
+    const f = FONDOS[a.fondo];
+    if (f) { v.fondo = f.css; v.fondoTam = f.tam || 'auto'; v.fondoRep = f.repetir ? 'repeat' : 'no-repeat'; }
     const fTit = FUENTES[a.fuente] || FUENTES[t.titulos], fTxt = FUENTES.manrope;
     const google = [...new Set([fTit.google, fTxt.google])].map(f => `family=${f}`).join('&');
     return { t, v, fTit, fTxt, google };
@@ -76,7 +86,7 @@ function variables(blog) {
 const CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-body{font-family:var(--f-txt);color:var(--txt);background:var(--bg);background-image:var(--fondo);background-attachment:fixed;background-repeat:no-repeat;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+body{font-family:var(--f-txt);color:var(--txt);background:var(--bg);background-image:var(--fondo);background-attachment:fixed;background-repeat:var(--fondo-rep,no-repeat);background-size:var(--fondo-tam,auto);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
 a{color:var(--acento);text-decoration:none}a:hover{text-decoration:underline}
 img{max-width:100%;height:auto;display:block}
 .ancho{width:100%;max-width:1080px;margin:0 auto;padding:0 16px}
@@ -147,6 +157,24 @@ footer.pie{border-top:1px solid var(--borde);padding:22px 0 30px;color:var(--txt
 footer.pie .ancho{display:flex;gap:10px 18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 footer.pie a{color:var(--txt2)}footer.pie .hecho b{color:var(--acento)}
 .pixel{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.t-centro{text-align:center}.t-grande{font-size:1.28em;line-height:1.55;font-weight:500}
+.contenido figure a{display:block}
+.aviso{border:1px solid var(--borde);border-left:4px solid var(--a,var(--acento));background:color-mix(in srgb,var(--a,var(--acento)) 9%,transparent);border-radius:calc(var(--radio)*.6);padding:14px 16px}
+.aviso-info{--a:#3B9EFF}.aviso-exito{--a:#2FBF71}.aviso-alerta{--a:#F5A524}.aviso-peligro{--a:#F04438}
+.faq{display:grid;gap:10px}.faq details{background:var(--tarjeta);border:1px solid var(--borde);border-radius:calc(var(--radio)*.6);padding:0 16px}
+.faq summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';color:var(--acento);font-weight:800;font-size:1.2em;line-height:1}.faq details[open] summary::after{content:'–'}
+.faq details>div{padding:0 0 14px;color:var(--txt2)}
+.ficha{background:var(--tarjeta);border:1px solid var(--borde);border-radius:calc(var(--radio)*.7);overflow:hidden}
+.ficha-t{display:block;padding:12px 16px;font-family:var(--f-tit);border-bottom:1px solid var(--borde);background:color-mix(in srgb,var(--acento) 8%,transparent)}
+.ficha dl>div{display:flex;gap:14px;padding:10px 16px;font-size:.96rem}.ficha dl>div+div{border-top:1px solid var(--borde)}
+.ficha dt{color:var(--txt2);width:38%;flex-shrink:0}.ficha dd{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.audio iframe{width:100%;border:0;border-radius:14px;display:block}
+.anuncio{margin:30px auto 0;text-align:center;max-width:320px}.anuncio small{display:block;color:var(--txt2);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;opacity:.7}
+.anuncio iframe{width:300px;height:250px;border:0;border-radius:10px;background:var(--tarjeta);max-width:100%}
+.previa{background:#F5A524;color:#1A1203;text-align:center;font-weight:800;font-size:.86rem;padding:8px 12px}
+.revista .tarjeta:first-child{grid-column:1/-1}
+@media(min-width:700px){.revista .tarjeta:first-child{flex-direction:row}.revista .tarjeta:first-child .port{width:58%;aspect-ratio:16/9}.revista .tarjeta:first-child h2{font-size:1.7rem}.revista .tarjeta:first-child .txt{justify-content:center;padding:26px}}
 `.trim();
 
 // ── Partes comunes ───────────────────────────────────────────────────────────────────
@@ -155,7 +183,7 @@ footer.pie a{color:var(--txt2)}footer.pie .hecho b{color:var(--acento)}
  *   base   → prefijo de las rutas del blog ('' con dominio propio, '/b/direccion' sin él)
  *   origen → https://host, para las URL absolutas (canonical, feed, sitemap)
  */
-function documento(ctx, { titulo, descripcion, ruta, imagen, cuerpo, tipo = 'website', jsonld, noindex, activo }) {
+function documento(ctx, { titulo, descripcion, ruta, imagen, cuerpo, tipo = 'website', jsonld, noindex, activo, previa }) {
     const { blog, base, origen } = ctx;
     const { t, v, fTit, fTxt, google } = variables(blog);
     const a = blog.ajustes || {};
@@ -163,7 +191,7 @@ function documento(ctx, { titulo, descripcion, ruta, imagen, cuerpo, tipo = 'web
     const tituloPag = titulo ? `${titulo} · ${blog.titulo}` : blog.titulo;
     const desc = descripcion || blog.descripcion || `Blog de @${blog.usuario} en UpGames`;
     const oculto = noindex || blog.visibilidad !== 'publico';
-    const vars = `--bg:${v.bg};--bg2:${v.bg2};--tarjeta:${v.tarjeta};--borde:${v.borde};--txt:${v.txt};--txt2:${v.txt2};--acento:${v.acento};--acento2:${v.acento2};--sobre-acento:${v.sobreAcento};--radio:${v.radio};--fondo:${v.fondo};--f-tit:${fTit.css};--f-txt:${fTxt.css}`;
+    const vars = `--bg:${v.bg};--bg2:${v.bg2};--tarjeta:${v.tarjeta};--borde:${v.borde};--txt:${v.txt};--txt2:${v.txt2};--acento:${v.acento};--acento2:${v.acento2};--sobre-acento:${v.sobreAcento};--radio:${v.radio};--fondo:${v.fondo};--fondo-tam:${v.fondoTam || 'auto'};--fondo-rep:${v.fondoRep || 'no-repeat'};--f-tit:${fTit.css};--f-txt:${fTxt.css}`;
     const menu = [`<a href="${esc(base)}/"${activo === 'inicio' ? ' class="activo"' : ''}>Inicio</a>`,
         ...(ctx.paginas || []).slice(0, 6).map(p => `<a href="${esc(base)}/p/${esc(p.slug)}"${activo === 'p:' + p.slug ? ' class="activo"' : ''}>${esc(p.titulo)}</a>`)].join('');
     return `<!DOCTYPE html>
@@ -190,7 +218,7 @@ ${CSS}</style>
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, '\\u003c')}</script>` : ''}
 </head>
 <body class="tema-${esc(TEMAS[blog.tema] ? blog.tema : 'neon')}${t.oscuro ? ' oscuro' : ''}">
-<header class="cab"><div class="ancho">
+${previa ? '<div class="previa">Vista previa · así se verá cuando la publiques</div>' : ''}<header class="cab"><div class="ancho">
 <a class="marca" href="${esc(base)}/">${a.logo ? `<img src="${esc(img(a.logo, 96))}" alt="">` : ''}<span>${esc(blog.titulo)}</span></a>
 <nav class="menu" aria-label="Secciones">${menu}</nav>
 </div></header>
@@ -220,6 +248,9 @@ function lateral(ctx) {
     return cajas.length ? `<aside class="lateral">${cajas.join('')}</aside>` : '';
 }
 
+/** Espacio de publicidad (solo si el creador activó la monetización). El anuncio va en un marco aislado. */
+const anuncio = ctx => ctx.anuncio ? `<aside class="anuncio"><small>Publicidad</small><iframe src="${esc(ctx.base)}/_anuncio" title="Publicidad" loading="lazy" scrolling="no" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></aside>` : '';
+
 function tarjeta(e, ctx) {
     const port = e.portada || V.primeraImagen(e.bloques);
     return `<a class="tarjeta" href="${esc(ctx.base)}/e/${esc(e.slug)}">${port ? `<div class="port"><img src="${esc(img(port, 640))}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="txt"><h2>${esc(e.titulo)}</h2><p>${esc(e.resumen || V.resumen(e.bloques, 150))}</p><span class="meta">${esc(fecha(e.publicadaEn))}</span></div></a>`;
@@ -230,7 +261,8 @@ function tarjeta(e, ctx) {
 function inicio(ctx, { entradas, pagina = 1, hayMas = false, etiqueta = '' }) {
     const { blog, base } = ctx, a = blog.ajustes || {};
     const lat = lateral(ctx);
-    const forma = temaDe(blog.tema).portada === 'lista' ? 'lista' : 'rejilla';
+    const pedida = PORTADAS.includes(a.portadaForma) ? a.portadaForma : temaDe(blog.tema).portada;
+    const forma = pedida === 'lista' ? 'lista' : pedida === 'revista' ? 'rejilla revista' : 'rejilla';
     const ruta = etiqueta ? `/etiqueta/${V.slug(etiqueta)}` : '/';
     const heroe = etiqueta
         ? `<section class="heroe"><div class="ancho"><h1>#${esc(etiqueta)}</h1><p>Entradas con esta etiqueta</p></div></section>`
@@ -242,12 +274,12 @@ function inicio(ctx, { entradas, pagina = 1, hayMas = false, etiqueta = '' }) {
     return documento(ctx, {
         titulo: etiqueta ? `#${etiqueta}` : '', ruta, imagen: a.portada || '', activo: etiqueta ? '' : 'inicio', noindex: pagina > 1,
         jsonld: etiqueta ? null : { '@context': 'https://schema.org', '@type': 'Blog', name: blog.titulo, description: blog.descripcion || undefined, url: ctx.origen + base + '/' },
-        cuerpo: `${pagina === 1 ? heroe : ''}<main><div class="ancho cuerpo${lat ? ' con-lateral' : ''}"><div>${lista}${nav}</div>${lat}</div></main>`,
+        cuerpo: `${pagina === 1 ? heroe : ''}<main><div class="ancho cuerpo${lat ? ' con-lateral' : ''}"><div>${lista}${nav}${anuncio(ctx)}</div>${lat}</div></main>`,
     });
 }
 
 /** Una entrada (o una página fija, que no lleva fecha, etiquetas ni contador). */
-function entrada(ctx, e) {
+function entrada(ctx, e, { previa = false } = {}) {
     const { blog, base, origen } = ctx;
     const esPagina = e.tipo === 'pagina';
     const ruta = `/${esPagina ? 'p' : 'e'}/${e.slug}`;
@@ -261,11 +293,12 @@ function entrada(ctx, e) {
 ${port ? `<div class="portada-entrada"><img src="${esc(img(port, 1400))}" alt=""></div>` : ''}
 <div class="contenido">${bloquesHtml(e.bloques, ctx)}</div>
 ${!esPagina && e.etiquetas?.length ? `<div class="etiquetas">${e.etiquetas.map(t => `<a class="chip" href="${esc(base)}/etiqueta/${esc(V.slug(t))}">#${esc(t)}</a>`).join('')}</div>` : ''}
-${esPagina ? '' : compartir}
+${esPagina || previa ? '' : compartir}
+${previa ? '' : anuncio(ctx)}
 </article></div></main>
-${e._id ? `<img class="pixel" src="${esc(base)}/_v/${esc(e._id)}.gif" alt="" width="1" height="1">` : ''}`;
+${e._id && !previa ? `<img class="pixel" src="${esc(base)}/_v/${esc(e._id)}.gif" alt="" width="1" height="1">` : ''}`;
     return documento(ctx, {
-        titulo: e.titulo, descripcion: desc, ruta, imagen, tipo: 'article', activo: esPagina ? 'p:' + e.slug : '', cuerpo,
+        titulo: e.titulo, descripcion: desc, ruta, imagen, tipo: 'article', activo: esPagina ? 'p:' + e.slug : '', cuerpo, previa, noindex: previa,
         jsonld: esPagina ? null : { '@context': 'https://schema.org', '@type': 'BlogPosting', headline: e.titulo, description: desc || undefined, image: imagen || undefined,
             datePublished: e.publicadaEn ? new Date(e.publicadaEn).toISOString() : undefined, dateModified: e.updatedAt ? new Date(e.updatedAt).toISOString() : undefined,
             author: { '@type': 'Person', name: blog.usuario }, mainEntityOfPage: url },

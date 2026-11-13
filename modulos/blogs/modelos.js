@@ -26,6 +26,11 @@ module.exports = function modelos(mongoose) {
         reportes:    { type: Number, default: 0 },
         sinMarca:    { type: Boolean, default: false },   // Premium: sin «Hecho con UpGames»
         vistas:      { type: Number, default: 0 },
+        // Monetización opcional: el creador decide si su blog lleva publicidad de UpGames
+        monetizar:   { type: Boolean, default: false },
+        ingresos:    { type: Number, default: 0 },   // US$ ganados con los anuncios del blog
+        anunciosVistos: { type: Number, default: 0 },
+        motivoEstado: { type: String, default: '' },   // nota del equipo al suspender
         dominio: {
             nombre:       { type: String, default: '' },
             token:        { type: String, default: '' },
@@ -54,7 +59,7 @@ module.exports = function modelos(mongoose) {
     EntradaSchema.index({ blog: 1, estado: 1, publicadaEn: -1 });
     EntradaSchema.index({ blog: 1, etiquetasSlug: 1 });
 
-    const BlogVistaSchema = new mongoose.Schema({ blog: { type: mongoose.Schema.Types.ObjectId, required: true }, dia: { type: String, required: true }, n: { type: Number, default: 0 } });
+    const BlogVistaSchema = new mongoose.Schema({ blog: { type: mongoose.Schema.Types.ObjectId, required: true }, dia: { type: String, required: true }, n: { type: Number, default: 0 }, a: { type: Number, default: 0 }, g: { type: Number, default: 0 } });   // n visitas · a anuncios vistos · g ganancia US$
     BlogVistaSchema.index({ blog: 1, dia: 1 }, { unique: true });
 
     const BlogReporteSchema = new mongoose.Schema({ blog: { type: mongoose.Schema.Types.ObjectId, required: true, index: true }, motivo: String, detalle: String, ip: String }, { timestamps: true });

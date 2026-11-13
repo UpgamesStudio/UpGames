@@ -43,6 +43,18 @@ const TEMAS = {
 };
 const POR_DEFECTO = 'neon';
 
+// Opciones de diseño que el creador puede cambiar encima de cualquier tema
+const ESQUINAS = { rectas: '2px', suaves: '12px', redondas: '26px' };
+const PORTADAS = ['rejilla', 'lista', 'revista'];   // cómo se ordenan las entradas en el inicio
+const FONDOS = {
+    aurora:    { nombre: 'Aurora',    css: 'radial-gradient(60% 50% at 15% 0%, rgba(120,90,255,.30), transparent 70%), radial-gradient(55% 45% at 95% 10%, rgba(0,220,180,.22), transparent 70%)' },
+    atardecer: { nombre: 'Atardecer', css: 'radial-gradient(70% 55% at 50% -10%, rgba(255,120,60,.30), transparent 70%), radial-gradient(50% 40% at 100% 100%, rgba(255,60,140,.20), transparent 70%)' },
+    oceano:    { nombre: 'Océano',    css: 'radial-gradient(70% 55% at 0% 0%, rgba(40,140,255,.30), transparent 70%), radial-gradient(55% 45% at 100% 90%, rgba(0,210,255,.18), transparent 70%)' },
+    bosque:    { nombre: 'Bosque',    css: 'radial-gradient(65% 50% at 90% 0%, rgba(60,220,120,.26), transparent 70%), radial-gradient(50% 45% at 0% 100%, rgba(180,220,60,.14), transparent 70%)' },
+    rejilla:   { nombre: 'Rejilla',   css: 'linear-gradient(rgba(128,128,128,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(128,128,128,.10) 1px, transparent 1px)', tam: '34px 34px', repetir: true },
+    liso:      { nombre: 'Liso',      css: 'none' },
+};
+
 const temaDe = id => TEMAS[id] || TEMAS[POR_DEFECTO];
 const esColor = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
 
@@ -58,4 +70,4 @@ function lista() {
         colores: { bg: t.v.bg, tarjeta: t.v.bg2, txt: t.v.txt, acento: t.v.acento, acento2: t.v.acento2 } }));
 }
 
-module.exports = { TEMAS, FUENTES, POR_DEFECTO, temaDe, esColor, sobre, lista };
+module.exports = { TEMAS, FUENTES, POR_DEFECTO, ESQUINAS, PORTADAS, FONDOS, temaDe, esColor, sobre, lista };

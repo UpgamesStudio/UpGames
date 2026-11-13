@@ -24,7 +24,8 @@ const RESERVADOS = new Set(['www', 'admin', 'api', 'app', 'blog', 'blogs', 'upga
     'mail', 'correo', 'ftp', 'cdn', 'static', 'assets', 'nexus', 'live', 'studio', 'racing', 'premium', 'oficial', 'official',
     'root', 'null', 'undefined', 'test', 'dev', 'staging', 'status', 'docs', 'legal', 'terminos', 'privacidad']);
 
-const TIPOS = new Set(['texto', 'titulo', 'imagen', 'galeria', 'video', 'cita', 'boton', 'separador', 'codigo', 'juego']);
+const TIPOS = new Set(['texto', 'titulo', 'imagen', 'galeria', 'video', 'cita', 'boton', 'separador', 'codigo', 'juego', 'aviso', 'faq', 'ficha', 'audio']);
+const ESTILOS_AVISO = new Set(['info', 'exito', 'alerta', 'peligro']);
 
 /** Texto plano de una línea: sin etiquetas, sin saltos, recortado. */
 function linea(v, max) {
@@ -75,6 +76,12 @@ function idYouTube(v) {
     return m ? m[1] : '';
 }
 
+/** Canción, álbum, lista, programa o episodio de Spotify a partir de su enlace. */
+function idSpotify(v) {
+    const m = String(v ?? '').trim().match(/^https:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(?:embed\/)?(track|album|playlist|episode|show)\/([A-Za-z0-9]{22})(?:[/?#].*)?$/);
+    return m ? { clase: m[1], id: m[2] } : null;
+}
+
 function etiquetas(v) {
     const lista = Array.isArray(v) ? v : String(v ?? '').split(',');
     const vistas = new Set(), out = [];
@@ -99,9 +106,21 @@ function limpiarBloques(entrada) {
         if (!b || typeof b !== 'object' || !TIPOS.has(b.tipo)) continue;
         let n = null;
         switch (b.tipo) {
-            case 'texto': { const t = parrafos(b.texto, LIMITES.TEXTO_BLOQUE); if (t) n = { tipo: 'texto', texto: t }; break; }
-            case 'titulo': { const t = linea(b.texto, 160); if (t) n = { tipo: 'titulo', texto: t, nivel: b.nivel === 3 ? 3 : 2 }; break; }
-            case 'imagen': { const url = urlSegura(b.url); if (url) n = { tipo: 'imagen', url, pie: linea(b.pie, 200), alt: linea(b.alt, 200) }; break; }
+            case 'texto': { const t = parrafos(b.texto, LIMITES.TEXTO_BLOQUE); if (t) n = { tipo: 'texto', texto: t, ...(b.centro ? { centro: true } : {}), ...(b.grande ? { grande: true } : {}) }; break; }
+            case 'titulo': { const t = linea(b.texto, 160); if (t) n = { tipo: 'titulo', texto: t, nivel: b.nivel === 3 ? 3 : 2, ...(b.centro ? { centro: true } : {}) }; break; }
+            case 'imagen': { const url = urlSegura(b.url); if (url) n = { tipo: 'imagen', url, pie: linea(b.pie, 200), alt: linea(b.alt, 200), enlace: urlSegura(b.enlace) }; break; }
+            case 'aviso': { const t = parrafos(b.texto, 1500); if (t) n = { tipo: 'aviso', texto: t, estilo: ESTILOS_AVISO.has(b.estilo) ? b.estilo : 'info' }; break; }
+            case 'faq': {
+                const items = (Array.isArray(b.items) ? b.items : []).map(i => ({ p: linea(i?.p, 200), r: parrafos(i?.r, 1500) })).filter(i => i.p && i.r).slice(0, 20);
+                if (items.length) n = { tipo: 'faq', items };
+                break;
+            }
+            case 'ficha': {
+                const filas = (Array.isArray(b.filas) ? b.filas : []).map(f => ({ k: linea(f?.k, 60), v: linea(f?.v, 200) })).filter(f => f.k && f.v).slice(0, 20);
+                if (filas.length) n = { tipo: 'ficha', filas, titulo: linea(b.titulo, 80) };
+                break;
+            }
+            case 'audio': { const a = idSpotify(b.url || (b.clase && b.id ? `https://open.spotify.com/${b.clase}/${b.id}` : '')); if (a) n = { tipo: 'audio', clase: a.clase, id: a.id }; break; }
             case 'galeria': {
                 const urls = (Array.isArray(b.urls) ? b.urls : []).map(u => urlSegura(u)).filter(Boolean).slice(0, LIMITES.GALERIA);
                 if (urls.length) n = { tipo: 'galeria', urls };
@@ -122,7 +141,7 @@ function limpiarBloques(entrada) {
 
 /** Todo el texto de una entrada junto, para la moderación y para el resumen. */
 function textoDe(bloques) {
-    return (bloques || []).map(b => [b.texto, b.pie, b.autor].filter(Boolean).join(' ')).filter(Boolean).join('\n');
+    return (bloques || []).map(b => [b.texto, b.pie, b.autor, b.titulo, ...(b.items || []).flatMap(i => [i.p, i.r]), ...(b.filas || []).flatMap(f => [f.k, f.v])].filter(Boolean).join(' ')).filter(Boolean).join('\n');
 }
 
 /** Enlaces que aparecen en una entrada (botones y enlaces dentro del texto). */
@@ -130,7 +149,9 @@ function enlacesDe(bloques) {
     const out = [];
     for (const b of bloques || []) {
         if (b.tipo === 'boton') out.push(b.url);
-        if (b.tipo === 'texto' || b.tipo === 'cita') for (const m of String(b.texto).matchAll(/\]\((https:\/\/[^\s)]+)\)/g)) out.push(m[1]);
+        if (b.tipo === 'imagen' && b.enlace) out.push(b.enlace);
+        for (const i of b.items || []) for (const m of String(i.r).matchAll(/\]\((https:\/\/[^\s)]+)\)/g)) out.push(m[1]);
+        if (b.tipo === 'texto' || b.tipo === 'cita' || b.tipo === 'aviso') for (const m of String(b.texto).matchAll(/\]\((https:\/\/[^\s)]+)\)/g)) out.push(m[1]);
     }
     return out;
 }
@@ -151,4 +172,4 @@ function primeraImagen(bloques) {
     return '';
 }
 
-module.exports = { LIMITES, RESERVADOS, linea, parrafos, slug, validarDireccion, validarDominio, urlSegura, idYouTube, etiquetas, limpiarBloques, textoDe, enlacesDe, resumen, primeraImagen };
+module.exports = { LIMITES, RESERVADOS, linea, parrafos, slug, validarDireccion, validarDominio, urlSegura, idYouTube, idSpotify, etiquetas, limpiarBloques, textoDe, enlacesDe, resumen, primeraImagen };

@@ -1346,7 +1346,7 @@ const { paginasSeoPronto } = require('./rutas/seo')({ Juego, Seo, Usuario, app, 
 _items.vincularTarde({ paginasSeoPronto });   // rutas/items.js usa estas dependencias, creadas después de registrar el módulo
 
 // UpGames Blogs: el creador arma su sitio (temas, entradas, páginas) y se sirve en /b/<direccion> o en su dominio
-blogsPorHost = require('./rutas/blogs').registrar(app, { verificarToken, Usuario, Juego, Limites, Moderacion, CeroTolerancia, logger, mongoose, APP_URL, API_URL_SELF }).porHost;
+blogsPorHost = require('./rutas/blogs').registrar(app, { verificarToken, verificarAdmin, Usuario, Juego, Limites, Moderacion, CeroTolerancia, fraudDetector, logger, mongoose, APP_URL, API_URL_SELF, JWT_SECRET }).porHost;
 
 // ========== MANEJO DE ERRORES ==========
 app.use((req, res) => {

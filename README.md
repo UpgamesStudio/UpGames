@@ -35,11 +35,15 @@ Cada creador puede armar su sitio desde `public/blog.html`: elige un tema, escri
 
 - **Dirección gratis:** `https://<servidor>/b/<direccion>/`.
 - **Dominio propio:** en Ajustes → Dominio propio, el creador crea un `CNAME` hacia UpGames y un `TXT` de verificación (`_upgames.<su dominio>`). Verificado el TXT, el servidor sirve el blog cuando la petición llega con ese `Host`.
+- **Monetización opcional:** en Ingresos el creador decide si su blog lleva publicidad. El anuncio va en un marco aislado (`/_anuncio`); se paga cuando estuvo 10 s a la vista, sin bloqueador y con ticket firmado (`modulos/blogs/anuncios.js`), hasta 3 veces al día por visitante y blog.
+- **Panel admin → Blogs:** blogs reportados o en revisión; se reactivan o se suspenden (`GET /admin/blogs`, `PUT /admin/blogs/:id/estado`).
 - El contenido se guarda como bloques (JSON) y el servidor genera el HTML escapando todo: un blog no puede llevar scripts.
 
 | Variable | Por defecto | Para qué |
 |---|---|---|
 | `BLOGS_CNAME` | dominio público de Railway | A dónde debe apuntar el `CNAME` de los dominios propios (p. ej. el host de Cloudflare for SaaS) |
+| `BLOGS_CPM` | `0.30` | US$ que gana el creador por cada 1.000 anuncios vistos en su blog (solo si activó «Monetizar») |
+| `BLOGS_AD_KEY` | la del puente | Clave del banner 300×250 de la red de anuncios que se muestra en los blogs |
 | `BLOGS_DOMINIO` | — | Dominio de blogs con comodín (p. ej. `upgames.site`): cada blog queda en `<direccion>.upgames.site` |
 
 Para que un dominio propio abra con HTTPS, además del DNS del creador, el dominio debe estar dado de alta donde termina el TLS: en Railway (Settings → Networking → Custom Domain) o, mejor, en Cloudflare for SaaS delante del servidor.
