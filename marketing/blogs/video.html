@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>UpGames Blogs · Tu sitio web en minutos</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+/* Lenguaje: galería clara (papel cálido + tinta + un solo índigo) con bloques pastel y cristal.
+   Muy distinto al video SaaS (oscuro, neón verde). Letra ligera a gran escala; jerarquía por tamaño, no por peso. */
+:root { --paper: #F5F3EE; --ink: #0B0B10; --ink2: #5A5F6B; --ind: #4D49FC; --lime: #E4FF97; --lilac: #C4BAFF; --blush: #FFC9C1; --aqua: #C7F8FB; --linea: rgba(11,11,16,.1); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); color: var(--ink); font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+#lienzo { position: absolute; inset: 0; overflow: hidden; }
+.abs { position: absolute; } .mono { font-family: 'JetBrains Mono', monospace; }
+.blob { position: absolute; border-radius: 50%; filter: blur(130px); will-change: transform; }
+#puntos { position: absolute; inset: 0; background-image: radial-gradient(rgba(11,11,16,.13) 1.6px, transparent 1.6px); background-size: 44px 44px; -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent); mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent); opacity: .55; }
+.esc { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+.w { display: inline-block; white-space: pre; will-change: transform, opacity; }
+.tit { font-weight: 300; letter-spacing: -.045em; line-height: 1.02; }
+.kick { font-family: 'JetBrains Mono', monospace; font-size: 22px; letter-spacing: .16em; text-transform: uppercase; color: var(--ind); font-weight: 500; }
+.ind { color: var(--ind); } .mut { color: var(--ink2); }
+.marca { background: linear-gradient(transparent 62%, var(--lime) 62%, var(--lime) 92%, transparent 92%); padding: 0 .08em; }
+/* Superficies */
+.hoja { background: #fff; border-radius: 36px; box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 0 0 1.5px rgba(11,11,16,.07), 0 60px 110px -50px rgba(40,30,120,.35); }
+.vidrio { background: linear-gradient(160deg, rgba(255,255,255,.78), rgba(255,255,255,.42)); backdrop-filter: blur(26px) saturate(160%); border-radius: 32px;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.85), inset 0 2px 0 #fff, 0 40px 90px -40px rgba(60,50,160,.45); }
+.pill { display: inline-flex; align-items: center; gap: 10px; padding: 13px 26px; border-radius: 999px; font-weight: 700; font-size: 24px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--linea); }
+.pill.i { background: var(--ind); color: #fff; box-shadow: 0 18px 40px -16px rgba(77,73,252,.8), inset 0 2px 0 rgba(255,255,255,.35); }
+.chip { display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px; border-radius: 18px; font-weight: 700; font-size: 24px; }
+.dot3 { display: flex; gap: 9px; } .dot3 i { width: 15px; height: 15px; border-radius: 50%; background: rgba(11,11,16,.13); }
+/* Editor */
+.barra { display: flex; align-items: center; gap: 16px; padding: 0 30px; height: 84px; border-bottom: 1.5px solid var(--linea); }
+.blq { position: absolute; left: 36px; right: 36px; border-radius: 22px; padding: 22px 26px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--linea); will-change: transform, opacity; }
+.blq small { position: absolute; top: -13px; left: 20px; font: 500 15px 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; background: var(--ind); color: #fff; padding: 4px 12px; border-radius: 99px; }
+.barra-gris { height: 16px; border-radius: 8px; background: rgba(11,11,16,.09); margin: 12px 0; }
+.arte { border-radius: 20px; position: relative; overflow: hidden; }
+.fila { display: flex; justify-content: space-between; font-size: 24px; padding: 12px 0; border-bottom: 1.5px solid var(--linea); } .fila:last-child { border: 0; } .fila b { font-weight: 700; } .fila span { color: var(--ink2); }
+#cursor { position: absolute; width: 46px; height: 46px; z-index: 60; opacity: 0; filter: drop-shadow(0 8px 12px rgba(30,20,90,.35)); left: 0; top: 0; }
+.onda { position: absolute; border-radius: 50%; border: 4px solid var(--ind); opacity: 0; }
+/* Mini blog (escena de temas) */
+.mini { position: absolute; width: 520px; height: 640px; border-radius: 34px; overflow: hidden; will-change: transform, opacity; box-shadow: 0 50px 90px -40px rgba(30,20,100,.5), 0 0 0 1.5px rgba(11,11,16,.08); }
+.mini .cab { height: 66px; display: flex; align-items: center; padding: 0 26px; gap: 12px; font-weight: 700; font-size: 21px; }
+.mini .tl { height: 18px; border-radius: 9px; margin: 14px 26px; opacity: .85; }
+.mini .tar { position: absolute; border-radius: 22px; }
+.mini .pie { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; justify-content: center; font: 500 15px 'JetBrains Mono', monospace; letter-spacing: .1em; }
+#out div:empty { display: none; }
+.av { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 26px; flex-shrink: 0; }
+.burb { padding: 20px 26px; border-radius: 26px; font-size: 27px; line-height: 1.35; font-weight: 500; }
+#nota { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font: 400 15px 'JetBrains Mono', monospace; letter-spacing: .14em; color: rgba(11,11,16,.35); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="lienzo">
+  <div class="blob" id="b1" style="width:900px;height:900px;background:#C4BAFF;left:-260px;top:-380px;opacity:.75"></div>
+  <div class="blob" id="b2" style="width:800px;height:800px;background:#E4FF97;left:1380px;top:620px;opacity:.7"></div>
+  <div class="blob" id="b3" style="width:700px;height:700px;background:#C7F8FB;left:1150px;top:-380px;opacity:.8"></div>
+  <div class="blob" id="b4" style="width:700px;height:700px;background:#FFC9C1;left:-200px;top:700px;opacity:.55"></div>
+  <div id="puntos"></div>
+  <div id="escenas"></div>
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2l15 9-7 2-3 7z" fill="#0B0B10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  <div id="nota">Ejemplos ilustrativos · upgames.games</div>
+</div>
+<script>
+'use strict';
+/* ═══ Motor: todo se calcula en render(t); cada fotograma es exacto y reproducible ═══ */
+const DUR = 36;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = { out: k => 1 - Math.pow(1 - k, 3), out5: k => 1 - Math.pow(1 - k, 5), io: k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2, in: k => k * k * k,
+  back: k => { const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); },
+  spr: k => k >= 1 ? 1 : 1 - Math.exp(-7 * k) * Math.cos(k * 12) };
+const en = (t, a, d, e = E.out) => e(clamp((t - a) / d));
+const win = (t, a, b, fi = .4, fo = .4) => Math.min(clamp((t - a) / fi), clamp((b - t) / fo));
+const R = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const fmt = n => Math.round(n).toLocaleString('es-CO');
+const $ = (tag, cls, html, padre, css) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (css) e.style.cssText = css; if (padre) padre.appendChild(e); return e; };
+const S = (el, p) => { if (p.o != null) el.style.opacity = p.o; el.style.transform = `translate(${p.x || 0}px, ${p.y || 0}px) rotate(${p.r || 0}deg) scale(${p.s ?? 1})`; if (p.b != null) el.style.filter = p.b > .05 ? `blur(${p.b}px)` : 'none'; };
+// Texto cinético: cada palabra sube desde una máscara, con rebote suave
+const pal = (padre, str, cls, css) => { const e = $('div', cls, null, padre, css); let modo = '';
+  str.split(' ').forEach((p, i, a) => { const abre = p.match(/^[\[{]/), cierra = p.match(/[\]}]$/); if (abre) modo = abre[0] === '[' ? 'ind' : 'marca';
+    const limpio = p.replace(/^[\[{]/, '').replace(/[\]}]$/, ''); $('span', 'w' + (modo ? ' ' + modo : ''), limpio + (i < a.length - 1 ? ' ' : ''), e); if (cierra) modo = ''; }); return e; };
+const kin = (el, t, a, gap = .09, d = .8, dy = 70) => [...el.children].forEach((w, i) => { const k = en(t, a + i * gap, d, E.back); w.style.opacity = clamp(k * 1.6); w.style.transform = `translateY(${(1 - k) * dy}px) rotate(${(1 - k) * 3}deg)`; });
+const teclear = (el, str, k) => { el.textContent = str.slice(0, Math.round(clamp(k) * str.length)); };
+const SFX = []; const sfx = (t, n, g = 1, p) => SFX.push({ t, n, g, p });
+const ESC = [];
+const escena = (a, b, crear, act) => { const r = $('div', 'esc', null, document.getElementById('escenas')); const ctx = crear(r) || {}; ESC.push({ a, b, r, act, ctx }); };
+const cursor = document.getElementById('cursor');
+// Cursor guiado por puntos de paso [t, x, y, (clic?)]: interpolación suave
+const ruta = (t, pts) => { let a = pts[0], b = pts[pts.length - 1]; for (let i = 0; i < pts.length - 1; i++) if (t >= pts[i][0] && t <= pts[i + 1][0]) { a = pts[i]; b = pts[i + 1]; break; } if (t <= pts[0][0]) return { x: pts[0][1], y: pts[0][2] }; if (t >= b[0] && b === pts[pts.length - 1]) return { x: b[1], y: b[2] };
+  const k = E.io(clamp((t - a[0]) / (b[0] - a[0]))); return { x: lerp(a[1], b[1], k), y: lerp(a[2], b[2], k) }; };
+const CUR = []; // [a, b, puntos, clics[]]
+const arte = i => ['linear-gradient(135deg,#C4BAFF,#8F86FF)', 'linear-gradient(135deg,#FFC9C1,#FF8E7B)', 'linear-gradient(135deg,#E4FF97,#B6E64A)', 'linear-gradient(135deg,#C7F8FB,#6ED8E6)'][i % 4];
+const forma = i => ['<circle cx="50" cy="50" r="24" fill="rgba(255,255,255,.75)"/><circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4"/>', '<path d="M20 76l30-52 30 52z" fill="rgba(255,255,255,.78)"/>', '<rect x="26" y="26" width="48" height="48" rx="14" fill="rgba(255,255,255,.78)" transform="rotate(14 50 50)"/>', '<path d="M50 20l8 22 22 8-22 8-8 22-8-22-22-8 22-8z" fill="rgba(255,255,255,.8)"/>'][i % 4];
+const miniArte = (padre, i, css) => $('div', 'arte', `<svg viewBox="0 0 100 100" style="position:absolute;left:50%;top:50%;width:62%;height:100%;transform:translate(-50%,-50%)">${forma(i)}</svg>`, padre, `background:${arte(i)};${css}`);
+
+/* ═══ 1 · Gancho (0 – 3,9) ═══ */
+escena(0, 3.95, r => {
+  const w1 = pal(r, 'Escribe.', 'abs tit', 'left:210px;top:190px;font-size:230px');
+  const w2 = pal(r, '[Publica.]', 'abs tit', 'left:210px;top:420px;font-size:230px');
+  const w3 = pal(r, '{Crece.}', 'abs tit', 'left:210px;top:650px;font-size:230px');
+  const ch = [['reseña', 'var(--lilac)', 1300, 230, -6], ['guía', 'var(--lime)', 1480, 420, 5], ['noticia', 'var(--blush)', 1250, 600, 4], ['top 5', 'var(--aqua)', 1520, 760, -4]].map(([t, c, x, y, rr]) => ({ el: $('div', 'abs chip', t, r, `left:${x}px;top:${y}px;background:${c}`), x, y, rr }));
+  sfx(.35, 'nota', .8, 0); sfx(1.25, 'nota', .8, 2); sfx(2.15, 'nota', .9, 4); sfx(3.4, 'whoosh', .7);
+  return { w1, w2, w3, ch };
+}, (t, r, c) => {
+  kin(c.w1, t, .3, .1, .9); kin(c.w2, t, 1.2, .1, .9); kin(c.w3, t, 2.1, .1, .9);
+  c.ch.forEach((h, i) => { const k = en(t, .8 + i * .35, .8, E.spr); S(h.el, { o: clamp(k * 2), s: lerp(.3, 1, k), r: h.rr, y: Math.sin(t * 1.6 + i) * 8 }); });
+  const k = en(t, 3.4, .55, E.in); S(r, { o: win(t, 0, 3.95, .2, .2), x: -k * 260, s: 1 - k * .06 });
+});
+
+/* ═══ 2 · Bloques (3,7 – 10,6) ═══ */
+const PAL = [['Texto', 'var(--lilac)'], ['Imagen', 'var(--blush)'], ['Ficha', 'var(--lime)'], ['Descarga', 'var(--aqua)'], ['Video', '#fff'], ['Spotify', '#fff']];
+escena(3.7, 10.7, r => {
+  const k = $('div', 'abs kick', '01 · Editor por bloques', r, 'left:140px;top:150px');
+  const h = pal(r, 'Arma tu entrada {con bloques.}', 'abs tit', 'left:140px;top:205px;font-size:92px;width:760px;line-height:1.04');
+  const p = $('div', 'abs', 'Sin código. Arrastra, escribe y publica desde el celular.', r, 'left:140px;top:520px;width:640px;font-size:32px;line-height:1.4;color:var(--ink2);font-weight:400');
+  const chips = PAL.map(([n, c], i) => $('div', 'abs chip', `<span style="opacity:.55">+</span>${n}`, r, `left:${140 + (i % 3) * 215}px;top:${650 + Math.floor(i / 3) * 96}px;background:${c};box-shadow:inset 0 0 0 1.5px rgba(11,11,16,.08)`));
+  const ed = $('div', 'abs hoja', `<div class="barra"><div class="dot3"><i></i><i></i><i></i></div><span class="mono" style="font-size:19px;color:var(--ink2);letter-spacing:.08em">NUEVA ENTRADA</span><span style="flex:1"></span><span class="pill i" style="padding:10px 22px;font-size:20px">Publicar</span></div>`, r, 'left:960px;top:96px;width:860px;height:900px;overflow:hidden');
+  const B = [];
+  const mk = (css, html) => { const e = $('div', 'blq', html, ed, css); e.style.opacity = 0; B.push(e); return e; };
+  const b1 = mk('top:120px;height:112px', '<small>Título</small><div id="b1t" style="font-size:44px;font-weight:700;letter-spacing:-.03em"></div>');
+  const b2 = mk('top:262px;height:150px', '<small>Texto</small><div id="b2t" style="font-size:27px;line-height:1.45;color:#2c2f3a;min-height:80px"></div>');
+  const b3 = mk('top:442px;height:190px;padding:0', '<small style="z-index:2">Imagen</small>'); miniArte(b3, 0, 'position:absolute;inset:0;border-radius:22px');
+  const b4 = mk('top:662px;height:190px', '<small>Ficha</small><div class="fila"><b>Género</b><span>Acción</span></div><div class="fila"><b>Plataforma</b><span>Android</span></div><div class="fila"><b>Peso</b><span>1,2 GB</span></div>');
+  const b5 = mk('top:662px;height:160px;display:flex;align-items:center;gap:22px;background:linear-gradient(135deg,#C7F8FB,#fff)', '<small>Descarga</small><div class="arte" style="width:96px;height:96px;background:' + arte(2) + '"></div><div style="flex:1"><b style="font-size:27px">Mod de rendimiento</b><div class="mut" style="font-size:20px;margin-top:4px">por @kale · descarga gratis</div></div><span class="pill i" style="font-size:22px">Descargar</span>');
+  b5.style.opacity = 0;
+  const onda = $('div', 'onda', null, r, 'width:90px;height:90px;margin:-45px 0 0 -45px');
+  sfx(3.9, 'whoosh', .6); [4.95, 5.85, 6.75, 7.65, 8.55].forEach((t, i) => sfx(t, i % 2 ? 'pop' : 'pop2', .9, i)); sfx(9.6, 'campana', .8);
+  return { k, h, p, chips, ed, b1, b2, b3, b4, b5, onda, t1: b1.querySelector('#b1t'), t2: b2.querySelector('#b2t') };
+}, (t, r, c) => {
+  S(c.k, { o: en(t, 3.95, .4), y: (1 - en(t, 3.95, .6)) * 20 }); kin(c.h, t, 4.05, .11, .85, 80); S(c.p, { o: en(t, 4.7, .6), y: (1 - en(t, 4.7, .7)) * 24 });
+  c.chips.forEach((e, i) => { const k = en(t, 4.4 + i * .08, .7, E.spr); S(e, { o: clamp(k * 2), s: lerp(.5, 1, k), y: (1 - k) * 30 }); });
+  const ed = en(t, 4.0, 1.0, E.out5); S(c.ed, { o: clamp(ed * 2), x: (1 - ed) * 220, y: (1 - ed) * 40, r: (1 - ed) * 2.5 });
+  // Cada bloque cae desde su chip: aparece, rebota y se asienta
+  const caida = (el, a, y0) => { const k = en(t, a, .75, E.spr); S(el, { o: clamp((t - a) / .15), y: (1 - k) * -90 + 0 * y0, s: lerp(.94, 1, k) }); };
+  caida(c.b1, 5.0); caida(c.b2, 5.9); caida(c.b3, 6.8); caida(c.b4, 7.7);
+  c.b4.style.opacity = t < 8.5 ? clamp((t - 7.7) / .15) : 1 - clamp((t - 8.5) / .25);   // la ficha cede su lugar a la descarga
+  caida(c.b5, 8.6);
+  teclear(c.t1, 'Reseña: mi mod favorito', (t - 5.1) / .9);
+  teclear(c.t2, 'Corre a 60 FPS en mi celular de gama media. Así lo instalé, paso a paso…', (t - 6.0) / 1.6);
+  // Cursor: va de chip en chip y de ahí al editor
+  const P = [[4.4, 1000, 940], [4.9, 270, 700], [5.0, 270, 700], [5.5, 1300, 190], [5.8, 485, 700], [5.9, 485, 700], [6.4, 1300, 330], [6.7, 270, 800], [6.8, 270, 800], [7.4, 1300, 520], [7.6, 700, 800], [7.7, 700, 800], [8.4, 1300, 760], [8.5, 600, 800], [8.6, 600, 800], [9.3, 1650, 790], [9.9, 1700, 840]];
+  const pos = ruta(t, P); const clic = [4.95, 5.85, 6.75, 7.65, 8.55, 9.65].reduce((a, ct) => a + Math.max(0, 1 - Math.abs(t - ct) / .12), 0);
+  cursor.style.opacity = win(t, 4.4, 10.3, .3, .3); cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${1 - clamp(clic) * .22})`;
+  const q = en(t, 9.6, .8); c.onda.style.left = '1655px'; c.onda.style.top = '800px'; c.onda.style.opacity = (1 - q) * .8 * (t > 9.6 ? 1 : 0); c.onda.style.transform = `scale(${1 + q * 3})`;
+  S(r, { o: win(t, 3.7, 10.7, .2, .35), x: en(t, 10.2, .5, E.in) * -240 });
+});
+
+/* ═══ 3 · Nexus escribe (10,3 – 16) ═══ */
+escena(10.3, 16.0, r => {
+  const k = $('div', 'abs kick', '02 · Nexus escritor', r, 'left:140px;top:150px');
+  const h = pal(r, 'Nexus escribe {el borrador.}', 'abs tit', 'left:140px;top:205px;font-size:92px;width:760px');
+  const p = $('div', 'abs', 'Elige un juego de UpGames y pide una reseña, una guía o una noticia. Tú la completas con tu experiencia.', r, 'left:140px;top:520px;width:640px;font-size:30px;line-height:1.45;color:var(--ink2);font-weight:400');
+  const hoja = $('div', 'abs vidrio', `
+    <div style="display:flex;align-items:center;gap:22px;padding:34px 38px 0"><div class="arte" style="width:104px;height:104px;background:${arte(1)}"><svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%">${forma(1)}</svg></div>
+      <div><div class="mono" style="font-size:17px;letter-spacing:.14em;color:var(--ind)">PUBLICACIÓN DE UPGAMES</div><div style="font-size:34px;font-weight:700;letter-spacing:-.03em;margin-top:6px">Mod de rendimiento · Android</div></div></div>
+    <div style="display:flex;gap:12px;padding:26px 38px 0"><span id="s1" class="chip" style="padding:11px 22px;font-size:22px;background:var(--lilac)">Reseña</span><span class="chip" style="padding:11px 22px;font-size:22px;background:rgba(11,11,16,.05)">Guía</span><span class="chip" style="padding:11px 22px;font-size:22px;background:rgba(11,11,16,.05)">Noticia</span><span style="flex:1"></span><span id="bn" class="pill i" style="padding:12px 26px;font-size:22px">✦ Escribir borrador</span></div>
+    <div id="out" style="position:absolute;left:38px;right:38px;top:286px;bottom:34px;border-radius:24px;background:rgba(255,255,255,.85);box-shadow:inset 0 0 0 1.5px var(--linea);padding:28px 32px;overflow:hidden"></div>`, r, 'left:960px;top:150px;width:860px;height:780px');
+  const out = hoja.querySelector('#out');
+  const L = [['h', 'Lo mejor'], ['t', '- Corre fluido incluso con 3 GB de RAM'], ['t', '- La instalación toma menos de 5 minutos'], ['h', 'Lo peor'], ['t', '- Pesa 1,2 GB, hace falta espacio libre'], ['n', '[ Cuenta aquí cómo corrió en tu equipo ]']];
+  const filas = L.map(([tp, tx]) => $('div', null, '', out, tp === 'h' ? 'font-size:30px;font-weight:700;letter-spacing:-.02em;margin:14px 0 6px' : tp === 'n' ? 'font-size:23px;color:var(--ind);margin-top:14px;padding:12px 16px;border-radius:14px;background:rgba(77,73,252,.08);font-weight:500' : 'font-size:25px;line-height:1.5;color:#2c2f3a;font-weight:400'));
+  const chis = Array.from({ length: 14 }, (_, i) => $('div', 'abs', '✦', r, `font-size:${26 + R(i) * 26}px;color:var(--ind);opacity:0`));
+  const onda = $('div', 'onda', null, r, 'width:90px;height:90px;margin:-45px 0 0 -45px');
+  sfx(10.5, 'whoosh', .6); sfx(12.55, 'clic', 1); sfx(12.6, 'brillo', .9); [13.3, 13.9, 14.5].forEach((t, i) => sfx(t, 'teclas', .6)); sfx(15.2, 'campana', .7);
+  return { k, h, p, hoja, L, filas, chis, bn: hoja.querySelector('#bn'), onda };
+}, (t, r, c) => {
+  S(c.k, { o: en(t, 10.5, .4), y: (1 - en(t, 10.5, .6)) * 20 }); kin(c.h, t, 10.6, .11, .85, 80); S(c.p, { o: en(t, 11.3, .6), y: (1 - en(t, 11.3, .7)) * 24 });
+  const k = en(t, 10.6, 1.0, E.out5); S(c.hoja, { o: clamp(k * 2), x: (1 - k) * 200, y: (1 - k) * 40, r: (1 - k) * -2 });
+  const clic = Math.max(0, 1 - Math.abs(t - 12.55) / .12), busy = clamp((t - 12.6) / .2) * (1 - clamp((t - 13.2) / .2));
+  S(c.bn, { s: 1 - clic * .06 }); c.bn.textContent = t < 12.6 ? '✦ Escribir borrador' : t < 13.3 ? '✦ Escribiendo…' : '✦ Listo'; c.bn.style.filter = busy ? `brightness(${1 + .15 * Math.sin(t * 22)})` : 'none';
+  c.L.forEach(([, tx], i) => { const a = 13.2 + i * .42; teclear(c.filas[i], tx, (t - a) / .5); });
+  c.chis.forEach((e, i) => { const a = 12.6 + R(i) * .2, q = clamp((t - a) / 1.3); const ang = R(i + 4) * Math.PI * 2, d = 90 + q * (140 + R(i + 9) * 200); e.style.opacity = q > 0 && q < 1 ? (1 - q) * .9 : 0; e.style.transform = `translate(${1680 + Math.cos(ang) * d}px, ${268 + Math.sin(ang) * d * .7}px) rotate(${q * 120}deg) scale(${.5 + (1 - q) * .8})`; });
+  const pos = ruta(t, [[11.0, 1100, 900], [12.4, 1640, 280], [12.6, 1640, 280], [13.4, 1420, 560], [14.8, 1440, 700], [15.6, 1700, 900]]);
+  cursor.style.opacity = win(t, 11.0, 15.6, .3, .3); cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${1 - clic * .22})`;
+  const q = en(t, 12.55, .7); c.onda.style.left = '1640px'; c.onda.style.top = '282px'; c.onda.style.opacity = (1 - q) * .8 * (t > 12.55 ? 1 : 0); c.onda.style.transform = `scale(${1 + q * 3})`;
+  S(r, { o: win(t, 10.3, 16.0, .2, .35), x: en(t, 15.5, .5, E.in) * -240 });
+});
+
+/* ═══ 4 · Temas (15,7 – 21,6) ═══ */
+escena(15.7, 21.7, r => {
+  const k = $('div', 'abs kick', '03 · Tu estilo', r, 'left:0;right:0;top:120px;text-align:center');
+  const h = pal(r, 'Elige cómo {se ve.}', 'abs tit', 'left:0;right:0;top:170px;text-align:center;font-size:104px');
+  const mkMini = (x, nombre, css, cab, tar, pie, premium) => {
+    const m = $('div', 'mini', `<div class="cab" style="${cab}"><span style="width:26px;height:26px;border-radius:9px;background:currentColor;opacity:.9"></span>${nombre}</div>
+      <div class="tl" style="width:62%;height:26px;margin-top:20px;background:currentColor;opacity:.9"></div><div class="tl" style="width:42%;background:currentColor;opacity:.35"></div>${tar}<div class="pie" style="${pie}">${premium ? '' : 'HECHO CON UPGAMES'}</div>`, r, `left:${x}px;top:340px;${css}`);
+    return m;
+  };
+  const neon = mkMini(150, 'kale.blog', 'background:#05080F;color:#F4F5F7', 'border-bottom:1px solid rgba(255,255,255,.08)', `<div class="tar" style="left:26px;top:200px;width:226px;height:250px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(57,255,136,.35)"></div><div class="tar" style="left:268px;top:200px;width:226px;height:250px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)"></div><div class="tar" style="left:26px;top:470px;width:468px;height:70px;background:#39FF88"></div>`, 'color:#8b93a3', false);
+  const cris = mkMini(700, 'kale.blog', 'background:radial-gradient(60% 40% at 50% 0%,rgba(124,92,255,.5),transparent 70%),#05060F;color:#E6EEFB', 'box-shadow:inset 0 -1px 0 rgba(186,215,247,.16)', `<div class="tar" style="left:26px;top:200px;width:226px;height:250px;background:rgba(186,214,247,.07);box-shadow:inset 0 0 0 1px rgba(186,215,247,.2),inset 0 1px 0 rgba(216,236,248,.3);backdrop-filter:blur(10px)"></div><div class="tar" style="left:268px;top:200px;width:226px;height:250px;background:rgba(186,214,247,.07);box-shadow:inset 0 0 0 1px rgba(186,215,247,.2),inset 0 1px 0 rgba(216,236,248,.3)"></div><div class="tar" style="left:26px;top:470px;width:468px;height:70px;border-radius:99px;background:#7C5CFF"></div>`, 'color:#9DA7BA', true);
+  const lien = mkMini(1250, 'kale.blog', 'background:#fff;color:#0A0A0A', 'border-bottom:1px solid rgba(0,0,0,.08)', `<div class="tar" style="left:26px;top:200px;width:226px;height:250px;background:#C4BAFF"></div><div class="tar" style="left:268px;top:200px;width:226px;height:250px;background:#E4FF97"></div><div class="tar" style="left:26px;top:470px;width:468px;height:70px;border-radius:99px;background:#4D49FC"></div>`, 'color:#595959', true);
+  const rot = [['Neón', 'Gratis'], ['Cristal', 'Premium'], ['Lienzo', 'Premium']].map(([n, e], i) => $('div', 'abs', `<b style="font-size:34px;letter-spacing:-.02em">${n}</b> <span class="pill ${i ? 'i' : ''}" style="padding:7px 16px;font-size:18px;margin-left:10px">${e}</span>`, r, `left:${150 + i * 550}px;top:0;width:520px;text-align:center`));
+  const franja = $('div', 'abs pill', '<span class="ind">★</span> Sin «Hecho con UpGames» · Hasta 10 blogs · Temas exclusivos', r, 'left:0;right:0;margin:0 auto;width:max-content;top:962px;font-size:25px');
+  sfx(15.9, 'whoosh', .6); sfx(17.1, 'nota', .8, 1); sfx(17.9, 'nota', .8, 3); sfx(18.8, 'nota', .9, 5); sfx(19.8, 'sello', .8);
+  return { k, h, minis: [neon, cris, lien], rot, franja };
+}, (t, r, c) => {
+  S(c.k, { o: en(t, 15.9, .4) }); kin(c.h, t, 16.0, .12, .9, 80);
+  c.minis.forEach((m, i) => { const k = en(t, 16.4 + i * .22, .9, E.spr); const foco = [[16.4, 18.3], [18.3, 19.7], [19.7, 21.7]][i], f = en(t, foco[0], .5) * (1 - en(t, foco[1], .5)) * (i === 0 ? 1 : 1);
+    S(m, { o: clamp(k * 2), y: (1 - k) * 140 - f * 14, s: lerp(.66, .76, k) + f * .12, r: (i - 1) * 2 * (1 - f) }); m.style.top = '290px'; m.style.zIndex = Math.round(f * 3); });
+  c.rot.forEach((e, i) => { S(e, { o: en(t, 17.0 + i * .2, .5), y: 900 + (1 - en(t, 17.0 + i * .2, .6)) * 20 }); });
+  const f2 = en(t, 19.6, .7, E.spr); S(c.franja, { o: clamp(f2 * 2), s: lerp(.7, 1, f2) });
+  c.franja.style.top = '962px';
+  S(r, { o: win(t, 15.7, 21.7, .2, .35), x: en(t, 21.2, .5, E.in) * -240 });
+});
+
+/* ═══ 5 · Comunidad (21,3 – 26,8) ═══ */
+escena(21.3, 26.9, r => {
+  const k = $('div', 'abs kick', '04 · Comunidad', r, 'left:140px;top:150px');
+  const h = pal(r, 'Tus lectores {responden.}', 'abs tit', 'left:140px;top:205px;font-size:92px;width:760px');
+  const p = $('div', 'abs', 'Comentarios con las cuentas y la moderación de UpGames. Y tus seguidores se enteran al instante.', r, 'left:140px;top:520px;width:640px;font-size:30px;line-height:1.45;color:var(--ink2);font-weight:400');
+  const C = [['L', 'var(--blush)', '@lena', '¡Corre perfecto en mi Redmi! Gracias 🙌', 960, 300], ['K', 'var(--aqua)', '@kio', '¿Funciona con 3 GB de RAM?', 1040, 480], ['C', 'var(--lilac)', '@kale', 'Sí, con la configuración del paso 3.', 960, 660]].map(([l, col, who, tx, x, y]) =>
+    $('div', 'abs', `<div class="av" style="background:${col}">${l}</div><div><div class="mono" style="font-size:17px;letter-spacing:.1em;color:var(--ink2);margin-bottom:6px">${who}</div><div class="burb" style="background:#fff;box-shadow:inset 0 0 0 1.5px var(--linea);padding:18px 24px;font-size:26px">${tx}</div></div>`, r, `left:${x}px;top:${y}px;display:flex;gap:18px;align-items:flex-end;width:780px`));
+  const push = $('div', 'abs vidrio', `<div style="display:flex;gap:20px;align-items:center;padding:26px 30px"><div class="av" style="background:var(--ind);color:#fff;border-radius:18px"><svg viewBox="0 0 24 24" style="width:34px;height:34px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0"/></svg></div>
+    <div><div class="mono" style="font-size:16px;letter-spacing:.12em;color:var(--ind)">UPGAMES · AHORA</div><div style="font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:4px">@kale publicó en su blog</div><div class="mut" style="font-size:22px;margin-top:2px">Reseña: mi mod favorito</div></div></div>`, r, 'left:1060px;top:90px;width:720px');
+  const seg = $('div', 'abs pill', '<span class="ind">●</span> <b id="nseg" style="font-variant-numeric:tabular-nums">0</b> seguidores avisados', r, 'left:1140px;top:880px;font-size:26px');
+  sfx(21.5, 'whoosh', .6); sfx(22.3, 'pop', .8); sfx(23.1, 'pop2', .8); sfx(23.9, 'pop', .8); sfx(24.6, 'notif', 1); sfx(25.0, 'contador', .5);
+  return { k, h, p, C, push, seg, ns: seg.querySelector('#nseg') };
+}, (t, r, c) => {
+  S(c.k, { o: en(t, 21.5, .4) }); kin(c.h, t, 21.6, .11, .85, 80); S(c.p, { o: en(t, 22.3, .6), y: (1 - en(t, 22.3, .7)) * 24 });
+  c.C.forEach((e, i) => { const a = 22.2 + i * .8, k = en(t, a, .7, E.spr); S(e, { o: clamp(k * 2.5), s: lerp(.8, 1, k), y: (1 - k) * 50 }); });
+  const k = en(t, 24.6, .8, E.spr), sh = Math.sin(t * 38) * Math.max(0, 1 - (t - 24.65) / .5) * (t > 24.6 ? 1 : 0);
+  S(c.push, { o: clamp(k * 3), y: (1 - k) * -220, r: sh * 1.4 });
+  S(c.seg, { o: en(t, 25.1, .5), y: (1 - en(t, 25.1, .6)) * 24 }); c.ns.textContent = fmt(1248 * en(t, 25.1, 1.4, E.out));
+  cursor.style.opacity = 0;
+  S(r, { o: win(t, 21.3, 26.9, .2, .35), x: en(t, 26.4, .5, E.in) * -240 });
+});
+
+/* ═══ 6 · Descargas (26,5 – 31,6) ═══ */
+escena(26.5, 31.7, r => {
+  const k = $('div', 'abs kick', '05 · Descargas que suman', r, 'left:0;right:0;top:130px;text-align:center');
+  const h = pal(r, 'Cada descarga {suma.}', 'abs tit', 'left:0;right:0;top:180px;text-align:center;font-size:104px');
+  const nodos = [['Tu entrada', 'var(--lilac)', 240, `<svg viewBox="0 0 24 24" style="width:64px;fill:none;stroke:#0B0B10;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"/></svg>`], ['Página puente', 'var(--lime)', 760, ''], ['Descarga', 'var(--aqua)', 1280, `<svg viewBox="0 0 24 24" style="width:64px;fill:none;stroke:#0B0B10;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>`]].map(([n, col, x, ic], i) =>
+    $('div', 'abs hoja', `<div style="display:grid;place-items:center;height:150px;border-radius:26px;background:${col};margin:22px">${i === 1 ? '<div class="mono" id="cnt" style="font-size:72px;font-weight:700;letter-spacing:-.04em">30</div>' : ic}</div><div style="text-align:center;font-size:30px;font-weight:700;letter-spacing:-.02em;padding-bottom:26px">${n}</div>`, r, `left:${x}px;top:410px;width:400px`));
+  const flechas = [0, 1].map(i => $('div', 'abs', null, r, `left:${650 + i * 520}px;top:490px;width:110px;height:8px;border-radius:8px;background:var(--ind);transform-origin:left`));
+  const kpi = $('div', 'abs vidrio', `<div style="padding:30px 40px;display:flex;align-items:baseline;gap:22px"><span class="mono" style="font-size:18px;letter-spacing:.14em;color:var(--ink2)">ANUNCIOS VISTOS</span><b id="av" style="font-size:78px;font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums">0</b><span class="pill i" style="font-size:22px">+ suma al CPM</span></div>`, r, 'left:0;right:0;margin:0 auto;width:max-content;top:760px');
+  sfx(26.7, 'whoosh', .6); sfx(27.7, 'tick', .7); sfx(28.2, 'tick', .7); sfx(28.7, 'tick', .7); sfx(29.4, 'sello', .8); sfx(30.2, 'campana', .9); sfx(30.25, 'contador', .5);
+  return { k, h, nodos, flechas, kpi, cnt: nodos[1].querySelector('#cnt'), av: kpi.querySelector('#av') };
+}, (t, r, c) => {
+  S(c.k, { o: en(t, 26.7, .4) }); kin(c.h, t, 26.8, .12, .9, 80);
+  c.nodos.forEach((e, i) => { const k = en(t, 27.2 + i * .45, .8, E.spr); S(e, { o: clamp(k * 2), y: (1 - k) * 70, s: lerp(.85, 1, k) }); });
+  c.flechas.forEach((f, i) => { const k = en(t, 27.9 + i * .9, .6, E.out5); f.style.opacity = clamp(k * 3); f.style.transform = `scaleX(${k})`; });
+  c.cnt.textContent = Math.max(0, Math.ceil(30 - en(t, 28.0, 1.8, x => x) * 30)).toString().padStart(2, '0');
+  const k = en(t, 29.6, .8, E.spr); S(c.kpi, { o: clamp(k * 2), y: (1 - k) * 60, s: lerp(.85, 1, k) }); c.av.textContent = fmt(1284 * en(t, 30.2, 1.2, E.out));
+  S(r, { o: win(t, 26.5, 31.7, .2, .35), x: en(t, 31.2, .5, E.in) * -240 });
+});
+
+/* ═══ 7 · Cierre (31,3 – 36) ═══ */
+escena(31.3, DUR + 1, r => {
+  const logo = $('img', 'abs', null, r, 'left:610px;top:130px;width:700px;filter:drop-shadow(0 20px 40px rgba(60,40,160,.25))'); logo.src = 'logo.png';
+  const t1 = pal(r, 'UpGames [Blogs.]', 'abs tit', 'left:0;right:0;top:390px;text-align:center;font-size:150px');
+  const t2 = pal(r, 'Tu sitio web en {minutos.} Gratis.', 'abs tit', 'left:0;right:0;top:590px;text-align:center;font-size:72px;font-weight:300');
+  const url = $('div', 'abs pill mono', '<span class="ind">●</span><span id="u"></span><span id="c" class="ind">▍</span>', r, 'left:0;right:0;margin:0 auto;width:max-content;top:760px;font-size:36px;padding:20px 40px');
+  const boton = $('div', 'abs pill i', 'Crear mi blog', r, 'left:0;right:0;margin:0 auto;width:max-content;top:880px;font-size:32px;padding:22px 56px');
+  const onda = $('div', 'onda', null, r, 'width:120px;height:120px;margin:-60px 0 0 -60px');
+  sfx(31.5, 'swell', .9); sfx(32.1, 'nota', .8, 1); sfx(32.8, 'nota', .8, 3); sfx(33.4, 'nota', .8, 5); sfx(34.4, 'clic', 1); sfx(34.45, 'campana', 1);
+  return { logo, t1, t2, url, boton, onda };
+}, (t, r, c) => {
+  const k = en(t, 31.5, .9, E.spr); S(c.logo, { o: en(t, 31.5, .3), s: lerp(.7, 1, k), y: (1 - k) * -40 });
+  kin(c.t1, t, 31.9, .12, .9, 90); kin(c.t2, t, 32.5, .09, .8, 50);
+  S(c.url, { o: en(t, 33.1, .4), y: (1 - en(t, 33.1, .5)) * 30 }); const s = 'upgames.games/blog'; c.url.querySelector('#u').textContent = s.slice(0, Math.round(en(t, 33.2, 1.1, x => x) * s.length)); c.url.querySelector('#c').style.opacity = Math.floor(t * 2.6) % 2 ? 1 : .15;
+  const b = en(t, 33.6, .7, E.spr), clic = Math.max(0, 1 - Math.abs(t - 34.4) / .12); S(c.boton, { o: clamp(b * 2), s: lerp(.6, 1, b) * (1 - clic * .05) });
+  const pos = ruta(t, [[33.6, 1500, 1000], [34.3, 1000, 925], [35.8, 1010, 930]]); cursor.style.opacity = win(t, 33.6, 35.6, .3, .3); cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${1 - clic * .22})`;
+  const q = en(t, 34.4, 1.0); c.onda.style.left = '1000px'; c.onda.style.top = '925px'; c.onda.style.opacity = (1 - q) * .7 * (t > 34.4 ? 1 : 0); c.onda.style.transform = `scale(${1 + q * 7})`;
+  S(r, { o: Math.min(clamp((t - 31.3) / .2), clamp((DUR - t) / .5)) });
+});
+
+/* ═══ Fondo y cuadro ═══ */
+const BL = ['b1', 'b2', 'b3', 'b4'].map(i => document.getElementById(i));
+function render(t) {
+  t = clamp(t, 0, DUR);
+  BL.forEach((b, i) => { b.style.transform = `translate(${Math.sin(t * .27 + i * 1.9) * 130}px, ${Math.cos(t * .21 + i * 1.3) * 90}px) scale(${1 + Math.sin(t * .35 + i) * .1})`; });
+  document.getElementById('nota').style.opacity = win(t, 4.5, 31.2, .5, .5) * .9;
+  if (t < 4 || (t > 10 && t < 11) || (t > 15.6 && t < 16.5)) cursor.style.opacity = 0;
+  for (const e of ESC) { const on = t >= e.a - .05 && t <= e.b + .05; e.r.style.display = on ? '' : 'none'; if (on) e.act(t, e.r, e.ctx); }
+  if (![[4.3, 10.4], [10.9, 15.8], [33.5, 36]].some(([a, b]) => t >= a && t <= b)) cursor.style.opacity = 0;
+}
+window.DURACION = DUR; window.SFX = SFX; window.render = render;
+window.listo = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => render(0));
+// Vista previa: video.html?play (tiempo real) · video.html?t=12.9 (un instante)
+const q = new URLSearchParams(location.search);
+if (q.has('t')) window.listo.then(() => render(+q.get('t')));
+if (q.has('play')) window.listo.then(() => { const t0 = performance.now(); (function f() { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(f); })(); });
+</script>
+</body>
+</html>

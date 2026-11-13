@@ -105,3 +105,17 @@ Cada fase cabe en una o dos sesiones de trabajo.
 - Buscador avanzado de Nexus en el panel admin: web, YouTube, TikTok, Facebook, Instagram y Reddit.
   - Variables opcionales: `SERPER_API_KEY` (recomendada para las redes), `BRAVE_SEARCH_API_KEY`, `YOUTUBE_API_KEY`.
 - Correcciones de puntos ciegos listadas arriba.
+
+## Hecho · UpGames Blogs y portada (13 de noviembre)
+- **Botón «Comprar» eliminado** (ficha, modal, endpoint `/items/buy-intent`, estilos y lista de tiendas). El servidor ya no guarda ni envía `purchaseLink`; solo `autoInfo` lo usa por dentro para buscar la portada en Steam.
+- **Blogs**
+  - Bloque **Descarga**: el botón pasa por `puente.html` (espera, anuncios y ticket firmado), así suma al CPM normal de la publicación.
+  - **Comentarios** en las entradas, con las cuentas y la moderación de UpGames. La página del blog sigue sin scripts: los comentarios viven en un marco aislado, `public/blog-comentarios.html`, en el dominio de UpGames (donde está la sesión). Rutas: `GET/POST /blogs/comentarios/:eid`, `DELETE /blogs/comentarios/:eid/:cid`.
+  - **«Escribir sobre esto»** en cada publicación: abre el editor con la tarjeta del juego ya puesta y ofrece Nexus.
+  - **Nexus escritor** (`modulos/blogs/escritor.js`, `POST /blogs/nexus/escribir`): reseña, guía o noticia con bloques. Lo que devuelve el modelo pasa por `limpiarBloques`; sin enlaces ni descargas inventadas, y lo que no sabe lo deja entre `[corchetes]`.
+  - **Aviso a seguidores** al publicar (notificación `nueva_entrada` + push, una sola vez por entrada, máximo 3 al día por blog, después de la revisión de Nexus).
+  - **Premium:** sin «Hecho con UpGames», hasta 10 blogs (3 en gratis) y dos temas exclusivos, **Cristal** y **Lienzo**. Si el Premium vence, esos temas vuelven al tema por defecto al mostrarse.
+- **Inicio:** carrusel «Recomendados para ti» (fichas de cristal, 3 entradas, la central crece, desvanecido en los bordes), dos filas por debajo del carrusel principal.
+- **Modo video:** el video ocupa toda la pantalla (sin marco ni márgenes verdes); controles en cristal.
+- **Video** `marketing/blogs` (diseño claro y sonido sintetizado propio).
+- Pendiente de decisión: que el dueño del blog también gane por las descargas que genera su entrada (hoy solo gana el dueño de la publicación).
