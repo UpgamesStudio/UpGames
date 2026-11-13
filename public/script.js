@@ -1700,9 +1700,9 @@ function ugTarjeta(it) {
 // Enlace para compartir: la página estática (/p/…) si ya existe, que trae la vista previa lista
 function ugUrlCompartir(it) {
   if (!it) return '';
-  const slug = String(it.title || 'publicacion').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '') || 'publicacion';
   const estatica = (!it.status || it.status === 'aprobado') && it.createdAt && Date.now() - new Date(it.createdAt) > UG_PAGINA_LISTA_MS;
-  return estatica ? `https://upgames.games/public/p/${slug}-${it._id}.html` : `https://upgames.games/public/biblioteca.html?id=${it._id}`;
+  // Nombre fijo por id: no depende del título (si el autor lo cambiaba, el enlace ya compartido daba 404)
+  return estatica ? `https://upgames.games/public/p/${it._id}.html` : `https://upgames.games/public/biblioteca.html?id=${it._id}`;
 }
 async function share(id) {
   const it = (currentItem && currentItem._id === id) ? currentItem : todosLosItems.find(i => i._id === id);
