@@ -118,4 +118,4 @@ Cada fase cabe en una o dos sesiones de trabajo.
 - **Inicio:** carrusel «Recomendados para ti» (fichas de cristal, 3 entradas, la central crece, desvanecido en los bordes), dos filas por debajo del carrusel principal.
 - **Modo video:** el video ocupa toda la pantalla (sin marco ni márgenes verdes); controles en cristal.
 - **Video** `marketing/blogs` (diseño claro y sonido sintetizado propio).
-- Pendiente de decisión: que el dueño del blog también gane por las descargas que genera su entrada (hoy solo gana el dueño de la publicación).
+- ~~Pendiente: que el dueño del blog también gane por las descargas que genera su entrada.~~ Hecho (14 de noviembre): `via` firmado en el ticket de la página puente, pago `BLOGS_DESCARGA_CPM` (US$0,50 por 1.000 por defecto, del margen de la plataforma), tope diario por blog y sin autopago. Ver README → UpGames Blogs.

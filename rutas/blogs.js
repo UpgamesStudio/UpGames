@@ -18,6 +18,7 @@ const V = require('../modulos/blogs/validar');
 const R = require('../modulos/blogs/render');
 const Temas = require('../modulos/blogs/temas');
 const Anuncios = require('../modulos/blogs/anuncios');
+const Atribucion = require('../modulos/blogs/atribucion');
 const Escritor = require('../modulos/blogs/escritor');
 const llm = require('../modulos/nexus/llm');
 
@@ -363,7 +364,8 @@ function registrar(app, deps) {
             const porDia = Object.fromEntries(dias.map(d => [d.dia, d.n]));
             const serie = Array.from({ length: 30 }, (_, i) => { const dia = new Date(Date.now() - (29 - i) * 864e5).toISOString().slice(0, 10); return { dia, n: porDia[dia] || 0 }; });
             const r4 = n => Math.round(n * 1e4) / 1e4;
-            res.json({ success: true, monetizar: !!b.monetizar, cpm: Anuncios.CPM, ingresos: r4(b.ingresos || 0), ingresosMes: r4(dias.reduce((s, d) => s + (d.g || 0), 0)), anunciosMes: dias.reduce((s, d) => s + (d.a || 0), 0), total: b.vistas || 0, mes: serie.reduce((s, d) => s + d.n, 0), hoy: serie[29].n, publicadas, serie,
+            res.json({ success: true, monetizar: !!b.monetizar, cpm: Anuncios.CPM, ingresos: r4(b.ingresos || 0), ingresosMes: r4(dias.reduce((s, d) => s + (d.g || 0), 0)), anunciosMes: dias.reduce((s, d) => s + (d.a || 0), 0),
+                descargas: b.descargasGeneradas || 0, descargasMes: dias.reduce((s, d) => s + (d.d || 0), 0), ingresosDescargas: r4(b.ingresosDescargas || 0), ingresosDescargasMes: r4(dias.reduce((s, d) => s + (d.gd || 0), 0)), cpmDescargas: Atribucion.CPM, total: b.vistas || 0, mes: serie.reduce((s, d) => s + d.n, 0), hoy: serie[29].n, publicadas, serie,
                 top: top.map(e => ({ titulo: e.titulo, vistas: e.vistas, tipo: e.tipo })) });
         } catch (e) { fallo(res, e, 'estadisticas'); }
     });

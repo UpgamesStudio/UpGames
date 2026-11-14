@@ -58,7 +58,7 @@ function bloqueHtml(b, ctx) {
             // La descarga pasa SIEMPRE por la página puente (espera + anuncios + ticket): así cuenta igual que una descarga normal
             const j = ctx.juegos?.[b.id];
             if (!j) return '';
-            const puente = `${ctx.appUrl}/public/puente.html?id=${encodeURIComponent(b.id)}&media=${encodeURIComponent(j.image || '')}&title=${encodeURIComponent(j.title || '')}`;
+            const puente = `${ctx.appUrl}/public/puente.html?id=${encodeURIComponent(b.id)}${ctx.entradaId ? `&via=${encodeURIComponent(ctx.entradaId)}` : ''}&media=${encodeURIComponent(j.image || '')}&title=${encodeURIComponent(j.title || '')}`;
             return `<div class="descarga">${j.image ? `<img src="${esc(img(j.image, 320))}" alt="" loading="lazy">` : ''}<div class="d-info"><b>${esc(j.title)}</b><small>por @${esc(j.usuario)} · descarga gratis</small></div><a class="d-boton" href="${esc(puente)}" target="_blank" rel="nofollow noopener">Descargar</a></div>`;
         }
         case 'juego': {
@@ -312,7 +312,7 @@ function entrada(ctx, e, { previa = false } = {}) {
     const cuerpo = `<main><div class="ancho"><article class="entrada">
 <header><h1>${esc(e.titulo)}</h1>${esPagina ? '' : `<div class="meta"><span>${esc(fecha(e.publicadaEn))}</span><span>·</span><span>@${esc(blog.usuario)}</span></div>`}</header>
 ${port ? `<div class="portada-entrada"><img src="${esc(img(port, 1400))}" alt=""></div>` : ''}
-<div class="contenido">${bloquesHtml(e.bloques, ctx)}</div>
+<div class="contenido">${bloquesHtml(e.bloques, previa || !e._id ? ctx : { ...ctx, entradaId: String(e._id) })}</div>
 ${!esPagina && e.etiquetas?.length ? `<div class="etiquetas">${e.etiquetas.map(t => `<a class="chip" href="${esc(base)}/etiqueta/${esc(V.slug(t))}">#${esc(t)}</a>`).join('')}</div>` : ''}
 ${esPagina || previa ? '' : compartir}
 ${esPagina || previa || !e._id ? '' : comentarios(ctx, e)}

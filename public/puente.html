@@ -190,12 +190,13 @@
         async function pedirTicket() {
             if (!juegoIdTicket()) return null;
             try {
-                const r = await fetch(`${API_URL}/economia/ticket`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ juegoId: juegoIdTicket() }) });
+                const r = await fetch(`${API_URL}/economia/ticket`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ juegoId: juegoIdTicket(), via: viaBlog() }) });
                 const d = await r.json().catch(() => ({}));
                 if (d.success && d.ticket) ticketPuente = d.ticket;
             } catch (_) {}
             return ticketPuente;
         }
+        function viaBlog() { try { const v = new URLSearchParams(location.search).get('via'); return /^[a-f0-9]{24}$/i.test(v || '') ? v : undefined; } catch (_) { return undefined; } }
         function juegoIdTicket() { try { return new URLSearchParams(location.search).get('id'); } catch (_) { return null; } }
         const ticketListo = pedirTicket();
 
@@ -356,7 +357,7 @@
             try {
                 if (!ticketPuente) await ticketListo;
                 if (!ticketPuente) await pedirTicket();
-                const requestBody = { juegoId, tieneAdBlocker, ticket: ticketPuente };
+                const requestBody = { juegoId, tieneAdBlocker, ticket: ticketPuente, via: viaBlog() };
                 log(`Body de la petición: ${JSON.stringify(requestBody)}`);
                 
                 // ⭐ AVISO VISUAL si hay ad blocker (no bloquea, solo informa)

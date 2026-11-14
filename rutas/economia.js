@@ -8,10 +8,14 @@ module.exports = function economia({ AUTHOR_PERCENTAGE, CPM_VALUE, DescargaIP, E
 // Creadas en index.js después de registrar este módulo: llegan con vincularTarde()
 let cobros, live;
 const TicketPuente = require('../modulos/ticketPuente');
+const AtribucionBlog = require('../modulos/blogs/atribucion');
+const { Blog, Entrada, BlogVista } = require('../modulos/blogs/modelos')(mongoose);
+// `via` = entrada de blog de la que llegó la persona (opcional). Se normaliza: cualquier otra cosa se ignora.
+const viaDe = v => (typeof v === 'string' && /^[a-f0-9]{24}$/i.test(v) ? v.toLowerCase() : '');
 app.post('/economia/ticket', [body('juegoId').isMongoId()], async (req, res) => {
     if (!validationResult(req).isEmpty()) return res.status(400).json({ success: false, error: 'ID inválido' });
     if (!(await Limites.permitir(`ticket:${req.ip}`, [[Limites.MIN, 20]]))) return res.status(429).json({ success: false, error: 'Demasiadas peticiones' });
-    res.json({ success: true, ...TicketPuente.emitir(JWT_SECRET, req.body.juegoId, req.ip) });
+    res.json({ success: true, ...TicketPuente.emitir(JWT_SECRET, req.body.juegoId, req.ip, Date.now(), viaDe(req.body.via)) });
 });
 
 app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req, res) => {
@@ -28,7 +32,8 @@ app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req
         if (!juego) return res.status(404).json({ success: false, error: "Juego no encontrado" });
         if (juego.status !== 'aprobado') return res.status(403).json({ success: false, error: "El juego no está aprobado para descargas" });
 
-        const tk = TicketPuente.verificar(JWT_SECRET, req.body.ticket, juegoId, ip);
+        const via = viaDe(req.body.via);
+        const tk = TicketPuente.verificar(JWT_SECRET, req.body.ticket, juegoId, ip, Date.now(), via);
         if (!tk.ok) {
             if (tk.motivo === 'pronto') return res.status(425).json({ success: false, esperaRestante: tk.esperaRestante, error: `Espera ${tk.esperaRestante} s más` });
             if (tk.motivo !== 'falta' || TicketPuente.obligatorio()) return res.status(428).json({ success: false, renovarTicket: true, error: 'Recarga la página para obtener el enlace' });
@@ -110,6 +115,14 @@ app.post('/economia/validar-descarga', [body('juegoId').isMongoId()], async (req
 
         await autor.save();
         StatsItems.sumar(juegoId, juego.usuario, { d: 1, g: gananciaGenerada });   // panel "Rendimiento por publicación"
+
+        // UpGames Blogs: si la descarga llegó desde una entrada de blog, su dueño también gana (solo si esta descarga ya pagó al autor)
+        if (via && gananciaGenerada > 0) {
+            try {
+                const atrib = await AtribucionBlog.resolver({ Blog, Entrada }, via, juegoId, juego.usuario);
+                if (atrib) await AtribucionBlog.pagar({ Blog, BlogVista, Usuario }, atrib, logger);
+            } catch (e) { logger.error(`[blogs] atribución de descarga: ${e.message}`); }
+        }
 
         // ── Hooks gamificación & recomendaciones (fire & forget) ──
         gamification.onDescarga(juego.usuario).catch(() => {});

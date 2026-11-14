@@ -17,19 +17,21 @@ const VIGENCIA_MS = 30 * 60e3;   // un ticket sirve 30 min
 const OBLIGATORIO_DESDE = Date.parse('2026-11-14T00:00:00Z');
 
 const huellaIp = ip => crypto.createHash('sha256').update(String(ip || '')).digest('base64url').slice(0, 10);
-const firma = (secreto, id, t, ip) => crypto.createHmac('sha256', secreto).update(`${id}|${t}|${huellaIp(ip)}`).digest('base64url').slice(0, 32);
+// `via` (id de la entrada de blog desde la que llegó la persona) va dentro de la firma: no se puede cambiar
+// ni añadir después de emitido el ticket. Sin `via` la firma es idéntica a la de siempre (tickets ya emitidos siguen valiendo).
+const firma = (secreto, id, t, ip, via = '') => crypto.createHmac('sha256', secreto).update(`${id}|${t}|${huellaIp(ip)}${via ? `|via:${via}` : ''}`).digest('base64url').slice(0, 32);
 
-function emitir(secreto, juegoId, ip, ahora = Date.now()) {
-    return { ticket: `${ahora.toString(36)}.${firma(secreto, String(juegoId), ahora, ip)}`, esperaMs: ESPERA_MS };
+function emitir(secreto, juegoId, ip, ahora = Date.now(), via = '') {
+    return { ticket: `${ahora.toString(36)}.${firma(secreto, String(juegoId), ahora, ip, via)}`, esperaMs: ESPERA_MS };
 }
 
 /** → { ok:true } | { ok:false, motivo:'falta'|'invalido'|'vencido'|'pronto', esperaRestante?: s } */
-function verificar(secreto, ticket, juegoId, ip, ahora = Date.now()) {
+function verificar(secreto, ticket, juegoId, ip, ahora = Date.now(), via = '') {
     if (!ticket || typeof ticket !== 'string') return { ok: false, motivo: 'falta' };
     const [t36, f] = ticket.split('.');
     const t = parseInt(t36, 36);
     if (!Number.isFinite(t) || !f) return { ok: false, motivo: 'invalido' };
-    const esperada = firma(secreto, String(juegoId), t, ip);
+    const esperada = firma(secreto, String(juegoId), t, ip, via);
     if (f.length !== esperada.length || !crypto.timingSafeEqual(Buffer.from(f), Buffer.from(esperada))) return { ok: false, motivo: 'invalido' };
     if (t > ahora + 5e3 || ahora - t > VIGENCIA_MS) return { ok: false, motivo: 'vencido' };
     if (ahora - t < ESPERA_MS) return { ok: false, motivo: 'pronto', esperaRestante: Math.ceil((ESPERA_MS - (ahora - t)) / 1000) };

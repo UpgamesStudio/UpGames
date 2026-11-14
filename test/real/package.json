@@ -1,11 +1,12 @@
 {
   "name": "upgames-pruebas-reales",
   "private": true,
-  "description": "Pruebas con el catálogo real y el servidor real. No se despliegan: solo las usan CI y quien las corre a mano.",
+  "description": "Pruebas con el cat\u00e1logo real y el servidor real. No se despliegan: solo las usan CI y quien las corre a mano.",
   "scripts": {
     "portada": "node portada.js",
     "blogs": "node blogs.js",
-    "todo": "node portada.js && node blogs.js"
+    "todo": "node portada.js && node blogs.js && node economia.js",
+    "economia": "node economia.js"
   },
   "devDependencies": {
     "mongodb-memory-server": "10.1.4",

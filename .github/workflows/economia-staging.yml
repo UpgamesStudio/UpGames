@@ -1,0 +1,30 @@
+# Prueba adversarial de la economía contra STAGING (manual o cada noche).
+# NUNCA contra producción: el script escribe datos y se niega a correr contra upgames.games / upgames-production.up.railway.app.
+# Variables del repositorio (Settings → Secrets and variables → Actions → Variables):
+#   STAGING_API       URL del servidor de staging (p. ej. https://upgames-staging.up.railway.app)
+#   STAGING_JUEGO_ID  id de una publicación APROBADA de staging (la prueba le cuenta descargas)
+#   STAGING_JUEGO_ID_2  (opcional) otra publicación aprobada, para probar tickets cruzados
+name: Economía en staging
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+
+jobs:
+  economia:
+    if: ${{ vars.STAGING_API != '' && vars.STAGING_JUEGO_ID != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Ataques a la economía (staging)
+        env:
+          API: ${{ vars.STAGING_API }}
+          JUEGO_ID: ${{ vars.STAGING_JUEGO_ID }}
+          JUEGO_ID_2: ${{ vars.STAGING_JUEGO_ID_2 }}
+          CONFIRMO_STAGING: 'si'
+        run: node test/real/economia.js

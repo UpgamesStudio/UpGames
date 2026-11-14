@@ -37,3 +37,5 @@ jobs:
         run: node test/real/portada.js
       - name: UpGames Blogs de extremo a extremo
         run: node test/real/blogs.js
+      - name: Economía adversarial (saltarse la espera, reciclar IPs y tickets, falsear vistas y descargas de blog)
+        run: node test/real/economia.js

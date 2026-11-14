@@ -270,6 +270,10 @@ async function vistaIngresos() {
       ${b.visibilidad !== 'publico' ? '<p style="color:var(--amber)">Tu blog está oculto: los anuncios solo se muestran en blogs públicos.</p>' : ''}
     </section>
     <div class="cifras"><div class="cifra glass"><b>${usd(d.ingresosMes)}</b><span>Últimos 30 días</span></div><div class="cifra glass"><b>${usd(d.ingresos)}</b><span>Desde siempre</span></div><div class="cifra glass"><b>${num(d.anunciosMes)}</b><span>Anuncios vistos (30 días)</span></div></div>
+    <section class="seccion glass"><h2>${ico('download')} Descargas que generas</h2>
+      <p>Cuando alguien pulsa un bloque <b>Descarga</b> de tus entradas y la descarga es válida, ganas <b style="color:var(--g)">${usd(d.cpmDescargas)}</b> por cada 1.000, <b>aunque tengas la publicidad apagada</b>. Es aparte de lo que cobra el autor del juego. No aplica a tus propios juegos.</p>
+      <div class="cifras"><div class="cifra glass"><b>${usd(d.ingresosDescargasMes)}</b><span>Últimos 30 días</span></div><div class="cifra glass"><b>${usd(d.ingresosDescargas)}</b><span>Desde siempre</span></div><div class="cifra glass"><b>${num(d.descargas)}</b><span>Descargas pagadas</span></div></div>
+    </section>
     <section class="seccion glass"><h2>${ico('shield-checkmark')} Cómo se cuenta</h2>
       <p>Un anuncio cuenta cuando una persona real lo tuvo a la vista unos segundos y no usa bloqueador. Cada visitante cuenta hasta 3 veces al día en tu blog. Las visitas falsas o hechas por ti mismo no pagan y pueden suspender la monetización.</p></section>`;
   $('#monetizar').onchange = async e => {
