@@ -20,7 +20,7 @@
   // ══════════════ 1) BARRA DE BÚSQUEDA ══════════════
   const input = $('buscador'), main = $('main-view'), out = $('output');
   if (input && main && out) {
-    input.placeholder = 'Busca o pregúntale a Nexus: "juegos de carreras para gama baja"…';
+    input.placeholder = 'Busca o pregúntale a Nexus';
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'nxb-btn'; btn.title = 'Buscar con Nexus'; btn.setAttribute('aria-label', 'Buscar con Nexus');
     btn.innerHTML = '<span>✦</span>';
