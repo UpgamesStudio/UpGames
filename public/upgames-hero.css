@@ -1,24 +1,35 @@
 /* ═══════════════════════════════════════════════════════════════
    UpGames · Carrusel principal (rediseño)
    ───────────────────────────────────────────────────────────────
-   • Tarjeta alta y limpia: la portada se ve entera, con un zoom lento la que está activa.
+   • Tarjeta alta y limpia: la portada se ve entera, con un zoom lento la que está activa y los
+     bordes desvanecidos como en «Recomendados para ti».
    • Barras de progreso arriba (como las stories): muestran cuánto falta para la siguiente
      y se pulsan para saltar. Duración = HERO_MS en public/js/02-portada-render.js.
    • Arriba: puesto + categoría + plataforma. Abajo: título grande, creador, cifras y «Ver ahora».
    Va la ÚLTIMA del paquete y con `html #hero-carousel` (selector con id) para ganarle a los
    temas (cyber/neo), que redefinían el título, la insignia y los marcos con !important.
 ═══════════════════════════════════════════════════════════════ */
-html #hero-carousel {
+/* Los temas (cyber/neo) ponen borde y sombra con html[data-tema] #hero-carousel !important: se repite ese mismo selector para ganarles por orden */
+html #hero-carousel,
+html[data-tema] #hero-carousel {
   --hero-ms: 5000ms;
   aspect-ratio: 5 / 4;
   margin: 6px 14px 18px;
   border-radius: 28px !important;
   border: 0 !important;
-  background: #05070c;
-  box-shadow: 0 34px 60px -34px rgba(0, 0, 0, .95), 0 0 0 1px rgba(255, 255, 255, .08) !important;
+  background: transparent !important;   /* sin marco: los bordes de la portada se desvanecen hacia el fondo de la página */
+  box-shadow: none !important;
   isolation: isolate;
 }
 html #hero-carousel::before { content: none !important; background: none !important; }   /* sin esquinas ni tramas de los temas */
+
+/* Desvanecido en los bordes: el mismo de «Recomendados para ti» (.ugc-vp). Solo la imagen y su velo;
+   el texto, las etiquetas y las barras quedan nítidos encima. */
+html #hero-carousel .hero-slide img,
+html #hero-carousel .hero-slide::after {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+}
 
 /* Portada */
 html #hero-carousel .hero-slide img { transform: scale(1); transition: transform 7s cubic-bezier(.2, .6, .2, 1); will-change: transform; }
@@ -78,6 +89,10 @@ html #hero-carousel .hero-arrow { width: 40px; height: 40px; background: rgba(8,
 
 @media (min-width: 900px) {
   html #hero-carousel { aspect-ratio: 16 / 6; border-radius: 32px !important; margin: 8px auto 18px; }
+  html #hero-carousel .hero-slide img, html #hero-carousel .hero-slide::after {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10%, #000 90%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 10%, #000 90%, transparent 100%);
+  }
   html #hero-carousel .hero-dots { top: 18px; left: 28px; right: 28px; }
   .hero-top { top: 38px; left: 28px; right: 28px; }
   html #hero-carousel .hero-info { padding: 0 32px 28px; max-width: 760px; }
