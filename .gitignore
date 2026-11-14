@@ -51,3 +51,7 @@ user_public/
 
 # ========== Otros ==========
 .cache
+
+# graphify: archivos temporales del pipeline (el grafo final sí se versiona)
+graphify-out/.*
+graphify-out/cache/

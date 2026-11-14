@@ -1,0 +1,9 @@
+# Fuera del grafo: herramientas del agente, dependencias y salidas generadas
+plugins/
+.claude/
+node_modules/
+graphify-out/
+**/build/
+**/.gradle/
+**/android/app/src/main/assets/public/
+package-lock.json
