@@ -12,16 +12,25 @@ Es idempotente. Copia las `skills/` de cada plugin a `.claude/skills/`, regenera
 
 Instrucción para Claude: *"Antes de empezar, lee `plugins/README.md` y ejecuta `node plugins/install.js`."*
 
+Solo las 25 skills de agent-skills (más sus 4 agentes y 9 comandos `/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`...):
+
+```
+node plugins/install.js agent-skills
+```
+
+(`node plugins/install.js <plugin> [<plugin> ...]` instala solo los plugins que nombres.)
+
 ## Plugins instalados
 
 | Plugin | Qué hace |
 |---|---|
 | `ponytail` (5.3.3) | Modo "senior perezoso": la solución más pequeña que funcione. `/ponytail lite\|full\|ultra`, `-review`, `-audit`, `-debt`, `-gain`, `-help`. Sin el módulo band (task board/webhook). |
 | `graphify` (0.9.108) | Convierte código, docs e imágenes en un grafo de conocimiento consultable. Skill `/graphify` + CLI `graphify` (se instala en `~/.local/bin`; usa `export PATH=$HOME/.local/bin:$PATH`). `plugins/graphify/self-graph/` es el grafo de graphify sobre sí mismo (`graphify explain "X" --graph plugins/graphify/self-graph/graph.json`). No se instalan los hooks PreToolUse de graphify. |
+| `agent-skills` (0.6.16) | 25 skills de ingeniería (spec, plan, TDD, revisión, seguridad, rendimiento, CI/CD, lanzamiento...), 4 agentes (code-reviewer, security-auditor, test-engineer, web-performance-auditor) y 9 comandos `/spec /plan /build /test /review /code-simplify /constraints /webperf /ship`. Sin sus hooks (Claude Code ya enruta skills por descripción). |
 
 ## Añadir un plugin nuevo
 
-1. Crea `plugins/<nombre>/` con `skills/<skill>/SKILL.md` y/o `hooks/` + `hooks.json`.
+1. Crea `plugins/<nombre>/` con `skills/<skill>/SKILL.md` (y opcional `references/`, `agents/`, `commands/`) y/o `hooks/` + `hooks.json`.
 2. Si trae una CLI, añade un `install.sh` idempotente.
 3. En `hooks.json` usa el formato de `settings.json` (`{ "Evento": [...] }`) y `{{DIR}}` para la ruta del plugin.
 4. Ejecuta `node plugins/install.js`, añade una fila a la tabla y haz commit de `plugins/` y `.claude/`.
