@@ -1,8 +1,9 @@
 // Instala TODOS los plugins de plugins/*/ en este repo (idempotente).
 //   skills/<x>/SKILL.md  -> .claude/skills/<x>/
+//   install.sh           -> se ejecuta si existe (p. ej. pip install de una CLI)
 //   hooks.json           -> se mezcla en .claude/settings.json ({{DIR}} = ruta del plugin)
 // Uso: node plugins/install.js
-const fs = require('fs'), path = require('path');
+const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const claude = path.join(root, '.claude');
 const settingsPath = path.join(claude, 'settings.json');
@@ -19,6 +20,7 @@ for (const name of fs.readdirSync(__dirname)) {
     const txt = fs.readFileSync(hj, 'utf8').split('{{DIR}}').join('$CLAUDE_PROJECT_DIR/plugins/' + name);
     for (const [ev, list] of Object.entries(JSON.parse(txt))) (hooks[ev] ||= []).push(...list);
   }
+  if (fs.existsSync(path.join(dir, 'install.sh'))) execFileSync('bash', [path.join(dir, 'install.sh')], { stdio: 'inherit' });
   console.log('instalado:', name);
 }
 settings.hooks = hooks;
