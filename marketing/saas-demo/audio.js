@@ -55,9 +55,10 @@ const ffmpeg = args => new Promise((ok, no) => { const p = spawn('ffmpeg', ['-y'
 async function mezclar(dur, cues, video, salida) {
   const wav = salida.replace(/\.mp4$/, '.sfx.wav');
   sintetizar(dur, cues, wav);
-  // sin música: efectos con un poco de sala (eco corto) y normalizados; fundido de salida al final
+  // sin música: efectos con un poco de sala (eco corto). Se normaliza por tramos (dynaudnorm) y no con loudnorm: son sonidos
+  // sueltos separados por silencio y loudnorm exige tanta ganancia que se desborda; así cada clic se oye al mismo nivel.
   await ffmpeg(['-i', video, '-i', wav, '-filter_complex',
-    `[1:a]aecho=0.85:0.5:42|71:0.2|0.12,highpass=f=40,loudnorm=I=-17:TP=-1.5:LRA=9,afade=t=out:st=${dur - .8}:d=.8,aresample=48000[a]`,
+    `[1:a]aecho=0.85:0.5:42|71:0.2|0.12,highpass=f=40,dynaudnorm=f=250:g=9:p=0.8:m=6,afade=t=out:st=${dur - .8}:d=0.8,aresample=48000,alimiter=limit=0.85:level=disabled:attack=2:release=60[a]`,
     '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-t', String(dur), '-movflags', '+faststart', salida]);
   fs.unlinkSync(wav);
 }

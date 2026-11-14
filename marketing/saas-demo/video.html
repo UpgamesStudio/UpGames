@@ -289,7 +289,7 @@ sfx(42.5, 'exito', 1); [42.7, 42.85, 43.0].forEach((t, i) => sfx(t, 'moneda', .8
 
 /* ─ Cierre ─ */
 const URLT = 'upgames.games'; const UT0 = 47.4; for (let i = 0; i < URLT.length; i++) sfx(UT0 + i * .06, 'tecla', .5, 1 + (i % 3) * .05);
-sfx(.35, 'golpe', .9); sfx(2.05, 'whoosh', .55);
+sfx(.35, 'golpe', .5); sfx(2.05, 'whoosh', .4);
 sfx(T_.out, 'whoosh', .5, .8);
 sfx(45.8, 'golpe', .5, 1.3); [46.15, 46.55, 47.0].forEach((t, i) => sfx(t, 'pop', .5, 1 + i * .1));
 const CLK_END = 48.7, CTA = () => ctr($('cta')); go(43.1, 43.2, () => [CTA()[0] + 260, CTA()[1] + 220]); go(48.0, 48.6, () => [CTA()[0] + 40, CTA()[1] + 10]); click(CLK_END, 1); sfx(CLK_END + .05, 'exito', .6, 1.1);

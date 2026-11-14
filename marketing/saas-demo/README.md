@@ -19,7 +19,7 @@ Vista previa en Chrome: `video.html?play` (tiempo real) o `video.html?t=21.9` (u
 
 - `video.html` — la app y todas las escenas. Todo se calcula en `render(t)`: cada fotograma es exacto y reproducible. La línea de tiempo (cursor, clics, escritura, cámara) está declarada arriba del script con `go()`, `click()`, `typing()` y `sfx()`.
 - `render.js` — graba cuadro a cuadro con Chromium y codifica con ffmpeg.
-- `audio.js` — sintetiza todos los efectos en el instante que cada acción los pide (`sfx(t, nombre, ganancia, tono)`) y los mezcla con un poco de sala. **No usa ninguna pista de música.**
+- `audio.js` — sintetiza todos los efectos en el instante que cada acción los pide (`sfx(t, nombre, ganancia, tono)`) y los mezcla con un poco de sala, normalizados por tramos (−18 LUFS, pico −1,6 dBFS). **No usa ninguna pista de música.**
 - El logo se toma de `../saas/logo.png`.
 
 ## Hoja de tiempos
