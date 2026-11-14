@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    UpGames · Experiencia de la portada y de la ficha
    ───────────────────────────────────────────────────────────────
-   • Filas en la portada: "Más descargados esta semana", "Nuevos"
-     y "Para Android" (scroll horizontal), antes del catálogo completo.
+   • Filas en la portada: "Más descargados esta semana", "Nuevos",
+     "Recomendados para ti" y "Del blog de los creadores" (scroll horizontal), antes del catálogo completo.
    • Guía de instalación: la escribe QUIEN PUBLICA (texto paso a paso
      y/o un video tutorial suyo ya publicado en UpGames). UpGames no la
      redacta: solo la muestra en la ficha bajo "Cómo instalarlo".
@@ -26,11 +26,6 @@
   }
 
   // ── Filas de la portada ──
-  const esAndroid = i => {
-    const ex = i.extraData || {};
-    if (/android/i.test(`${ex.plataforma || ''} ${ex.so || ''}`)) return true;
-    return /\b(android|apk|obb|winlator|gamehub|m[óo]vil|mobile)\b/i.test(`${i.title} ${(i.tags || []).join(' ')}`);
-  };
   function fila(titulo, sub, items, clase, min = 3) {
     if (typeof createTile !== 'function' || items.length < min) return null;
     const sec = document.createElement('section');
@@ -111,44 +106,9 @@
     try { const d = await (await fetch(`${API}/megusta/mios`, { headers: { Authorization: `Bearer ${t}` } })).json(); if (d?.success) { guardarIds('ug_megusta', d.ids); sessionStorage.setItem('ug_mg_ok', '1'); } } catch (_) {}
   })();
 
-  // ── Historial: "Continúa donde lo dejaste" (solo en este teléfono, sin cuenta) ──
-  const HIST = 'ug_historial';
-  const leerHist = () => { try { const h = JSON.parse(localStorage.getItem(HIST) || '[]'); return Array.isArray(h) ? h : []; } catch (_) { return []; } };
-  function guardarEnHistorial(it) {
-    if (!it || !it._id) return;
-    const ex = it.extraData || {};
-    const min = { _id: it._id, title: it.title, image: it.image, category: it.category, usuario: it.usuario, linkStatus: it.linkStatus,
-      descargasEfectivas: it.descargasEfectivas || 0, likesCount: it.likesCount || 0, vistas: it.vistas || 0, createdAt: it.createdAt, updatedAt: it.updatedAt,
-      videoType: it.videoType, link: it.category === 'Video' ? it.link : undefined,
-      extraData: { plataforma: ex.plataforma, so: ex.so, size: ex.size, version: ex.version, 'juego-base': ex['juego-base'], duracion: ex.duracion }, t: Date.now() };
-    const h = [min, ...leerHist().filter(x => x._id !== it._id)].slice(0, 24);
-    try { localStorage.setItem(HIST, JSON.stringify(h)); } catch (_) {}
-  }
-  addEventListener('ug:detalle', e => { const it = buscarItem(e.detail); guardarEnHistorial(it); elegir(it, 'v'); });
-  function filaHistorial() {
-    const h = leerHist(); if (!h.length) return null;
-    const frescos = typeof todosLosItems !== 'undefined' ? new Map(todosLosItems.map(i => [i._id, i])) : new Map();
-    let desc; try { desc = new Set(JSON.parse(localStorage.getItem('ug_descargadas') || '[]')); } catch (_) { desc = new Set(); }
-    const items = h.map(x => frescos.get(x._id) || x).filter(i => i.linkStatus !== 'caido').slice(0, 12);
-    const sec = fila('⏯ Continúa donde lo dejaste', null, items, 'ugx-fila--hist', 1);
-    if (!sec) return null;
-    sec.querySelectorAll('.game-tile').forEach(t => { if (desc.has(t.dataset.id)) t.classList.add('ugx-descargado'); });
-    const borrar = document.createElement('button');
-    borrar.type = 'button'; borrar.className = 'ugx-fila-borrar'; borrar.textContent = 'Borrar';
-    borrar.setAttribute('aria-label', 'Borrar historial de este teléfono');
-    borrar.onclick = () => { try { localStorage.removeItem(HIST); } catch (_) {} sec.remove(); };
-    sec.querySelector('.ugx-fila-h').appendChild(borrar);
-    return sec;
-  }
-
-  // Al cerrar una ficha, la fila del historial se actualiza sin repintar el catálogo
-  addEventListener('ug:detalle-cerrado', () => {
-    const out = document.getElementById('output'); if (!out || !out.querySelector('.ugx-fila')) return;
-    const nueva = filaHistorial(); if (!nueva) return;
-    const vieja = out.querySelector('.ugx-fila--hist');
-    if (vieja) vieja.replaceWith(nueva); else out.querySelector('.ugx-fila')?.before(nueva);
-    window.UGX?.estilizarTiles?.(nueva);
-  });
+  // El historial «Continúa donde lo dejaste» ya no existe: se borra el que quedó guardado en este teléfono
+  try { localStorage.removeItem('ug_historial'); } catch (_) {}
+  addEventListener('ug:detalle', e => { elegir(buscarItem(e.detail), 'v'); });
 
   // ── Blogs de los creadores: lo último publicado en UpGames Blogs (se pide una vez por visita) ──
   let blogsRecientes = null, blogsPedido = null;
@@ -330,16 +290,13 @@
 
   /** Agrega las filas a `frag` (antes del catálogo). Devuelve cuántas se agregaron. */
   function filas(frag, lista) {
-    const hist = filaHistorial();
-    if (hist) frag.appendChild(hist);
     const base = lista.filter(i => i.category !== 'Video');
-    if (base.length < 8) return hist ? 1 : 0;
+    if (base.length < 8) return 0;
     const top = [...base].filter(i => (i.descargasSemana || 0) > 0).sort((a, b) => b.descargasSemana - a.descargasSemana).slice(0, 12);
     const hayTopSemana = top.length >= 3;
     const masDesc = hayTopSemana ? top : [...base].filter(i => i.descargasEfectivas > 0).sort((a, b) => b.descargasEfectivas - a.descargasEfectivas).slice(0, 12);
     const nuevos = [...base].filter(i => i.createdAt && Date.now() - new Date(i.createdAt) < 45 * DIA)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 12);
-    const android = base.filter(esAndroid).sort((a, b) => (b.descargasSemana || 0) - (a.descargasSemana || 0) || (b.descargasEfectivas || 0) - (a.descargasEfectivas || 0)).slice(0, 12);
     // Recomendados: lo que Nexus ya puso arriba en el orden de este usuario, sin repetir lo de las filas de arriba
     const yaEnFilas = new Set([...masDesc, ...nuevos].map(i => i._id));
     const conPortada = base.filter(i => i.image && !/\.(mp4|webm|mov)(\?|$)/i.test(i.image));
@@ -349,13 +306,12 @@
       fila(hayTopSemana ? '🔥 Más descargados esta semana' : '🔥 Más descargados', hayTopSemana ? 'Lo que más baja la comunidad estos 7 días' : 'Lo favorito de la comunidad', masDesc, 'ugx-fila--top'),
       fila('🆕 Nuevos', 'Recién publicados', nuevos),
       filaCarrusel(recomFinal),   // dos filas por debajo del carrusel principal, para que no compitan
-      fila('📱 Para Android', 'Juegos, mods y apps para tu móvil', android),
       filaBlogs(),
     ].filter(Boolean);
     pedirBlogs();
     secs.forEach(s => frag.appendChild(s));
-    if (secs.length || hist) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
-    return secs.length + (hist ? 1 : 0);
+    if (secs.length) requestAnimationFrame(() => window.UGX?.estilizarTiles?.(document.getElementById('output')));
+    return secs.length;
   }
 
   // ── Guía de instalación: formulario (publicar y editar) ──

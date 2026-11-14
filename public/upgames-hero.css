@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════
+   UpGames · Carrusel principal (rediseño)
+   ───────────────────────────────────────────────────────────────
+   • Tarjeta alta y limpia: la portada se ve entera, con un zoom lento la que está activa.
+   • Barras de progreso arriba (como las stories): muestran cuánto falta para la siguiente
+     y se pulsan para saltar. Duración = HERO_MS en public/js/02-portada-render.js.
+   • Arriba: puesto + categoría + plataforma. Abajo: título grande, creador, cifras y «Ver ahora».
+   Va la ÚLTIMA del paquete y con `html #hero-carousel` (selector con id) para ganarle a los
+   temas (cyber/neo), que redefinían el título, la insignia y los marcos con !important.
+═══════════════════════════════════════════════════════════════ */
+html #hero-carousel {
+  --hero-ms: 5000ms;
+  aspect-ratio: 5 / 4;
+  margin: 6px 14px 18px;
+  border-radius: 28px !important;
+  border: 0 !important;
+  background: #05070c;
+  box-shadow: 0 34px 60px -34px rgba(0, 0, 0, .95), 0 0 0 1px rgba(255, 255, 255, .08) !important;
+  isolation: isolate;
+}
+html #hero-carousel::before { content: none !important; background: none !important; }   /* sin esquinas ni tramas de los temas */
+
+/* Portada */
+html #hero-carousel .hero-slide img { transform: scale(1); transition: transform 7s cubic-bezier(.2, .6, .2, 1); will-change: transform; }
+html #hero-carousel .hero-slide.is-on img { transform: scale(1.08); }
+html #hero-carousel .hero-slide::after {
+  background: linear-gradient(180deg, rgba(4, 6, 12, .6) 0%, rgba(4, 6, 12, 0) 24%, rgba(4, 6, 12, 0) 36%, rgba(4, 6, 12, .74) 68%, rgba(4, 6, 12, .96) 100%) !important;
+}
+
+/* Barras de progreso */
+html #hero-carousel .hero-dots { top: 13px; bottom: auto; left: 16px; right: 16px; gap: 5px; }
+html #hero-carousel .hero-dot {
+  position: relative; flex: 1; width: auto !important; height: 3px; border-radius: 3px !important;
+  background: rgba(255, 255, 255, .28) !important; box-shadow: none !important; cursor: pointer;
+}
+html #hero-carousel .hero-dot::before { content: ''; position: absolute; inset: -12px 0; }   /* zona de toque cómoda */
+html #hero-carousel .hero-dot::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--g), var(--cy)); transform: scaleX(0); transform-origin: left center;
+}
+html #hero-carousel .hero-dot.active { background: rgba(255, 255, 255, .28) !important; width: auto !important; }
+html #hero-carousel .hero-dot.active::after { animation: heroLlena var(--hero-ms) linear forwards; }
+@keyframes heroLlena { to { transform: scaleX(1); } }
+
+/* Etiquetas de arriba */
+.hero-top { position: absolute; top: 30px; left: 16px; right: 16px; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+html #hero-carousel .hero-badge {
+  margin: 0 !important; padding: 7px 12px !important; border: 0 !important; border-radius: 999px !important; clip-path: none !important;
+  background: linear-gradient(120deg, var(--g), var(--cy)) !important; color: #04140a !important;
+  font: 800 .66rem/1 var(--ff-disp) !important; letter-spacing: .08em !important; text-transform: uppercase !important;
+  box-shadow: 0 10px 24px -10px rgba(var(--g-rgb), .85) !important;
+}
+html #hero-carousel .hero-badge--video { background: rgba(var(--cy-rgb), .22) !important; color: #fff !important; border: 1px solid rgba(var(--cy-rgb), .55) !important; box-shadow: none !important; }
+html #hero-carousel .hero-chip {
+  padding: 7px 11px; border-radius: 999px; background: rgba(8, 10, 16, .58); border: 1px solid rgba(255, 255, 255, .18);
+  color: #fff; font: 700 .64rem/1 var(--ff-mono); letter-spacing: .08em; text-transform: uppercase;
+}
+
+/* Texto de abajo */
+html #hero-carousel .hero-info { padding: 0 18px 18px; }
+html #hero-carousel .hero-title {
+  font-size: clamp(1.35rem, 6.2vw, 1.85rem) !important; line-height: 1.06 !important; letter-spacing: .01em !important;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, .75) !important; margin: 0;
+}
+html #hero-carousel .hero-meta { flex-wrap: wrap; gap: 8px 14px; margin-top: 11px; }
+html #hero-carousel .hero-user { color: rgba(255, 255, 255, .9) !important; font-size: .78rem; }
+html #hero-carousel .hero-dl { color: rgba(255, 255, 255, .8) !important; font-size: .74rem; background: none !important; border: 0 !important; padding: 0 !important; }
+html #hero-carousel .hero-cta {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px; border-radius: 999px;
+  background: #fff; color: #07120c; font: 800 .7rem/1 var(--ff-disp); letter-spacing: .06em; text-transform: uppercase;
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, .8); transition: transform .25s;
+}
+html #hero-carousel .hero-cta ion-icon { font-size: .95rem; }
+html #hero-carousel:active .hero-cta { transform: scale(.96); }
+
+/* Flechas (solo ratón) */
+html #hero-carousel .hero-arrow { width: 40px; height: 40px; background: rgba(8, 10, 16, .55) !important; border: 1px solid rgba(255, 255, 255, .2) !important; }
+
+@media (min-width: 900px) {
+  html #hero-carousel { aspect-ratio: 16 / 6; border-radius: 32px !important; margin: 8px auto 18px; }
+  html #hero-carousel .hero-dots { top: 18px; left: 28px; right: 28px; }
+  .hero-top { top: 38px; left: 28px; right: 28px; }
+  html #hero-carousel .hero-info { padding: 0 32px 28px; max-width: 760px; }
+  html #hero-carousel .hero-title { font-size: 2.3rem !important; }
+  html #hero-carousel .hero-slide::after {
+    background: linear-gradient(90deg, rgba(4, 6, 12, .92) 0%, rgba(4, 6, 12, .55) 42%, rgba(4, 6, 12, 0) 70%), linear-gradient(0deg, rgba(4, 6, 12, .7) 0%, rgba(4, 6, 12, 0) 45%), linear-gradient(180deg, rgba(4, 6, 12, .6) 0%, rgba(4, 6, 12, 0) 24%) !important;
+  }
+  html #hero-carousel .hero-meta { margin-top: 14px; }
+  html #hero-carousel .hero-cta { margin-left: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html #hero-carousel .hero-slide img, html #hero-carousel .hero-slide.is-on img { transition: none; transform: none; }
+  html #hero-carousel .hero-dot.active::after { animation: none; transform: scaleX(1); }
+}

@@ -73,6 +73,18 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
     if (f !== '(cerrada)') { await p.goBack(); await espera(600); }
   }
 
+  C.seccion('Carrusel principal: diseño y filas retiradas');
+  const dis = await p.evaluate(() => { const c = document.getElementById('hero-carousel'), d = [...c.querySelectorAll('.hero-dot')], sl = [...c.querySelectorAll('.hero-slide')];
+    return { barras: d.length, activas: d.filter(x => x.classList.contains('active')).length, enMarcha: !!d.find(x => x.classList.contains('active')) && getComputedStyle(d.find(x => x.classList.contains('active')), '::after').animationName,
+      slides: sl.length, conCta: sl.every(x => x.querySelector('.hero-cta') && x.querySelector('.hero-top .hero-badge')), enfocadas: sl.filter(x => x.classList.contains('is-on')).length, alto: c.getBoundingClientRect().height, ancho: c.getBoundingClientRect().width }; });
+  C.prueba('una barra de progreso por entrada y solo una activa, con su animación', dis.barras === dis.slides && dis.activas === 1 && dis.enMarcha === 'heroLlena', JSON.stringify(dis));
+  C.prueba('cada entrada trae su puesto y el botón «Ver ahora»', dis.conCta, JSON.stringify(dis));
+  C.prueba('solo la portada que se ve tiene el zoom', dis.enfocadas === 1, String(dis.enfocadas));
+  C.prueba('la tarjeta es alta (se ve la portada, no una franja)', dis.alto / dis.ancho > .7, `${Math.round(dis.alto)}×${Math.round(dis.ancho)}`);
+  const filasTit = await p.evaluate(() => [...document.querySelectorAll('.ugx-fila h2, .section-title')].map(e => e.textContent.trim()).join(' | '));
+  C.prueba('ya no hay fila «Continúa donde lo dejaste»', !/contin[uú]a donde/i.test(filasTit), filasTit);
+  C.prueba('ya no hay fila «Para Android»', !/para android/i.test(filasTit), filasTit);
+
   C.seccion('Ficha de la publicación');
   const item = await p.evaluate(() => { const it = todosLosItems.find(i => i.category !== 'Video' && i.image); openDetail(it); return { id: it._id, t: it.title }; });
   await espera(1500);

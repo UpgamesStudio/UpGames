@@ -34,7 +34,9 @@ function requerir(nombre) {
 async function navegador() {
   const { chromium } = requerir('playwright');
   const px = process.env.HTTPS_PROXY || process.env.https_proxy;
-  return chromium.launch(px ? { proxy: { server: px, bypass: 'localhost,127.0.0.1' } } : {});
+  const opciones = px ? { proxy: { server: px, bypass: 'localhost,127.0.0.1' } } : {};
+  if (process.env.CHROMIUM_PATH) opciones.executablePath = process.env.CHROMIUM_PATH;   // navegador ya instalado (otra versión de Playwright)
+  return chromium.launch(opciones);
 }
 
 function contador(titulo) {
