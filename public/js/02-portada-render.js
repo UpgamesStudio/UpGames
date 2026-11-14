@@ -6,6 +6,7 @@ let heroIdx = 0;
 let heroTimer = null;
 let heroTouchStartX = 0;
 let heroAutoplayPaused = false;
+let heroUltimoGesto = 0;   // último deslizamiento: el «click» que lo sigue no abre nada
 
 function initHeroCarousel(items, isVideoMode) {
   // En modo video: top 10 más vistos. En modo normal: primeros 6
@@ -65,8 +66,10 @@ function initHeroCarousel(items, isVideoMode) {
         </div>
       </div>`;
 
-    // Click: video mode abre player inline en el output grid, normal abre detail
+    // Click: se abre la entrada que se VE (heroIdx), no la que pase bajo el dedo durante el deslizamiento
     slide.addEventListener('click', () => {
+      if(Date.now() - heroUltimoGesto < 450) return;   // el toque era parte de un deslizamiento o llegó a mitad del cambio
+      const item = heroItems[heroIdx] || heroItems[i];
       if(isVideoMode) {
         const tileEl = document.querySelector(`.game-tile--video[data-id="${item._id}"]`);
         if(tileEl) {
@@ -95,23 +98,24 @@ function initHeroCarousel(items, isVideoMode) {
   document.getElementById('hero-prev').onclick = (e) => { e.stopPropagation(); heroPrev(); };
   document.getElementById('hero-next').onclick = (e) => { e.stopPropagation(); heroNext(); };
 
-  // Swipe táctil
+  // Swipe táctil: se registra UNA sola vez. Antes se sumaba un par de oyentes en cada repintado de la
+  // portada y un deslizamiento saltaba 2, 3 o 4 entradas (y un toque abría otra publicación).
+  if(carousel.dataset.gestos) return;
+  carousel.dataset.gestos = '1';
   carousel.addEventListener('touchstart', e => {
     heroTouchStartX = e.touches[0].clientX;
     heroAutoplayPaused = true;
   }, {passive:true});
   carousel.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - heroTouchStartX;
-    if(Math.abs(dx) > 40) { dx < 0 ? heroNext() : heroPrev(); }
+    if(Math.abs(dx) > 40) { heroUltimoGesto = Date.now(); dx < 0 ? heroNext() : heroPrev(); }
     setTimeout(() => { heroAutoplayPaused = false; }, 3000);
   }, {passive:true});
-  
-  // Pausar al tocar
-  carousel.addEventListener('touchstart', () => { heroAutoplayPaused = true; }, {passive:true});
 }
 
 function heroGoTo(idx) {
   heroIdx = ((idx % heroItems.length) + heroItems.length) % heroItems.length;
+  heroUltimoGesto = Date.now();   // durante la transición (.55 s) el toque no abre la entrada que va pasando
   document.getElementById('hero-track').style.transform = `translateX(-${heroIdx * 100}%)`;
   document.querySelectorAll('.hero-dot').forEach((d,i) => d.classList.toggle('active', i===heroIdx));
 }

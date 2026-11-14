@@ -330,6 +330,8 @@ function openDetail(item) {
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();postComment(item._id);}
   };
 
+  fichaTienda(item, ls, isVideoItem);
+
   // Open sheet
   document.getElementById('detail-overlay').classList.add('show');
   document.getElementById('detail-sheet').classList.add('open');
@@ -355,6 +357,71 @@ function openDetail(item) {
     // Punto 6: escuchar evento ended en el video inyectado o iframe
     setTimeout(() => { attachAutoplayListener(item); }, 800);
   }
+}
+
+// ── Ficha estilo tienda (portada a sangre teñida, título centrado, valoración real,
+//    panel de cristal con «Gratis» + Obtener link + Favorito, y fila de datos) ─────
+function fichaTienda(item, ls, isVideoItem) {
+  const sheet = document.getElementById('detail-sheet'), scroll = sheet?.querySelector('.sheet-scroll');
+  if (!sheet || !scroll) return;
+  sheet.classList.add('ds-tienda');
+  // La «X» flota sobre la portada (como el «atrás» de la tienda): pasa a ser hija directa de la hoja
+  const cerrar = document.getElementById('ds-close'); if (cerrar && cerrar.parentNode !== sheet) sheet.appendChild(cerrar);
+  // Tinte: color dominante de la portada (o uno estable por publicación mientras carga)
+  sheet.style.setProperty('--dsh', window.UGMatiz ? window.UGMatiz(item._id) : 150);
+  const portada = typeof cldOpt === 'function' ? cldOpt(item.image || '', 'c_limit,w_32,q_auto,f_auto') : item.image;
+  const pedido = item._id; sheet.dataset.tono = pedido;
+  window.UGTono?.(portada, h => { if (sheet.dataset.tono === pedido) sheet.style.setProperty('--dsh', h); });
+
+  // Bloque nuevo, creado una vez: valoración, panel de compra y fila de datos
+  let caja = document.getElementById('ds-tienda');
+  if (!caja) {
+    caja = document.createElement('div');
+    caja.id = 'ds-tienda';
+    caja.innerHTML = `<div class="dst-val" id="dst-val"></div>
+      <div class="dst-panel">
+        <div class="dst-precio"><strong>Gratis</strong><small id="dst-precio-sub">Sin cuenta ni tarjeta</small></div>
+        <div class="dst-acc" id="dst-acc"><button type="button" class="dst-fav" id="dst-fav" aria-label="Guardar en favoritos"><ion-icon name="heart-outline"></ion-icon></button></div>
+      </div>
+      <div class="dst-chips" id="dst-chips" role="list"></div>`;
+    document.getElementById('ds-author').after(caja);
+    // El botón de favoritos de la ficha sigue siendo la fuente de verdad: este lo refleja
+    const orig = document.getElementById('ds-btn-fav');
+    const reflejar = () => { const on = orig.classList.contains('fav-active'); const b = document.getElementById('dst-fav'); b.classList.toggle('on', on); b.querySelector('ion-icon').setAttribute('name', on ? 'heart' : 'heart-outline'); };
+    new MutationObserver(reflejar).observe(orig, { attributes: true, childList: true, subtree: true });
+    document.getElementById('dst-fav').onclick = () => orig.click();
+  }
+  // El botón de descarga de siempre (con su enlace a la página puente) pasa al panel
+  const dl = document.getElementById('ds-download'), acc = document.getElementById('dst-acc');
+  if (dl && dl.parentNode !== acc) acc.insertBefore(dl, acc.firstChild);
+  if (dl && !isVideoItem) dl.innerHTML = '<ion-icon name="cloud-download-outline"></ion-icon> Obtener link';
+  document.getElementById('dst-precio-sub').textContent = isVideoItem ? 'Míralo aquí mismo' : 'Sin cuenta ni tarjeta';
+  document.getElementById('dst-fav').classList.toggle('solo', !!isVideoItem);
+  const orig = document.getElementById('ds-btn-fav'), on = orig?.classList.contains('fav-active');
+  const fb = document.getElementById('dst-fav'); fb.classList.toggle('on', !!on); fb.querySelector('ion-icon').setAttribute('name', on ? 'heart' : 'heart-outline');
+
+  // Valoración real (reseñas con estrellas); sin reseñas, datos reales de uso
+  const r = item.resenas, val = document.getElementById('dst-val');
+  const dls = item.descargasEfectivas || 0, nfx = n => (typeof fmt === 'function' ? fmt(n) : String(n));
+  if (r && r.n) {
+    const p = +r.promedio || 0;
+    val.innerHTML = `<b>${p >= 4.2 ? 'Muy positivas' : p >= 3.5 ? 'Mayormente positivas' : 'Opiniones mixtas'}</b><small>★ ${p.toFixed(1).replace('.', ',')} · ${nfx(r.n)} reseña${r.n === 1 ? '' : 's'}</small>`;
+  } else {
+    const nuevo = Date.now() - new Date(item.createdAt || 0) < 30 * 864e5;
+    val.innerHTML = `<b>${nuevo ? 'Recién llegado' : 'Sin reseñas todavía'}</b><small>${isVideoItem ? '' : dls ? `${nfx(dls)} descarga${dls === 1 ? '' : 's'}` : 'Sé de los primeros en probarlo'}</small>`;
+  }
+  // Fila de datos (como las etiquetas de la tienda): estado del enlace, categoría y números reales
+  const est = ls === 'online' ? ['ok', 'Enlace activo'] : ls === 'revision' ? ['rev', 'En revisión'] : ['mal', 'Enlace caído'];
+  const upd = item.updatedAt || item.createdAt, dias = upd ? Math.floor((Date.now() - new Date(upd)) / 864e5) : null;
+  const chips = [
+    isVideoItem ? null : `<span class="dst-chip dst-${est[0]}" role="listitem"><i></i>${est[1]}</span>`,
+    `<span class="dst-chip" role="listitem">${escH(item.category || 'General')}</span>`,
+    isVideoItem ? null : `<span class="dst-chip" role="listitem"><ion-icon name="cloud-download-outline"></ion-icon>${nfx(dls)}</span>`,
+    `<span class="dst-chip" role="listitem"><ion-icon name="heart-outline"></ion-icon>${nfx(item.likesCount || 0)}</span>`,
+    dias == null ? null : `<span class="dst-chip" role="listitem">${dias === 0 ? 'Actualizado hoy' : dias === 1 ? 'Actualizado ayer' : `Actualizado hace ${dias} días`}</span>`,
+  ].filter(Boolean);
+  document.getElementById('dst-chips').innerHTML = chips.join('');
+  sheet.classList.toggle('dst-aviso', ls !== 'online' && !isVideoItem);   // en revisión o caído, el aviso grande sigue visible
 }
 
 // ── Renderiza la entrada destacada en el detail sheet ─────

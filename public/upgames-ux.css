@@ -334,3 +334,64 @@ html[data-tema="cyber"] .ucx, html[data-tema="cyber"] .ucx-tuyo, html[data-tema=
 @media (min-width: 700px) { .ugc { --w: 300px; } .ugc-vp { margin: 0; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 78%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 78%, transparent 100%); } .ugc-h { text-align: center; } }
 @media (prefers-reduced-motion: reduce) { .ugc-card, .ugc-card-bg, .ugc-card-panel { transition: none !important; } }
 @supports not (backdrop-filter: blur(1px)) { .ugc-card-panel, .ugc-chip { background: rgba(20,26,44,.82); } }
+
+/* ═══════════════════════════════════════════════════════════════
+   Ficha de publicación estilo tienda (referencia: ficha de Google Play) + cristal
+   Portada teñida con el color dominante (--dsh), título centrado, valoración real,
+   panel de cristal con «Gratis» + Obtener link + Favorito, y fila de datos.
+   Va con !important donde los temas (cyber/neo) fijan estilos con !important.
+═══════════════════════════════════════════════════════════════ */
+#detail-sheet.ds-tienda { --dsh: 150; background: hsl(var(--dsh) 45% 7%) !important; }
+#detail-sheet.ds-tienda .sheet-media { margin: 8px 8px 0 !important; border-radius: 22px !important; aspect-ratio: 16 / 10; }
+#detail-sheet.ds-tienda .sheet-media-overlay { background: linear-gradient(180deg, rgba(0,0,0,.28) 0, transparent 30%, transparent 55%, hsl(var(--dsh) 50% 9% / .92) 100%) !important; }
+#detail-sheet.ds-tienda .sheet-scroll { background: linear-gradient(180deg, hsl(var(--dsh) 48% 9%) 0, hsl(var(--dsh) 40% 7%) 340px, var(--bg1) 760px); padding-top: 4px; }
+/* Título centrado bajo la portada, como en la tienda */
+#detail-sheet.ds-tienda .sheet-header { justify-content: center; text-align: center; margin: 10px 0 4px; }
+#detail-sheet.ds-tienda .sheet-title-area { flex: 0 1 auto; max-width: 100%; }
+#detail-sheet.ds-tienda .sheet-cat { text-align: center; color: hsl(var(--dsh) 85% 72%) !important; font-family: 'JetBrains Mono', 'Share Tech Mono', ui-monospace, monospace; letter-spacing: .14em; }
+#detail-sheet.ds-tienda .sheet-title { text-align: center; font-size: clamp(1.45rem, 6.4vw, 2rem) !important; line-height: 1.08 !important; letter-spacing: -.02em; text-wrap: balance; }
+#detail-sheet.ds-tienda > .sheet-close { position: absolute !important; top: 30px; right: 20px; z-index: 6; width: 40px !important; height: 40px !important; border-radius: 50% !important; clip-path: none !important;
+  background: rgba(10,14,22,.42) !important; backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); color: #fff !important; border: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), inset 0 1px 0 rgba(255,255,255,.25) !important; }
+/* Autor: una línea centrada (el perfil se sigue abriendo al tocar) */
+#detail-sheet.ds-tienda .sheet-author { justify-content: center; background: none !important; border: 0 !important; box-shadow: none !important; padding: 2px 0 !important; margin: 0 auto 2px !important; width: max-content; max-width: 100%; gap: 8px; }
+#detail-sheet.ds-tienda .sheet-author .author-avatar { width: 26px !important; height: 26px !important; font-size: .75rem !important; }
+#detail-sheet.ds-tienda .sheet-author .author-sub, #detail-sheet.ds-tienda .sheet-author .author-arrow { display: none !important; }
+#detail-sheet.ds-tienda .sheet-author .author-name { font-size: .95rem; color: rgba(230,238,251,.85); }
+/* Los datos pasan a la fila de etiquetas; el aviso grande solo si el enlace está en revisión o caído */
+#detail-sheet.ds-tienda .sheet-stats { display: none !important; }
+#detail-sheet.ds-tienda:not(.dst-aviso) #ds-status { display: none !important; }
+#detail-sheet.ds-tienda.dst-aviso #ds-status { margin-top: 12px; }
+
+#ds-tienda { margin: 6px 0 4px; }
+#detail-sheet.ds-tienda .sheet-desc { margin-top: 14px; }
+.dst-val { display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center; margin-bottom: 14px; }
+.dst-val b { font-size: 1.05rem; font-weight: 700; color: hsl(var(--dsh) 90% 70%); letter-spacing: -.01em; }
+.dst-val small { font-size: .8rem; color: rgba(230,238,251,.62); }
+.dst-val small:empty { display: none; }
+.dst-panel { padding: 16px; border-radius: 26px; display: grid; gap: 14px;
+  background: linear-gradient(180deg, hsl(var(--dsh) 55% 32% / .32), hsl(var(--dsh) 55% 16% / .22));
+  backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: inset 0 0 0 1px rgba(186,215,247,.16), inset 0 1px 0 rgba(216,236,248,.22), 0 20px 44px -26px hsl(var(--dsh) 80% 20% / .9); }
+.dst-precio { display: flex; align-items: baseline; gap: 10px; padding: 0 4px; }
+.dst-precio strong { font-size: 2rem; font-weight: 300; letter-spacing: -.03em; color: #fff; line-height: 1; }
+.dst-precio small { font-size: .78rem; color: rgba(230,238,251,.62); }
+.dst-acc { display: flex; gap: 10px; align-items: stretch; }
+#ds-tienda #ds-download { flex: 1; margin: 0 !important; height: 52px !important; min-height: 52px; padding: 0 18px !important; border-radius: 999px !important; clip-path: none !important; border: 0 !important;
+  display: inline-flex !important; align-items: center; justify-content: center; gap: 8px; font: 800 1rem/1 'Manrope', system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; text-shadow: none !important;
+  color: #04120a !important; background: linear-gradient(180deg, hsl(var(--dsh) 95% 74%), hsl(var(--dsh) 85% 58%)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 12px 26px -12px hsl(var(--dsh) 95% 55% / .95) !important; animation: none !important; }
+#ds-tienda #ds-download[style*="display: none"] { display: none !important; }
+.dst-fav { width: 52px; height: 52px; flex-shrink: 0; border: 0; border-radius: 999px; display: grid; place-items: center; font-size: 1.35rem; color: #fff; cursor: pointer;
+  background: rgba(186,214,247,.1); box-shadow: inset 0 0 0 1px rgba(186,215,247,.28); transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .3s; -webkit-tap-highlight-color: transparent; }
+.dst-fav:active { transform: scale(.92); }
+.dst-fav.on { color: #ff6b8b; background: rgba(255,107,139,.16); box-shadow: inset 0 0 0 1px rgba(255,107,139,.45); }
+.dst-fav.solo { flex: 1; }
+.dst-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 14px -16px 4px; padding: 0 16px; }
+.dst-chips::-webkit-scrollbar { display: none; }
+.dst-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font-size: .82rem; font-weight: 600; color: rgba(230,238,251,.9);
+  background: hsl(var(--dsh) 40% 50% / .12); box-shadow: inset 0 0 0 1px rgba(186,215,247,.14); white-space: nowrap; }
+.dst-chip ion-icon { font-size: .95rem; opacity: .8; }
+.dst-chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.dst-ok { color: #6ef0a8; } .dst-rev { color: #ffd166; } .dst-mal { color: #ff7a7a; }
+@supports not (backdrop-filter: blur(1px)) { .dst-panel { background: hsl(var(--dsh) 35% 14%); } }

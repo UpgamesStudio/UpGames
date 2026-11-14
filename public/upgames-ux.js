@@ -188,7 +188,7 @@
       if (typeof isYouTubeUrl === 'function' && isYouTubeUrl(src)) src = getYouTubeThumbnail(src);
       else if (typeof ugEsVideoArchivo === 'function' && ugEsVideoArchivo(src)) src = (typeof ugVideoThumb === 'function' && ugVideoThumb(src)) || '';
     } catch (_) {}
-    return typeof cldOpt === 'function' ? cldOpt(src, 'c_fill,g_auto,ar_3:4.4,w_640,q_auto,f_auto') : src;
+    return typeof cldOpt === 'function' ? cldOpt(src, 'c_limit,w_720,q_auto,f_auto') : src;   // (ar_3:4.4 no es válido en Cloudinary: error 400; el recorte lo hace object-fit)
   }
   function valoracion(it) {
     const r = it.resenas;
@@ -196,6 +196,28 @@
     const d = it.descargasEfectivas || 0;
     return { txt: Date.now() - new Date(it.createdAt || 0) < 30 * DIA ? 'Recién llegado' : 'Elegido para ti', sub: d ? `${nfK(d)} descargas` : 'Sé de los primeros en probarlo', cls: '' };
   }
+  /** Tono (0–360) del color dominante de una imagen; cb(h) solo si la imagen tiene color (no gris). Con caché. */
+  const tonos = new Map();
+  function tono(src, cb) {
+    if (!src || !/^https:/.test(src)) return;
+    if (tonos.has(src)) { const h = tonos.get(src); if (h != null) cb(h); return; }
+    try {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = () => { try {
+        const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0, 8, 8);
+        const d = x.getImageData(0, 0, 8, 8).data; let r = 0, g = 0, b = 0, w = 0;
+        for (let i = 0; i < d.length; i += 4) { const k = 1 + (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2])) / 40; r += d[i] * k; g += d[i + 1] * k; b += d[i + 2] * k; w += k; }
+        r /= w; g /= w; b /= w; const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+        if (mx - mn < 14) { tonos.set(src, null); return; }   // casi gris: se queda el tinte base
+        const h = mx === r ? ((g - b) / (mx - mn) + 6) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+        tonos.set(src, Math.round(h * 60)); cb(Math.round(h * 60));
+      } catch (_) { tonos.set(src, null); } };
+      im.src = src;
+    } catch (_) {}
+  }
+  window.UGTono = tono;
+  window.UGMatiz = id => matiz(id);
+
   function filaCarrusel(items) {
     if (items.length < 4 || typeof openDetail !== 'function') return null;
     const n = items.length, reducir = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -226,22 +248,10 @@
       <div class="ugc-dots" role="tablist">${items.map((_, i) => `<button type="button" role="tab" aria-label="Entrada ${i + 1}" data-dot="${i}"></button>`).join('')}</div>`;
 
     // El tinte de cada ficha toma el color dominante de su portada (si el servidor de la imagen lo permite)
-    const tonoDe = (card, src) => {
-      try {
-        const im = new Image(); im.crossOrigin = 'anonymous';
-        im.onload = () => { try {
-          const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0, 8, 8);
-          const d = x.getImageData(0, 0, 8, 8).data; let r = 0, g = 0, b = 0, w = 0;
-          for (let i = 0; i < d.length; i += 4) { const k = 1 + (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2])) / 40; r += d[i] * k; g += d[i + 1] * k; b += d[i + 2] * k; w += k; }
-          r /= w; g /= w; b /= w; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx - mn < 14) return;   // casi gris: se queda el tinte base
-          const h = mx === r ? ((g - b) / (mx - mn) + 6) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
-          card.style.setProperty('--h', Math.round(h * 60));
-        } catch (_) {} };
-        im.src = src;
-      } catch (_) {}
-    };
+    const tonoDe = (card, src) => tono(src, h => card.style.setProperty('--h', h));
     const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
-    idle(() => sec.querySelectorAll('.ugc-card').forEach((c, i) => { const src = portadaCarrusel(items[i]); if (/^https:/.test(src)) tonoDe(c, src); }));
+    // El color se saca de una miniatura de 32 px (no se vuelve a bajar la portada completa)
+    idle(() => sec.querySelectorAll('.ugc-card').forEach((c, i) => { const im = items[i].image || ''; const src = typeof cldOpt === 'function' && /res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(im) ? cldOpt(im, 'c_limit,w_32,q_auto,f_auto') : portadaCarrusel(items[i]); if (/^https:/.test(src)) tonoDe(c, src); }));
 
     const vp = sec.querySelector('.ugc-vp'), cards = [...sec.querySelectorAll('.ugc-card')], dots = [...sec.querySelectorAll('[data-dot]')];
     let idx = 0, timer = null, arrastre = null, visible = true, quieto = false;
@@ -257,7 +267,8 @@
       });
       dots.forEach((b, i) => { b.classList.toggle('on', i === idx); b.setAttribute('aria-selected', i === idx); });
     }
-    const ir = i => { idx = (i + n) % n; pintar(); };
+    let cambio = 0;   // momento del último cambio de entrada: un toque a mitad del giro no abre nada
+    const ir = i => { idx = (i + n) % n; cambio = Date.now(); pintar(); };
     pintar();
     const arrancar = () => { clearTimeout(timer); if (reducir) return; timer = setTimeout(() => { if (!sec.isConnected) return; if (!document.hidden && visible && !quieto) ir(idx + 1); arrancar(); }, 5200); };
     if ('IntersectionObserver' in window) new IntersectionObserver(e => { visible = e[0].isIntersecting; }, { threshold: .4 }).observe(sec);
@@ -278,8 +289,10 @@
     vp.addEventListener('click', e => {
       if (vp._swipe && Date.now() - vp._swipe < 350) return;
       const c = e.target.closest('.ugc-card'); if (!c) return;
-      const i = +c.dataset.i, it = items[i];
+      const i = +c.dataset.i;
       if (i !== idx) return ir(i);
+      if (Date.now() - cambio < 450) return;
+      const it = items[idx];
       const f = e.target.closest('[data-fav]');
       if (f) { e.stopPropagation(); if (typeof window.fav === 'function') window.fav(it._id); const on = !f.classList.contains('on'); f.classList.toggle('on', on); f.querySelector('ion-icon')?.setAttribute('name', on ? 'heart' : 'heart-outline'); return; }
       elegir(it, 'v'); openDetail(it);

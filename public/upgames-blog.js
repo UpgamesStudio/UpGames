@@ -563,7 +563,8 @@ async function editor(tipo, id) {
       const inp = $('input', el), tarj = $('.tarj', el);
       const sacar = () => (inp.value.match(/[a-f0-9]{24}/i) || [''])[0].toLowerCase();
       let t; const ver = () => { clearTimeout(t); const jid = sacar(); if (!jid) { tarj.hidden = true; return; } t = setTimeout(async () => {
-        try { const r = await fetch(`${API}/items/${jid}`).then(x => x.json()); const j = r.item || r.juego || r; if (!j?.title) throw 0;
+        try { const r = await fetch(`${API}/items/${jid}`).then(x => x.json()); const j = r && r._id ? r : (r.item || r);   // la publicación trae un campo «juego» (texto): no confundirlo
+          if (!j?.title) throw 0;
           tarj.innerHTML = `${j.image ? `<img src="${h(mini(j.image, 200))}" alt="">` : ''}<span><b>${h(j.title)}</b><small>por @${h(j.usuario)}</small></span>`; tarj.hidden = false;
         } catch (_) { tarj.innerHTML = '<small>No encontramos esa publicación. Revisa el enlace.</small>'; tarj.hidden = false; } }, 400); };
       inp.oninput = ver; ver();
