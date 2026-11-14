@@ -48,7 +48,7 @@
     caja.innerHTML = '<div class="ugrs-cargando">Cargando reseñas…</div>';
     const r = await api(`/items/${item._id}/resenas`);
     if (actual !== item) return;
-    if (!r.ok) { caja.innerHTML = ''; return; }
+    if (!r.ok || !r.d || !r.d.resumen) { caja.innerHTML = ''; return; }
     pintar(caja, item, r.d);
     colEnDetalle(item);
   }

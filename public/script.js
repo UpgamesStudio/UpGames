@@ -1037,13 +1037,45 @@ function ugMeta(attr, key, val) {
   if (!m) { m = document.createElement('meta'); m.setAttribute(attr, key); document.head.appendChild(m); }
   m.setAttribute('content', val);
 }
+// ── La ficha es una «página» con su propia entrada en el historial ──
+// Abrir una publicación agrega ?id=… al historial (pushState): el botón «atrás» del móvil la cierra
+// y el enlace se puede copiar y compartir. Un enlace compartido que se abre directo deja el inicio
+// detrás, así «atrás» vuelve al catálogo en lugar de salir de UpGames.
+let ugFichaPorAtras = false, ugFichaVolviendo = false;
+function ugFichaEnHistorial(id) {
+  const u = new URL(location.href);
+  const sinId = new URL(u); sinId.searchParams.delete('id');
+  u.searchParams.set('id', id);
+  const ruta = u.pathname + u.search, base = sinId.pathname + sinId.search;
+  const st = history.state || {};
+  if (st.ugFicha) { if (new URL(location.href).searchParams.get('id') !== id) history.replaceState({ ...st, ugFicha: 1 }, '', ruta); return; }
+  if (new URL(location.href).searchParams.get('id') === id) history.replaceState({ ...st, ugFicha: 0 }, '', base);   // llegó por un enlace: el inicio queda detrás
+  history.pushState({ ugFicha: 1 }, '', ruta);
+}
+function ugFichaFueraDelHistorial() {
+  if (history.state && history.state.ugFicha && !ugFichaPorAtras) { ugFichaVolviendo = true; history.back(); }
+  else { const u = new URL(location.href); if (u.searchParams.has('id')) { u.searchParams.delete('id'); history.replaceState(history.state && history.state.ugFicha ? null : history.state, '', u.pathname + u.search); } }
+  ugFichaPorAtras = false;
+}
+window.addEventListener('popstate', e => {
+  if (ugFichaVolviendo) { ugFichaVolviendo = false; return; }
+  const abierta = document.getElementById('detail-sheet')?.classList.contains('open');
+  const st = e.state || {};
+  if (abierta && !st.ugFicha) { ugFichaPorAtras = true; (window.closeDetail || closeDetail)(); return; }
+  if (!abierta && st.ugFicha) {   // «adelante»: vuelve a abrir la ficha
+    const id = new URL(location.href).searchParams.get('id');
+    const it = typeof todosLosItems !== 'undefined' && todosLosItems.find(i => i._id === id);
+    if (it) (window.openDetail || openDetail)(it);
+  }
+});
+
 function ugSeo(item) {
   try {
     const canon = document.head.querySelector('link[rel="canonical"]') || document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'canonical' }));
     let ld = document.getElementById('ug-ld-item');
     if (!item) {
       document.title = UG_SEO_BASE.title; canon.href = UG_SEO_BASE.url; if (ld) ld.remove();
-      try { const u = new URL(location.href); if (u.searchParams.has('id')) { u.searchParams.delete('id'); history.replaceState(null, '', u.pathname + u.search); } } catch(_) {}
+      try { ugFichaFueraDelHistorial(); } catch(_) {}
       return;
     }
     // Si ya tiene su página estática (public/p/, se genera a diario) esa es la canónica: evita contenido duplicado
@@ -1067,7 +1099,7 @@ function ugSeo(item) {
     if (!ld) { ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.id = 'ug-ld-item'; document.head.appendChild(ld); }
     ld.textContent = JSON.stringify(datos).replace(/</g, '\\u003c');
     // URL propia para compartir y para que Google la asocie a esta publicación
-    try { const u = new URL(location.href); if (u.searchParams.get('id') !== item._id) { u.searchParams.set('id', item._id); history.replaceState(null, '', u.pathname + u.search); } } catch(_) {}
+    try { ugFichaEnHistorial(item._id); } catch(_) {}
   } catch (_) {}
 }
 
@@ -1837,8 +1869,40 @@ document.querySelectorAll('.nav-tab[data-tab]').forEach(tab=>{
   });
 });
 
+// ── El inicio recuerda en qué parte ibas ──
+// · Al cambiar de pestaña y volver, el catálogo queda donde estaba (las demás pestañas empiezan arriba).
+// · Al volver a UpGames desde otra página (perfil, blog…) o al recargar, se restaura la posición
+//   si fue hace menos de 30 min, con la misma categoría y sin una búsqueda distinta.
+const UG_POS = 'ug_pos_inicio';
+let ugScrollInicio = 0, ugGuardarPosT = null;
+function ugGuardarPosicion() {
+  if (typeof currentTab !== 'undefined' && currentTab !== 'main') return;
+  if (document.getElementById('detail-sheet')?.classList.contains('open')) return;
+  try { sessionStorage.setItem(UG_POS, JSON.stringify({ y: Math.round(scrollY), t: Date.now(), cat: typeof activeCategory !== 'undefined' ? activeCategory : '', q: document.getElementById('buscador')?.value || '' })); } catch (_) {}
+}
+addEventListener('scroll', () => { clearTimeout(ugGuardarPosT); ugGuardarPosT = setTimeout(ugGuardarPosicion, 250); }, { passive: true });
+addEventListener('pagehide', ugGuardarPosicion);
+document.addEventListener('visibilitychange', () => { if (document.hidden) ugGuardarPosicion(); });
+(function ugRestaurarPosicion() {
+  let p; try { p = JSON.parse(sessionStorage.getItem(UG_POS) || 'null'); } catch (_) {}
+  const q = new URLSearchParams(location.search);
+  if (!p || p.y < 200 || Date.now() - p.t > 30 * 60e3 || q.has('id') || q.has('v') || q.has('tab')) return;
+  try { history.scrollRestoration = 'manual'; } catch (_) {}
+  const t0 = Date.now();
+  (function intentar() {
+    if (Date.now() - t0 > 8000) return;   // el catálogo no llegó: se queda arriba
+    const lista = document.querySelectorAll('#output .game-tile').length;
+    const mismaVista = (typeof activeCategory === 'undefined' || activeCategory === p.cat) && (document.getElementById('buscador')?.value || '') === p.q;
+    if (lista && !mismaVista) return;
+    if (lista && document.documentElement.scrollHeight >= p.y + innerHeight * .5) { scrollTo({ top: p.y, behavior: 'instant' }); return; }
+    setTimeout(intentar, 120);
+  })();
+})();
+
 function switchTab(t) {
   if (t === 'upload' && !ugPedirSesion('publicar contenido')) return;
+  const desde = typeof currentTab !== 'undefined' ? currentTab : '';
+  if (desde === 'main' && t !== 'main') ugScrollInicio = scrollY;
   const abrirPublicar = t === 'upload';
   if(t==='upload') t='profile';
   if(abrirPublicar) setTimeout(() => pfOpenPublish && pfOpenPublish(true), 150);
@@ -1862,6 +1926,8 @@ function switchTab(t) {
   if(t==='economia') { renderEconomia(); pfStartEcoPolling(); ecoCargarPlan(); window.UGX?.hub(); }
   else               { pfStopEcoPolling(); }
   if(t==='profile')  renderProfile();
+  // Cada pestaña empieza arriba; el inicio vuelve a donde lo dejaste
+  if (desde !== t) requestAnimationFrame(() => scrollTo({ top: t === 'main' ? ugScrollInicio : 0, behavior: 'instant' }));
 }
 
 // ── FAVORITES VIEW ────────────────────────────────────────

@@ -218,7 +218,34 @@
   window.UGTono = tono;
   window.UGMatiz = id => matiz(id);
 
-  function filaCarrusel(items) {
+  // Solo entran publicaciones cuya portada carga de verdad: una imagen rota (enlace externo caído,
+  // hotlink bloqueado…) nunca se ve como el marcador gris «UpGames» en el carrusel.
+  const portadaOk = new Map();   // src → true | false
+  function comprobarPortada(src) {
+    if (portadaOk.has(src)) return Promise.resolve(portadaOk.get(src));
+    return new Promise(ok => {
+      const im = new Image(); let listo = false;
+      const fin = v => { if (listo) return; listo = true; portadaOk.set(src, v); ok(v); };
+      im.onload = () => fin(im.naturalWidth > 40 && im.naturalHeight > 40); im.onerror = () => fin(false);
+      setTimeout(() => fin(false), 6000); im.src = src;
+    });
+  }
+  function filaCarrusel(candidatos) {
+    if (candidatos.length < 4 || typeof openDetail !== 'function') return null;
+    const conocidas = candidatos.every(it => portadaOk.has(portadaCarrusel(it)));
+    const buenas = () => candidatos.filter(it => portadaOk.get(portadaCarrusel(it))).slice(0, 9);
+    if (conocidas) return buenas().length >= 4 ? construirCarrusel(buenas()) : null;
+    // Primera vez: se reserva el lugar y se arma cuando se sabe qué portadas cargan
+    const hueco = document.createElement('section');
+    hueco.className = 'ugc ugc--cargando'; hueco.setAttribute('aria-hidden', 'true');
+    Promise.all(candidatos.map(it => comprobarPortada(portadaCarrusel(it)))).then(() => {
+      if (!hueco.isConnected) return;
+      const lista = buenas();
+      if (lista.length >= 4) { const sec = construirCarrusel(lista); sec && hueco.replaceWith(sec); } else hueco.remove();
+    });
+    return hueco;
+  }
+  function construirCarrusel(items) {
     if (items.length < 4 || typeof openDetail !== 'function') return null;
     const n = items.length, reducir = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const sec = document.createElement('section');
@@ -316,8 +343,8 @@
     // Recomendados: lo que Nexus ya puso arriba en el orden de este usuario, sin repetir lo de las filas de arriba
     const yaEnFilas = new Set([...masDesc, ...nuevos].map(i => i._id));
     const conPortada = base.filter(i => i.image && !/\.(mp4|webm|mov)(\?|$)/i.test(i.image));
-    const recom = conPortada.filter(i => !yaEnFilas.has(i._id)).slice(0, 9);
-    const recomFinal = recom.length >= 4 ? recom : conPortada.slice(0, 9);
+    const recom = conPortada.filter(i => !yaEnFilas.has(i._id)).slice(0, 14);   // de más: las de portada rota se descartan
+    const recomFinal = recom.length >= 4 ? recom : conPortada.slice(0, 14);
     const secs = [
       fila(hayTopSemana ? '🔥 Más descargados esta semana' : '🔥 Más descargados', hayTopSemana ? 'Lo que más baja la comunidad estos 7 días' : 'Lo favorito de la comunidad', masDesc, 'ugx-fila--top'),
       fila('🆕 Nuevos', 'Recién publicados', nuevos),

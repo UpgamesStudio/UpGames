@@ -219,8 +219,40 @@ document.querySelectorAll('.nav-tab[data-tab]').forEach(tab=>{
   });
 });
 
+// ── El inicio recuerda en qué parte ibas ──
+// · Al cambiar de pestaña y volver, el catálogo queda donde estaba (las demás pestañas empiezan arriba).
+// · Al volver a UpGames desde otra página (perfil, blog…) o al recargar, se restaura la posición
+//   si fue hace menos de 30 min, con la misma categoría y sin una búsqueda distinta.
+const UG_POS = 'ug_pos_inicio';
+let ugScrollInicio = 0, ugGuardarPosT = null;
+function ugGuardarPosicion() {
+  if (typeof currentTab !== 'undefined' && currentTab !== 'main') return;
+  if (document.getElementById('detail-sheet')?.classList.contains('open')) return;
+  try { sessionStorage.setItem(UG_POS, JSON.stringify({ y: Math.round(scrollY), t: Date.now(), cat: typeof activeCategory !== 'undefined' ? activeCategory : '', q: document.getElementById('buscador')?.value || '' })); } catch (_) {}
+}
+addEventListener('scroll', () => { clearTimeout(ugGuardarPosT); ugGuardarPosT = setTimeout(ugGuardarPosicion, 250); }, { passive: true });
+addEventListener('pagehide', ugGuardarPosicion);
+document.addEventListener('visibilitychange', () => { if (document.hidden) ugGuardarPosicion(); });
+(function ugRestaurarPosicion() {
+  let p; try { p = JSON.parse(sessionStorage.getItem(UG_POS) || 'null'); } catch (_) {}
+  const q = new URLSearchParams(location.search);
+  if (!p || p.y < 200 || Date.now() - p.t > 30 * 60e3 || q.has('id') || q.has('v') || q.has('tab')) return;
+  try { history.scrollRestoration = 'manual'; } catch (_) {}
+  const t0 = Date.now();
+  (function intentar() {
+    if (Date.now() - t0 > 8000) return;   // el catálogo no llegó: se queda arriba
+    const lista = document.querySelectorAll('#output .game-tile').length;
+    const mismaVista = (typeof activeCategory === 'undefined' || activeCategory === p.cat) && (document.getElementById('buscador')?.value || '') === p.q;
+    if (lista && !mismaVista) return;
+    if (lista && document.documentElement.scrollHeight >= p.y + innerHeight * .5) { scrollTo({ top: p.y, behavior: 'instant' }); return; }
+    setTimeout(intentar, 120);
+  })();
+})();
+
 function switchTab(t) {
   if (t === 'upload' && !ugPedirSesion('publicar contenido')) return;
+  const desde = typeof currentTab !== 'undefined' ? currentTab : '';
+  if (desde === 'main' && t !== 'main') ugScrollInicio = scrollY;
   const abrirPublicar = t === 'upload';
   if(t==='upload') t='profile';
   if(abrirPublicar) setTimeout(() => pfOpenPublish && pfOpenPublish(true), 150);
@@ -244,6 +276,8 @@ function switchTab(t) {
   if(t==='economia') { renderEconomia(); pfStartEcoPolling(); ecoCargarPlan(); window.UGX?.hub(); }
   else               { pfStopEcoPolling(); }
   if(t==='profile')  renderProfile();
+  // Cada pestaña empieza arriba; el inicio vuelve a donde lo dejaste
+  if (desde !== t) requestAnimationFrame(() => scrollTo({ top: t === 'main' ? ugScrollInicio : 0, behavior: 'instant' }));
 }
 
 // ── FAVORITES VIEW ────────────────────────────────────────

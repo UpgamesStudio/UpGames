@@ -1,0 +1,40 @@
+# Pruebas antes de publicar: las rápidas (npm test) y las «reales», que usan el catálogo de producción
+# en un navegador de móvil y levantan el servidor con MongoDB para probar UpGames Blogs de punta a punta.
+# Corren en cada PR a main y en cada push a main. El despliegue de respaldo (deploy-railway.yml) las reutiliza.
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: pruebas-${{ github.workflow }}-${{ github.ref }}   # distinto al llamarlo desde el despliegue: no se cancelan entre sí
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Dependencias del servidor
+        run: npm ci || npm install
+      - name: Pruebas rápidas (npm test)
+        run: npm test
+      - name: Dependencias de las pruebas reales
+        working-directory: test/real
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Portada y ficha con el catálogo real
+        run: node test/real/portada.js
+      - name: UpGames Blogs de extremo a extremo
+        run: node test/real/blogs.js

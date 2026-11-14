@@ -9,13 +9,45 @@ function ugMeta(attr, key, val) {
   if (!m) { m = document.createElement('meta'); m.setAttribute(attr, key); document.head.appendChild(m); }
   m.setAttribute('content', val);
 }
+// ── La ficha es una «página» con su propia entrada en el historial ──
+// Abrir una publicación agrega ?id=… al historial (pushState): el botón «atrás» del móvil la cierra
+// y el enlace se puede copiar y compartir. Un enlace compartido que se abre directo deja el inicio
+// detrás, así «atrás» vuelve al catálogo en lugar de salir de UpGames.
+let ugFichaPorAtras = false, ugFichaVolviendo = false;
+function ugFichaEnHistorial(id) {
+  const u = new URL(location.href);
+  const sinId = new URL(u); sinId.searchParams.delete('id');
+  u.searchParams.set('id', id);
+  const ruta = u.pathname + u.search, base = sinId.pathname + sinId.search;
+  const st = history.state || {};
+  if (st.ugFicha) { if (new URL(location.href).searchParams.get('id') !== id) history.replaceState({ ...st, ugFicha: 1 }, '', ruta); return; }
+  if (new URL(location.href).searchParams.get('id') === id) history.replaceState({ ...st, ugFicha: 0 }, '', base);   // llegó por un enlace: el inicio queda detrás
+  history.pushState({ ugFicha: 1 }, '', ruta);
+}
+function ugFichaFueraDelHistorial() {
+  if (history.state && history.state.ugFicha && !ugFichaPorAtras) { ugFichaVolviendo = true; history.back(); }
+  else { const u = new URL(location.href); if (u.searchParams.has('id')) { u.searchParams.delete('id'); history.replaceState(history.state && history.state.ugFicha ? null : history.state, '', u.pathname + u.search); } }
+  ugFichaPorAtras = false;
+}
+window.addEventListener('popstate', e => {
+  if (ugFichaVolviendo) { ugFichaVolviendo = false; return; }
+  const abierta = document.getElementById('detail-sheet')?.classList.contains('open');
+  const st = e.state || {};
+  if (abierta && !st.ugFicha) { ugFichaPorAtras = true; (window.closeDetail || closeDetail)(); return; }
+  if (!abierta && st.ugFicha) {   // «adelante»: vuelve a abrir la ficha
+    const id = new URL(location.href).searchParams.get('id');
+    const it = typeof todosLosItems !== 'undefined' && todosLosItems.find(i => i._id === id);
+    if (it) (window.openDetail || openDetail)(it);
+  }
+});
+
 function ugSeo(item) {
   try {
     const canon = document.head.querySelector('link[rel="canonical"]') || document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'canonical' }));
     let ld = document.getElementById('ug-ld-item');
     if (!item) {
       document.title = UG_SEO_BASE.title; canon.href = UG_SEO_BASE.url; if (ld) ld.remove();
-      try { const u = new URL(location.href); if (u.searchParams.has('id')) { u.searchParams.delete('id'); history.replaceState(null, '', u.pathname + u.search); } } catch(_) {}
+      try { ugFichaFueraDelHistorial(); } catch(_) {}
       return;
     }
     // Si ya tiene su página estática (public/p/, se genera a diario) esa es la canónica: evita contenido duplicado
@@ -39,7 +71,7 @@ function ugSeo(item) {
     if (!ld) { ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.id = 'ug-ld-item'; document.head.appendChild(ld); }
     ld.textContent = JSON.stringify(datos).replace(/</g, '\\u003c');
     // URL propia para compartir y para que Google la asocie a esta publicación
-    try { const u = new URL(location.href); if (u.searchParams.get('id') !== item._id) { u.searchParams.set('id', item._id); history.replaceState(null, '', u.pathname + u.search); } } catch(_) {}
+    try { ugFichaEnHistorial(item._id); } catch(_) {}
   } catch (_) {}
 }
 
