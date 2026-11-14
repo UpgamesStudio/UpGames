@@ -24,7 +24,9 @@ module.exports = function modelos(mongoose) {
         visibilidad: { type: String, enum: ['publico', 'oculto'], default: 'publico' },   // oculto: solo con el enlace, sin buscadores
         estado:      { type: String, enum: ['activo', 'revision', 'suspendido'], default: 'activo' },
         reportes:    { type: Number, default: 0 },
-        sinMarca:    { type: Boolean, default: false },   // Premium: sin «Hecho con UpGames»
+        sinMarca:    { type: Boolean, default: false },
+        // Aceptación expresa de los Términos de UpGames Blogs al crear el blog (prueba de que el creador asumió la responsabilidad)
+        terminos:    { version: { type: String, default: '' }, fecha: { type: Date, default: null }, ip: { type: String, default: '' } },   // Premium: sin «Hecho con UpGames»
         vistas:      { type: Number, default: 0 },
         // Monetización opcional: el creador decide si su blog lleva publicidad de UpGames
         monetizar:   { type: Boolean, default: false },

@@ -24,6 +24,7 @@ const llm = require('../modulos/nexus/llm');
 const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 const ACORTADORES = /^(?:bit\.ly|tinyurl\.com|t\.co|goo\.gl|is\.gd|cutt\.ly|shorturl\.at|rb\.gy|ow\.ly|acortar\.link|shre\.ink|ouo\.io|adf\.ly|linkvertise\.com)$/i;
 const POR_PAGINA = 12;
+const TERMINOS_BLOGS = '8.0';   // versión de los Términos (sección 10B) que acepta quien crea un blog
 
 /** Enlaces que no se permiten en un blog: acortadores (esconden el destino), IP sueltas y dominios disfrazados. */
 function enlaceProhibido(urls) {
@@ -171,6 +172,7 @@ function registrar(app, deps) {
             if (titulo.length < 2) return res.status(400).json({ success: false, error: 'Ponle un nombre a tu blog.' });
             const d = V.validarDireccion(req.body?.direccion);
             if (d.error) return res.status(400).json({ success: false, error: d.error });
+            if (req.body?.aceptaTerminos !== true) return res.status(400).json({ success: false, code: 'TERMINOS', error: 'Para crear un blog tienes que aceptar que eres el responsable de lo que publiques en él (Términos de UpGames Blogs).' });
             const u = await Usuario.findOne({ usuario: req.usuario }).select('emailVerificado').lean();
             if (!u) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
             if (!u.emailVerificado) return res.status(403).json({ success: false, code: 'EMAIL_SIN_VERIFICAR', error: 'Verifica tu correo para crear un blog. Lo haces desde tu perfil en UpGames.' });
@@ -182,7 +184,7 @@ function registrar(app, deps) {
             const malo = revisar(req.usuario, titulo, [{ tipo: 'texto', texto: descripcion }], d.valor);
             if (malo) return res.status(400).json({ success: false, error: malo });
             if (!(await Limites.permitir(`blog-crear:${req.usuario}`, [[Limites.DIA, 5]]))) return res.status(429).json({ success: false, error: 'Creaste muchos blogs hoy. Inténtalo mañana.' });
-            const b = await Blog.create({ usuario: req.usuario, direccion: d.valor, titulo, descripcion, tema: Temas.TEMAS[req.body?.tema] ? req.body.tema : Temas.POR_DEFECTO, ajustes: limpiarAjustes({}) });
+            const b = await Blog.create({ usuario: req.usuario, direccion: d.valor, titulo, descripcion, tema: Temas.TEMAS[req.body?.tema] ? req.body.tema : Temas.POR_DEFECTO, ajustes: limpiarAjustes({}), terminos: { version: TERMINOS_BLOGS, fecha: new Date(), ip: String(req.ip || '').slice(0, 64) } });
             logger.info(`[blogs] @${req.usuario} creó el blog «${d.valor}»`);
             res.json({ success: true, blog: vistaBlog(b) });
         } catch (e) {

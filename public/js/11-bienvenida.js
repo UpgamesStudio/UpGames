@@ -171,7 +171,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
 
 // ── BIENVENIDA — animación + términos ───────────────────
 (function initOnboarding() {
-  const TERMINOS_VERSION = '7.4';   // súbela al cambiar los Términos o la Privacidad
+  const TERMINOS_VERSION = '8.0';   // súbela al cambiar los Términos o la Privacidad
   // La bienvenida animada (con la aceptación de términos y privacidad) es OBLIGATORIA:
   //  · sin cuenta: una vez al día (día de Colombia);
   //  · con cuenta: cada vez que inicia sesión (cada inicio trae un token nuevo; se guarda
@@ -189,7 +189,7 @@ function ugBienvAnim(escena, prog, { alTerminar } = {}) {
   }
   function avisoTerminosNuevos() {
     const a = document.createElement('div'); a.className = 'ug-terminos-aviso'; a.setAttribute('role', 'status');
-    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: UpGames ya no paga por descargas. A los creadores se les paga por visualizaciones de publicidad, y la tarifa sube a US$1,50 por cada 1.000.</span><button type="button">Entendido</button>`;
+    a.innerHTML = `<span>📜 Actualizamos los <a href="./terminos_condiciones.html" target="_blank" rel="noopener">Términos (v${TERMINOS_VERSION})</a> y la <a href="./politica-privacidad.html" target="_blank" rel="noopener">Privacidad</a>: llega UpGames Blogs (cada creador responde por su blog), el Programa de impulso a creadores (2.000 UpCoins y 30 días de Premium) y quitamos el botón «Comprar».</span><button type="button">Entendido</button>`;
     a.querySelector('button').onclick = () => { LS.set('upgames_terms_v', TERMINOS_VERSION); a.remove(); };
     setTimeout(() => document.body.appendChild(a), 2500);
   }

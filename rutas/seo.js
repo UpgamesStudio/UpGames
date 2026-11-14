@@ -27,6 +27,7 @@ app.get('/seo/sitemap.xml', async (req, res) => {
                 // Perfiles: su página estática (public/u/…), generada en la misma acción diaria
                 ...[...autores].map(([u, f]) => url(Seo.usuarioValido(u) ? Seo.urlPerfil(u) : `${SITIO}/perfil-publico.html?usuario=${encodeURIComponent(u)}`, dia(f), 'weekly', '0.5')),
                 url(`${SITIO}/terminos_condiciones.html`, null, 'monthly', '0.2'),
+                url(`${SITIO}/blogs-guia.html`, null, 'monthly', '0.4'),
                 url(`${SITIO}/politica-privacidad.html`, null, 'monthly', '0.2'),
             ].join('\n') + '\n</urlset>\n';
         });

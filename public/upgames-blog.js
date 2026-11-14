@@ -104,7 +104,8 @@ function bienvenida() {
       <div class="glass">${ico('create-outline')}<b>Editor fácil</b><span>Texto, imágenes, galerías, videos, botones y tus publicaciones de UpGames.</span></div>
       <div class="glass">${ico('globe-outline')}<b>Tu dominio</b><span>Empieza con una dirección gratis y conecta tu dominio cuando lo tengas.</span></div>
       <div class="glass">${ico('stats-chart-outline')}<b>Estadísticas</b><span>Mira cuántas visitas tienes cada día y qué entradas gustan más.</span></div>
-    </div></div>`;
+    </div>
+    <p class="guia-enlace"><a href="./blogs-guia.html">${ico('book-outline')} Lee la guía de UpGames Blogs: cómo funciona, cómo ganar y tus responsabilidades</a></p></div>`;
 }
 
 function tarjetasTema(elegido) {
@@ -122,6 +123,7 @@ function asistente(puedeVolver) {
       <label class="campo"><span>Dirección</span><div class="prefijo"><b>…/b/</b><input class="inp" name="direccion" maxlength="30" placeholder="mi-blog" required autocapitalize="off" spellcheck="false"></div><small id="dir-nota">Letras, números y guiones. Entre 3 y 30 caracteres.</small></label>
       <label class="campo"><span>De qué trata (opcional)</span><input class="inp" name="descripcion" maxlength="300" placeholder="Una frase que lo describa"></label>
       <div class="campo"><span>Elige un tema</span>${tarjetasTema(tema)}</div>
+      <label class="acepto"><input type="checkbox" name="acepto" required><span>Soy el único responsable de todo lo que publique en mi blog (textos, imágenes, enlaces, descargas, dominio y comentarios que mantenga). UpGames solo presta la herramienta. Acepto los <a href="./terminos_condiciones.html#blogs" target="_blank" rel="noopener">Términos de UpGames Blogs</a> y la <a href="./politica-privacidad.html#blogs-datos" target="_blank" rel="noopener">Política de Privacidad</a>.</span></label>
       <button class="btn pri ancho" type="submit">${ico('sparkles-outline')} Crear mi blog</button>
       ${puedeVolver ? '<button class="btn ancho" type="button" data-volver>Cancelar</button>' : ''}
     </form></div>`;
@@ -142,7 +144,7 @@ function asistente(puedeVolver) {
   f.onsubmit = e => {
     e.preventDefault();
     ocupado($('[type=submit]', f), async () => {
-      const r = await api('/blogs', { metodo: 'POST', cuerpo: { titulo: f.titulo.value, direccion: f.direccion.value.replace(/-+$/, ''), descripcion: f.descripcion.value, tema } });
+      const r = await api('/blogs', { metodo: 'POST', cuerpo: { titulo: f.titulo.value, direccion: f.direccion.value.replace(/-+$/, ''), descripcion: f.descripcion.value, tema, aceptaTerminos: f.acepto.checked } });
       S.blogs.push({ ...r.blog, entradas: 0 }); S.blog = S.blogs[S.blogs.length - 1]; S.vista = 'entradas';
       JUEGO_INICIAL ? editor('entrada') : (panel(), toast('¡Tu blog está listo! Escribe tu primera entrada.'));
     });
