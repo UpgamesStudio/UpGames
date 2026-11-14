@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>UpGames · Creator Studio (demo de producto)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=block" rel="stylesheet">
+<style>
+:root { --g: #39FF88; --g2: #19c96a; --bg: #06080B; --pn: #0D1117; --pn2: #11161D; --ln: rgba(255,255,255,.075); --tx: #F2F5F8; --t2: #98A2B0; --t3: #5E6877; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--tx); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.abs { position: absolute; }
+.mono { font-family: 'JetBrains Mono', 'DejaVu Sans Mono', monospace; }
+#app { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(70% 60% at 50% 42%, #0d1a14 0%, #06080B 70%); }
+#cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+
+/* Ventana de la app */
+#win { position: absolute; left: 150px; top: 85px; width: 1620px; height: 910px; border-radius: 26px; background: var(--pn); border: 1.5px solid var(--ln); overflow: hidden;
+  box-shadow: 0 80px 160px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.6), 0 0 120px -30px rgba(57,255,136,.12); }
+#sb { position: absolute; left: 0; top: 0; width: 250px; height: 910px; background: #0A0D12; border-right: 1.5px solid var(--ln); padding: 30px 22px; }
+#sb img { width: 150px; display: block; margin: 4px 0 40px 6px; }
+.nv { position: relative; display: flex; align-items: center; gap: 14px; height: 52px; padding: 0 16px; border-radius: 14px; color: var(--t2); font-size: 19px; font-weight: 500; margin-bottom: 6px; }
+.nv svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+#nvbg { position: absolute; left: 22px; top: 0; width: 206px; height: 52px; border-radius: 14px; background: rgba(57,255,136,.1); border: 1.5px solid rgba(57,255,136,.28); }
+#top { position: absolute; left: 250px; top: 0; right: 0; height: 76px; border-bottom: 1.5px solid var(--ln); display: flex; align-items: center; justify-content: space-between; padding: 0 44px; }
+#top .bc { color: var(--t3); font-size: 18px; } #top .bc b { color: var(--tx); font-weight: 600; margin-left: 8px; }
+.sr { height: 42px; width: 300px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1.5px solid var(--ln); color: var(--t3); font-size: 16px; display: flex; align-items: center; padding: 0 16px; }
+.av { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #39FF88, #5CE1FF); margin-left: 18px; }
+#main { position: absolute; left: 250px; top: 76px; width: 1370px; height: 834px; overflow: hidden; }
+.view { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+h1 { position: absolute; left: 44px; top: 30px; font-size: 38px; font-weight: 700; letter-spacing: -.03em; }
+.sub { position: absolute; left: 44px; top: 82px; font-size: 20px; color: var(--t2); }
+.steps { position: absolute; left: 44px; top: 128px; display: flex; gap: 12px; }
+.st { display: flex; align-items: center; gap: 10px; padding: 9px 18px 9px 10px; border-radius: 999px; border: 1.5px solid var(--ln); font-size: 16px; font-weight: 600; color: var(--t3); }
+.st i { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--t3); display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; }
+.st.on { color: var(--tx); border-color: rgba(57,255,136,.4); } .st.on i { border-color: var(--g); color: var(--g); }
+.st.ok { color: var(--g); } .st.ok i { background: var(--g); border-color: var(--g); color: #04140a; }
+.card { position: absolute; background: var(--pn2); border: 1.5px solid var(--ln); border-radius: 24px; }
+.lbl { font-size: 15px; font-weight: 600; letter-spacing: .02em; color: var(--t2); margin-bottom: 9px; }
+.inp { height: 54px; border-radius: 14px; background: #090C11; border: 1.5px solid var(--ln); padding: 0 18px; font-size: 21px; display: flex; align-items: center; position: relative; }
+.inp .ph { color: var(--t3); } .car { display: inline-block; width: 2px; height: 26px; background: var(--g); margin-left: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 9px; height: 44px; padding: 0 18px; border-radius: 12px; border: 1.5px solid var(--ln); font-size: 18px; font-weight: 600; color: var(--t2); margin-right: 10px; background: #090C11; }
+.chip.on { border-color: rgba(57,255,136,.55); color: var(--tx); background: rgba(57,255,136,.08); }
+.tg { width: 54px; height: 30px; border-radius: 999px; background: #232a34; position: relative; flex: none; } .tg b { position: absolute; left: 4px; top: 4px; width: 22px; height: 22px; border-radius: 50%; background: #fff; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 16px; background: var(--g); color: #04140a; font-weight: 700; font-size: 22px; box-shadow: 0 16px 40px -14px rgba(57,255,136,.7), inset 0 1.5px 0 rgba(255,255,255,.4); }
+.menu { position: absolute; left: 0; right: 0; top: 62px; background: #12171e; border: 1.5px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px; z-index: 5; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8); opacity: 0; }
+.menu div { height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 9px; font-size: 19px; color: var(--t2); }
+.kpi { position: absolute; top: 130px; width: 296px; height: 150px; padding: 26px 28px; }
+.kpi small { font-size: 16px; color: var(--t2); font-weight: 500; } .kpi b { display: block; font-size: 46px; font-weight: 700; letter-spacing: -.03em; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.kpi em { font-style: normal; font-size: 15px; font-weight: 700; color: var(--g); margin-left: 8px; }
+.live { position: absolute; right: 44px; top: 42px; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; color: var(--g); padding: 9px 16px; border-radius: 999px; border: 1.5px solid rgba(57,255,136,.3); background: rgba(57,255,136,.07); }
+.live i { width: 9px; height: 9px; border-radius: 50%; background: var(--g); }
+#fi { position: absolute; width: 128px; z-index: 30; opacity: 0; filter: drop-shadow(0 22px 30px rgba(0,0,0,.6)); text-align: center; }
+#fi .sq { width: 98px; height: 112px; margin: 0 auto; border-radius: 18px; background: linear-gradient(160deg, #1b2a3a, #0f1a26); border: 1.5px solid rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; color: var(--g); }
+#fi div.n { margin-top: 10px; font-size: 15px; font-weight: 600; background: rgba(8,11,15,.85); border-radius: 8px; padding: 4px 8px; white-space: nowrap; display: inline-block; }
+#ptr { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
+#cur { position: absolute; left: 0; top: 0; width: 38px; height: 38px; z-index: 60; opacity: 0; filter: drop-shadow(0 5px 7px rgba(0,0,0,.65)); }
+.rip { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 2.5px solid var(--g); z-index: 55; opacity: 0; }
+#toast { position: absolute; right: 36px; top: 98px; width: 440px; padding: 20px 22px; display: flex; gap: 16px; align-items: center; background: #151b23; border: 1.5px solid rgba(57,255,136,.3); border-radius: 20px; box-shadow: 0 30px 70px -24px rgba(0,0,0,.9); z-index: 40; opacity: 0; }
+#toast .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--g); color: #04140a; display: flex; align-items: center; justify-content: center; flex: none; }
+.spark { position: absolute; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: var(--g); z-index: 56; opacity: 0; }
+
+/* Capas fuera de la cámara */
+#hud { position: absolute; inset: 0; pointer-events: none; }
+#cap { position: absolute; left: 0; right: 0; bottom: 52px; display: flex; justify-content: center; }
+#cap div { display: flex; align-items: center; gap: 16px; padding: 14px 30px 14px 16px; border-radius: 999px; background: rgba(12,16,22,.78); border: 1.5px solid rgba(255,255,255,.1); backdrop-filter: blur(16px); font-size: 27px; font-weight: 600; letter-spacing: -.01em; opacity: 0; }
+#cap span { font-family: 'JetBrains Mono', monospace; font-size: 19px; font-weight: 700; color: #04140a; background: var(--g); border-radius: 999px; padding: 6px 13px; }
+#nota { position: absolute; left: 56px; bottom: 28px; font-size: 15px; color: var(--t3); opacity: 0; letter-spacing: .02em; }
+#intro, #end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; }
+#intro img, #end img { width: 460px; }
+.kick { font-family: 'JetBrains Mono', monospace; font-size: 22px; letter-spacing: .42em; color: var(--g); margin-top: 34px; text-transform: uppercase; }
+#end h2 { font-size: 92px; font-weight: 700; letter-spacing: -.045em; line-height: 1.04; text-align: center; margin-top: 40px; }
+#end h2 .w { display: inline-block; will-change: transform, opacity; } #end h2 .a { color: var(--g); }
+#url { margin-top: 38px; height: 62px; padding: 0 30px; display: flex; align-items: center; gap: 14px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1.5px solid var(--ln); font-size: 28px; color: var(--tx); }
+#cta { margin-top: 30px; width: 460px; height: 84px; font-size: 28px; }
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="cam">
+  <div id="win">
+   <div id="sb"><img src="../saas/logo.png" alt="UpGames"><div id="nvbg"></div>
+    <div class="nv" id="n1"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Inicio</div>
+    <div class="nv" id="n2"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Publicar</div>
+    <div class="nv" id="n3"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Estadísticas</div>
+    <div class="nv" id="n4"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1-1.6 2.5-1.6s2.5.6 2.5 1.7-1 1.5-2.5 1.9-2.5.9-2.5 2 1 1.7 2.5 1.7 2.5-.7 2.5-1.7"/></svg>Ingresos</div>
+   </div>
+   <div id="top"><div class="bc">Creator Studio <b id="crumb">Publicar</b></div><div style="display:flex;align-items:center"><div class="sr">Buscar…</div><div class="av"></div></div></div>
+   <div id="main">
+
+    <!-- 1 · Subir -->
+    <div class="view" id="v1">
+     <h1>Publicar un juego</h1><div class="sub">Sube tu build y lo preparamos por ti.</div>
+     <div class="steps"><div class="st on" id="s1a"><i>1</i>Archivo</div><div class="st" id="s1b"><i>2</i>Detalles</div><div class="st" id="s1c"><i>3</i>Publicar</div></div>
+     <div class="card" id="zone" style="left:44px;top:200px;width:880px;height:540px;border:2.5px dashed rgba(255,255,255,.16);background:#0a0e13">
+      <div id="zin" class="abs" style="inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+       <div style="width:92px;height:92px;border-radius:50%;background:rgba(57,255,136,.08);border:1.5px solid rgba(57,255,136,.3);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#39FF88" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></div>
+       <div style="font-size:32px;font-weight:700;letter-spacing:-.02em;margin-top:10px">Arrastra tu archivo aquí</div>
+       <div style="font-size:19px;color:var(--t2)">APK, ZIP o carpeta · hasta 2 GB</div>
+      </div>
+      <div id="fcard" class="abs" style="left:120px;top:195px;width:640px;height:150px;border-radius:22px;background:#121820;border:1.5px solid rgba(255,255,255,.12);padding:26px 30px;opacity:0">
+       <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:25px;font-weight:600">neon-rider-v1.2.zip</b><span class="mono" style="color:var(--t2);font-size:18px">148 MB</span></div>
+       <div style="height:10px;border-radius:99px;background:#222a35;margin:26px 0 14px;overflow:hidden"><div id="pbar" style="height:100%;width:0;background:linear-gradient(90deg,#19c96a,#39FF88)"></div></div>
+       <div style="display:flex;justify-content:space-between;font-size:17px;color:var(--t2)"><span id="pst">Subiendo…</span><span id="ppc" class="mono" style="color:var(--tx);font-weight:700">0 %</span></div>
+      </div>
+     </div>
+     <div class="card" style="left:964px;top:200px;width:362px;height:540px;padding:34px 32px">
+      <div style="font-size:21px;font-weight:700;margin-bottom:30px">Revisión automática</div>
+      <div id="rv"></div>
+     </div>
+    </div>
+
+    <!-- 2 · Detalles -->
+    <div class="view" id="v2">
+     <h1>Detalles del juego</h1><div class="sub">Lo justo para que tu audiencia lo encuentre.</div>
+     <div class="steps"><div class="st ok" id="s2a"><i>✓</i>Archivo</div><div class="st on" id="s2b"><i>2</i>Detalles</div><div class="st" id="s2c"><i>3</i>Publicar</div></div>
+     <div class="card" style="left:44px;top:184px;width:800px;height:610px;padding:28px 32px">
+      <div style="margin-bottom:16px"><div class="lbl">Título</div><div class="inp" id="f1"><span id="t1"></span><span id="c1" class="car" style="opacity:0"></span><span class="ph" id="p1">Nombre de tu juego</span></div></div>
+      <div style="margin-bottom:16px"><div class="lbl">Descripción</div><div class="inp" id="f2"><span id="t2"></span><span id="c2" class="car" style="opacity:0"></span><span class="ph" id="p2">Cuéntalo en una frase</span></div></div>
+      <div style="margin-bottom:16px;position:relative"><div class="lbl">Categoría</div><div class="inp" id="f3" style="justify-content:space-between"><span id="t3" class="ph">Elige una categoría</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#98A2B0" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+       <div class="menu" id="menu" style="top:90px"><div>Acción</div><div>Carreras</div><div>Puzzle</div><div>Aventura</div></div></div>
+      <div style="margin-bottom:16px"><div class="lbl">Plataformas</div><span class="chip" id="ch1">Android</span><span class="chip" id="ch2">PC</span><span class="chip" id="ch3">Web</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;margin-bottom:16px;padding:0 4px"><div><div style="font-size:20px;font-weight:600">Ingresos por anuncios</div></div><div class="tg" id="tg"><b></b></div></div>
+      <div><div class="lbl">Portada</div><div style="display:flex;gap:14px" id="sw"></div></div>
+     </div>
+     <div class="card" id="pv" style="left:884px;top:184px;width:442px;height:470px;padding:18px;overflow:hidden">
+      <div id="pcv" style="height:226px;border-radius:16px;position:relative;overflow:hidden;background:#161d27"><div id="pcg" class="abs" style="inset:0;opacity:0"></div>
+       <div id="pbd" class="mono abs" style="right:14px;top:14px;font-size:14px;font-weight:700;letter-spacing:.08em;color:#04140a;background:var(--g);padding:6px 12px;border-radius:999px;opacity:0">EN LÍNEA</div></div>
+      <div class="mono" id="pc" style="font-size:15px;letter-spacing:.2em;color:var(--g);margin:22px 6px 6px;min-height:20px"></div>
+      <div id="pt" style="font-size:34px;font-weight:700;letter-spacing:-.03em;margin:0 6px;min-height:42px"></div>
+      <div id="pd" style="font-size:19px;color:var(--t2);margin:10px 6px;min-height:50px"></div>
+      <div style="display:flex;gap:8px;margin:14px 6px"><span class="chip" style="height:34px;font-size:15px;margin:0;opacity:0" id="pa">Android</span><span class="chip" style="height:34px;font-size:15px;margin:0;opacity:0" id="pp">PC</span></div>
+     </div>
+     <div class="btn abs" id="bpub" style="left:884px;top:688px;width:442px;height:68px"><span id="bl">Publicar</span></div>
+    </div>
+
+    <!-- 3 · Estadísticas -->
+    <div class="view" id="v3">
+     <h1>Estadísticas</h1><div class="sub">Tu juego «Neon Rider» · últimos 30 días</div><div class="live"><i></i>En vivo</div>
+     <div class="card kpi" style="left:44px"><small>Descargas</small><b id="k1">0</b></div>
+     <div class="card kpi" style="left:372px"><small>Visitas a tu página</small><b id="k2">0</b></div>
+     <div class="card kpi" style="left:700px"><small>Anuncios vistos</small><b id="k3">0</b></div>
+     <div class="card kpi" style="left:1028px"><small>Seguidores</small><b id="k4">0</b></div>
+     <div class="card" id="cc" style="left:44px;top:310px;width:1282px;height:484px"><svg id="ch" width="1282" height="484" viewBox="0 0 1282 484"></svg></div>
+    </div>
+
+    <!-- 4 · Ingresos -->
+    <div class="view" id="v4">
+     <h1>Ingresos</h1><div class="sub">Pagamos por cada anuncio visto, no por descargas.</div>
+     <div class="card" style="left:44px;top:150px;width:760px;height:620px;padding:40px 44px">
+      <div style="font-size:19px;color:var(--t2);font-weight:500">Saldo disponible</div>
+      <div id="bal" style="font-size:96px;font-weight:700;letter-spacing:-.05em;margin:10px 0 24px;font-variant-numeric:tabular-nums">US$ 0,00</div>
+      <div id="rate" style="display:inline-flex;align-items:center;gap:12px;padding:14px 22px;border-radius:14px;background:rgba(57,255,136,.08);border:1.5px solid rgba(57,255,136,.3);font-size:21px;font-weight:600;color:var(--g);opacity:0">US$ 1,50 por cada 1.000 visualizaciones de publicidad</div>
+      <div style="margin-top:38px;border-top:1.5px solid var(--ln)">
+       <div style="display:flex;justify-content:space-between;padding:22px 0;border-bottom:1.5px solid var(--ln);font-size:21px"><span style="color:var(--t2)">Anuncios vistos este mes</span><b class="mono" id="r1">0</b></div>
+       <div style="display:flex;justify-content:space-between;padding:22px 0;border-bottom:1.5px solid var(--ln);font-size:21px"><span style="color:var(--t2)">Tarifa de creador</span><b class="mono">US$ 1,50 / 1.000</b></div>
+       <div style="display:flex;justify-content:space-between;padding:22px 0;font-size:21px"><span style="color:var(--t2)">Retiro mínimo</span><b class="mono">US$ 10,00</b></div>
+      </div>
+     </div>
+     <div class="card" id="wd" style="left:844px;top:150px;width:482px;height:620px;padding:40px 40px">
+      <div style="font-size:26px;font-weight:700;letter-spacing:-.02em">Retirar</div>
+      <div id="amt" style="font-size:72px;font-weight:700;letter-spacing:-.05em;margin:26px 0 30px;font-variant-numeric:tabular-nums">US$ 20,00</div>
+      <div id="sl" style="position:relative;height:8px;border-radius:99px;background:#232a34;margin:0 12px 12px"><div id="slf" style="position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#19c96a,#39FF88)"></div><div id="slh" style="position:absolute;top:-11px;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.5)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;color:var(--t3);margin:0 4px 36px" class="mono"><span>US$ 10</span><span>US$ 62,82</span></div>
+      <div class="lbl">Método de cobro</div><div><span class="chip" id="pay" style="margin-bottom:38px">PayPal</span></div>
+      <div class="btn" id="bwd" style="height:72px;width:100%"><span id="bwl">Retirar</span></div>
+      <div id="ok" class="abs" style="inset:0;border-radius:24px;background:rgba(13,17,23,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;text-align:center;padding:0 40px">
+       <div style="width:84px;height:84px;border-radius:50%;background:var(--g);color:#04140a;display:flex;align-items:center;justify-content:center"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+       <div style="font-size:30px;font-weight:700;letter-spacing:-.02em">Retiro solicitado</div><div id="okm" style="font-size:19px;color:var(--t2)">Llegará a tu PayPal.</div>
+      </div>
+     </div>
+    </div>
+
+   </div>
+   <div id="toast"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div style="font-size:21px;font-weight:700">Neon Rider ya está en línea</div><div style="font-size:16px;color:var(--t2);margin-top:3px">Visible para toda la comunidad</div></div></div>
+  </div>
+  <div id="fi"><div class="sq">ZIP</div><div class="n">neon-rider-v1.2.zip</div></div>
+ </div>
+ <div id="hud"><div id="cap"><div><span id="cn">01</span><b id="ct">Sube tu juego</b></div></div><div id="nota">Datos y juego ilustrativos · Tarifa y retiro mínimo reales de la plataforma</div></div>
+ <div id="intro"><img src="../saas/logo.png" alt="UpGames"><div class="kick">Creator Studio</div></div>
+ <div id="end"><img src="../saas/logo.png" alt="UpGames" style="width:340px"><h2 id="h2"></h2><div id="url" class="mono"><span style="color:#39FF88">●</span><span id="ut"></span></div><div class="btn" id="cta">Empieza gratis</div></div>
+<div id="ptr"><div id="rp"></div><svg id="cur" viewBox="0 0 24 24"><path d="M3 2l17 8.2-7.2 2.1-2.6 7.4z" fill="#fff" stroke="#0b0f14" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+</div>
+<script>
+'use strict';
+const DUR = 50;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, t) => a + (b - a) * t;
+const E = { lin: t => t, io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 3), out5: t => 1 - Math.pow(1 - t, 5), spr: t => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2) };
+const en = (t, t0, d, f = E.out) => f(clamp((t - t0) / d));
+const win = (t, a, b, fi = .35, fo = .35) => Math.min(clamp((t - a) / fi), clamp((b - t) / fo));
+const $ = id => document.getElementById(id);
+const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const SFX = []; const sfx = (t, n, g = 1, f = 1) => SFX.push({ t, n, g, f });
+
+/* posición de un elemento en coordenadas del escenario (sin transformaciones: los elementos se miden en reposo) */
+const ctr = (el, dx = .5, dy = .5) => { let x = 0, y = 0, e = el; while (e && e.id !== 'cam') { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return [x + el.offsetWidth * dx, y + el.offsetHeight * dy]; };
+
+/* ── Contenido dinámico ── */
+$('rv').innerHTML = ['Escaneo de seguridad', 'Compatible con Android', 'Listo para publicar'].map((x, i) =>
+  `<div style="display:flex;align-items:center;gap:16px;margin-bottom:26px"><div class="ck" style="width:34px;height:34px;border-radius:50%;border:2px solid #3a4452;display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#04140a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:0"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div class="ct" style="font-size:20px;font-weight:600;color:var(--t3)">${x}</div></div>`).join('');
+const CK = [...document.querySelectorAll('#rv .ck')], CT = [...document.querySelectorAll('#rv .ct')];
+const COVERS = ['linear-gradient(135deg,#ff5e62,#ff9966)', 'linear-gradient(135deg,#4facfe,#00f2fe)', 'linear-gradient(135deg,#39FF88,#0f8a5a)', 'linear-gradient(135deg,#a18cd1,#fbc2eb)'];
+$('sw').innerHTML = COVERS.map(c => `<div class="swc" style="width:104px;height:56px;border-radius:12px;background:${c};border:2.5px solid transparent"></div>`).join('');
+const SW = [...document.querySelectorAll('.swc')];
+$('pcg').style.background = COVERS[2];
+
+/* gráfica de 30 días (determinista) */
+const PTS = Array.from({ length: 30 }, (_, i) => 70 + i * 9 + Math.sin(i * 1.15) * 26 + Math.sin(i * .37 + 1) * 18 + (i > 20 ? (i - 20) * 7 : 0));
+const CW = 1282, CH = 484, X0 = 60, X1 = CW - 50, Y0 = 70, Y1 = CH - 70, vmax = 460;
+const px = i => lerp(X0, X1, i / 29), py = v => lerp(Y1, Y0, v / vmax);
+const linea = PTS.map((v, i) => (i ? 'L' : 'M') + px(i).toFixed(1) + ' ' + py(v).toFixed(1)).join(' ');
+$('ch').innerHTML = `<defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39FF88" stop-opacity=".28"/><stop offset="1" stop-color="#39FF88" stop-opacity="0"/></linearGradient><clipPath id="cl"><rect id="clr" x="0" y="0" width="0" height="${CH}"/></clipPath></defs>
+ <text x="36" y="46" fill="#F2F5F8" font-family="Inter" font-size="21" font-weight="700">Descargas por día</text>
+ ${[0, 1, 2, 3].map(k => `<line x1="${X0}" x2="${X1}" y1="${lerp(Y0, Y1, k / 3)}" y2="${lerp(Y0, Y1, k / 3)}" stroke="rgba(255,255,255,.06)" stroke-width="1.5"/>`).join('')}
+ <g clip-path="url(#cl)"><path d="${linea} L${X1} ${Y1} L${X0} ${Y1} Z" fill="url(#ar)"/><path d="${linea}" fill="none" stroke="#39FF88" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+ <g id="hv" opacity="0"><line id="hl" y1="${Y0 - 14}" y2="${Y1}" stroke="rgba(255,255,255,.25)" stroke-width="1.5" stroke-dasharray="5 6"/><circle id="hd" r="9" fill="#06080B" stroke="#39FF88" stroke-width="4"/>
+  <g id="hb"><rect x="-86" y="-86" width="172" height="62" rx="14" fill="#171d26" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/><text id="ht1" x="0" y="-62" text-anchor="middle" fill="#98A2B0" font-family="Inter" font-size="15" font-weight="600"></text><text id="ht2" x="0" y="-39" text-anchor="middle" fill="#F2F5F8" font-family="Inter" font-size="20" font-weight="700"></text></g></g>
+ ${[1, 8, 15, 22, 29].map(d => `<text x="${px(d)}" y="${CH - 28}" text-anchor="middle" fill="#5E6877" font-family="Inter" font-size="15">Día ${d}</text>`).join('')}`;
+
+/* ═════════ Línea de tiempo ═════════ */
+const T_ = { drag0: 4.5, drop: 5.95, up0: 6.1, up1: 8.6, v2: 9.5, pub: 20.5, toast: 21.7, v3: 25.6, v4: 34.7, wd: 40.9, out: 44.3, end: 45.3 };
+
+/* Cursor: lista de movimientos (t0, t1, destino) y clics */
+let P0 = [1560, 320]; const MV = [], CLK = [];
+const go = (t0, t1, p) => MV.push({ t0, t1, p });
+const click = (t, g = 1) => { CLK.push(t); sfx(t, 'clic', g); sfx(t + .09, 'suelta', g * .7); };
+function curPos(t) {
+  let a = P0;
+  for (const m of MV) {
+    if (t < m.t0) break;
+    const s = E.io(clamp((t - m.t0) / (m.t1 - m.t0))), b = typeof m.p === 'function' ? m.p() : m.p, dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, arc = Math.sin(Math.PI * s) * d * .07;
+    if (t < m.t1) return [lerp(a[0], b[0], s) - dy / d * arc, lerp(a[1], b[1], s) + dx / d * arc];
+    a = b;
+  }
+  return a;
+}
+
+/* Objetivos del cursor (medidos una vez) */
+const TG = { zone: ctr($('zone')), f1: ctr($('f1'), .25), f2: ctr($('f2'), .25), f3: ctr($('f3'), .4), op: ctr($('menu').children[1], .35), ch1: ctr($('ch1')), ch2: ctr($('ch2')), tg: ctr($('tg')), sw: ctr(SW[1]), bpub: ctr($('bpub')), n3: ctr($('n3'), .45), n4: ctr($('n4'), .45), cc: ctr($('cc'), .1, .6), sl: ctr($('sl')), pay: ctr($('pay')), bwd: ctr($('bwd')), cta: null };
+const FILE = [1490, 790], SLW = $('sl').offsetWidth, SLX = ctr($('sl'), 0, .5)[0];
+// el menú está oculto (opacity 0) pero con layout: las opciones tienen posición real
+
+/* ─ Escena 1 · subir ─ */
+const zc = [TG.zone[0] - 10, TG.zone[1] - 40];
+go(3.35, 4.35, [FILE[0] + 8, FILE[1] - 14]); click(4.45);
+go(T_.drag0, T_.drop, zc); for (let t = T_.drag0 + .05; t < T_.drop - .15; t += .34) sfx(t, 'roce', .7, 1 + ((t * 10) % 3) * .05);
+sfx(3.25, 'pop', .8); sfx(T_.drop, 'soltar', 1); sfx(T_.drop + .02, 'suelta', .7);
+go(6.2, 7.2, [1240, 930]);
+for (let t = T_.up0 + .1; t < T_.up1; t += .27) sfx(t, 'tick', .5, 1 + (t - T_.up0) / (T_.up1 - T_.up0) * .9);
+const CHK = [7.1, 7.9, 8.7]; CHK.forEach(t => sfx(t, 'pop', .7, 1.15)); sfx(9.0, 'exito', .9); sfx(T_.v2 - .1, 'whoosh', .5);
+
+/* ─ Escena 2 · detalles ─ */
+go(10.3, 11.4, TG.f1); click(11.55);
+const TY = [];
+function typing(id, txt, t0, dt) { const ks = [...txt].map((c, i) => t0 + i * dt + ((i * 7) % 5) * .006); ks.forEach((t, i) => sfx(t, 'tecla', .55 + ((i * 3) % 4) * .1, 1 + ((i * 5) % 3) * .06)); TY.push({ id, txt, ks, end: ks[ks.length - 1] }); }
+typing('1', 'Neon Rider', 11.85, .085);
+go(12.85, 13.5, TG.f2); click(13.62);
+typing('2', 'Carreras arcade a 60 fps', 13.9, .052);
+go(15.2, 15.9, TG.f3); click(16.0); sfx(16.0, 'abrir', .8);
+go(16.2, 16.6, TG.op); click(16.75); sfx(16.75, 'elegir', .9);
+go(16.95, 17.35, TG.ch1); click(17.45); sfx(17.45, 'toggle', .8);
+go(17.6, 17.9, TG.ch2); click(18.0); sfx(18.0, 'toggle', .8, 1.1);
+go(18.15, 18.7, TG.tg); click(18.8); sfx(18.8, 'toggle', 1, .85);
+go(19.0, 19.6, TG.sw); click(19.7); sfx(19.7, 'elegir', .9, 1.2);
+
+/* ─ Escena 3 · publicar ─ */
+go(20.0, 20.9, TG.bpub); click(21.0); sfx(21.0, 'giro', .6);
+sfx(22.0, 'exito', 1); sfx(T_.toast, 'notif', .9);
+go(22.3, 23.2, [1560, 620]);
+go(24.1, 25.1, TG.n3); click(25.2); sfx(25.2, 'elegir', .6, .8);
+sfx(T_.v3 - .05, 'whoosh', .5);
+
+/* ─ Escena 4 · estadísticas ─ */
+[26.3, 26.55, 26.8, 27.05].forEach((t, i) => sfx(t, 'contador', .55, .95 + i * .06));
+sfx(26.5, 'whoosh', .35, .7);
+go(28.6, 29.6, [TG.cc[0] + 20, TG.cc[1] - 40]);
+const HOV0 = 29.9, HOV1 = 33.0; go(HOV0, HOV1, [TG.cc[0] + 20 + (1282 - 130) * 0.96, TG.cc[1] - 150]);
+for (let i = 0; i < 20; i++) sfx(HOV0 + .45 + i * .13, 'desliza', .4, .9 + i * .02);
+go(33.4, 34.4, TG.n4); click(34.55); sfx(34.55, 'elegir', .6, .8); sfx(T_.v4 - .05, 'whoosh', .5);
+
+/* ─ Escena 5 · ingresos ─ */
+sfx(35.3, 'contador', .7, 1);
+const SLV = 0.78;   // posición final del control (0-1) = ~US$ 50
+go(37.3, 38.0, [SLX + SLW * .08, ctr($('sl'), 0, .5)[1]]); click(38.15, .9);
+go(38.2, 39.7, [SLX + SLW * SLV, ctr($('sl'), 0, .5)[1]]);
+for (let i = 0; i < 12; i++) sfx(38.3 + i * .115, 'desliza', .5, .85 + i * .035);
+go(40.0, 40.55, TG.pay); click(40.65); sfx(40.65, 'toggle', .9);
+go(40.9, 41.5, TG.bwd); click(41.62); sfx(41.62, 'giro', .5);
+sfx(42.5, 'exito', 1); [42.7, 42.85, 43.0].forEach((t, i) => sfx(t, 'moneda', .8, 1 + i * .12));
+
+/* ─ Cierre ─ */
+const URLT = 'upgames.games'; const UT0 = 47.4; for (let i = 0; i < URLT.length; i++) sfx(UT0 + i * .06, 'tecla', .5, 1 + (i % 3) * .05);
+sfx(.35, 'golpe', .5); sfx(2.05, 'whoosh', .4);
+sfx(T_.out, 'whoosh', .5, .8);
+sfx(45.8, 'golpe', .5, 1.3); [46.15, 46.55, 47.0].forEach((t, i) => sfx(t, 'pop', .5, 1 + i * .1));
+const CLK_END = 48.7, CTA = () => ctr($('cta')); go(43.1, 43.2, () => [CTA()[0] + 260, CTA()[1] + 220]); go(48.0, 48.6, () => [CTA()[0] + 40, CTA()[1] + 10]); click(CLK_END, 1); sfx(CLK_END + .05, 'exito', .6, 1.1);
+const END_CTA = 48.7;
+
+/* Cámara: [t, cx, cy, zoom] */
+const KF = [[0, 960, 540, 1], [2.3, 960, 540, 1], [3.5, 1000, 600, 1.1], [9.0, 1000, 600, 1.1], [10.4, 960, 590, 1.12], [14.6, 960, 590, 1.14], [19.0, 1060, 650, 1.12], [20.2, 1250, 690, 1.18],
+  [23.2, 1230, 670, 1.12], [24.7, 1060, 600, 1.06], [27.0, 1060, 640, 1.1], [29.6, 1060, 690, 1.24], [33.2, 1060, 690, 1.24], [34.4, 1060, 600, 1.08], [37.0, 1100, 650, 1.2], [41.8, 1100, 650, 1.2], [43.6, 960, 540, 1], [DUR, 960, 540, 1]];
+function camAt(t) { for (let i = 0; i < KF.length - 1; i++) { const a = KF[i], b = KF[i + 1]; if (t <= b[0]) { const s = E.io(clamp((t - a[0]) / (b[0] - a[0]))); return [lerp(a[1], b[1], s), lerp(a[2], b[2], s), lerp(a[3], b[3], s)]; } } return KF[KF.length - 1].slice(1); }
+
+/* Titulares */
+const CAPS = [[3.5, 9.4, '01', 'Sube tu juego'], [10.3, 19.3, '02', 'Cuéntanos de qué va'], [19.9, 25.2, '03', 'Publica con un clic'], [26.0, 34.3, '04', 'Mide en tiempo real'], [35.0, 41.8, '05', 'Cobra por cada anuncio visto']];
+const H2 = [['Tu', 'juego.'], ['Tu', 'audiencia.'], ['Tus', 'ingresos.']];
+$('h2').innerHTML = H2.map((l, i) => `<div>${l.map((w, j) => `<span class="w${i == 2 && j == 1 ? ' a' : ''}">${w}</span>`).join(' ')}</div>`).join('');
+const WS = [...document.querySelectorAll('#end .w')];
+const ripples = CLK.map(() => { const d = document.createElement('div'); d.className = 'rip'; $('rp').appendChild(d); return d; });
+const SPK = Array.from({ length: 16 }, () => { const d = document.createElement('div'); d.className = 'spark'; $('cam').appendChild(d); return d; });
+
+const VIEWS = [$('v1'), $('v2'), $('v3'), $('v4')], NAVS = { 1: $('n2'), 2: $('n2'), 3: $('n3'), 4: $('n4') }, CRUMB = ['Publicar', 'Publicar', 'Estadísticas', 'Ingresos'];
+const vs = (t, a, b) => ({ o: Math.min(en(t, a, .5), 1 - en(t, b, .5)), x: (1 - en(t, a, .6, E.out5)) * 60 - en(t, b, .6, E.in || E.io) * 60 });
+const setTg = (el, p) => { el.style.background = `rgb(${lerp(35, 57, p)},${lerp(42, 255, p)},${lerp(52, 136, p)})`; el.firstChild.style.transform = `translateX(${p * 24}px)`; el.firstChild.style.background = p > .5 ? '#04140a' : '#fff'; };
+
+function render(t) {
+  t = clamp(t, 0, DUR);
+  /* cursor */
+  const cp = curPos(t);
+  /* cámara (con un toque de seguimiento del cursor) */
+  let [cx, cy, z] = camAt(t); const follow = .1 * win(t, 3.4, 43, .5, .5); cx += (cp[0] - cx) * follow; cy += (cp[1] - cy) * follow;
+  const dr = win(t, 3.4, 43, .5, .5); cx += Math.sin(t * .7) * 2.2 * dr; cy += Math.cos(t * .55) * 1.8 * dr;
+  const intro = en(t, 2.0, .9, E.io);
+  $('cam').style.transform = `translate(${960 - cx * z}px, ${540 - cy * z}px) scale(${z})`;
+  /* intro */
+  $('intro').style.opacity = Math.min(en(t, .15, .7), 1 - en(t, 1.9, .55)); $('intro').style.transform = `scale(${lerp(.92, 1, en(t, .15, 1.2, E.out5)) + en(t, 1.9, .9) * .16})`; $('intro').style.filter = `blur(${(1 - en(t, .15, .5)) * 14 + en(t, 1.9, .6) * 10}px)`;
+  const wv = en(t, 2.0, 1.1, E.out5), wo = 1 - en(t, T_.out, .9, E.io);
+  $('win').style.opacity = wv * wo; $('win').style.transform = `translateY(${(1 - wv) * 50}px) scale(${lerp(.94, 1, wv) - en(t, T_.out, 1, E.io) * .08})`;
+  /* vistas */
+  const V = [vs(t, 2.3, T_.v2), vs(t, T_.v2, T_.v3 - .25), vs(t, T_.v3, T_.v4 - .25), { o: en(t, T_.v4, .5), x: (1 - en(t, T_.v4, .6, E.out5)) * 60 }];
+  V.forEach((v, i) => { VIEWS[i].style.opacity = v.o; VIEWS[i].style.transform = `translateX(${v.x}px)`; });
+  const vi = t < T_.v2 ? 0 : t < T_.v3 ? 1 : t < T_.v4 ? 2 : 3;
+  $('crumb').textContent = CRUMB[vi];
+  const nTo = [$('n2'), $('n2'), $('n3'), $('n4')][vi].offsetTop, nFrom = [$('n2'), $('n2'), $('n2'), $('n3')][vi].offsetTop, nk = vi < 2 ? 1 : en(t, vi == 2 ? T_.v3 - .4 : T_.v4 - .4, .6, E.io);
+  $('nvbg').style.top = lerp(nFrom, nTo, nk) + 'px';
+  /* escena 1 */
+  const fiVis = t >= 3.25 && t < T_.drop ? en(t, 3.25, .3, E.spr) : 0, drag = t >= 4.45 && t < T_.drop;
+  const fi = $('fi'); fi.style.opacity = fiVis * (t < T_.drop - .02 ? 1 : 0); fi.style.transform = `scale(${drag ? 1.08 : 1}) rotate(${drag ? Math.sin(t * 5) * 2 : 0}deg)`;
+  const fpx = drag ? [cp[0] + 18, cp[1] + 22] : FILE; fi.style.left = (fpx[0] - 64) + 'px'; fi.style.top = (fpx[1] - 58) + 'px';
+  const zn = en(t, 5.1, .3) * (t < T_.drop ? 1 : 0), zone = $('zone');
+  zone.style.borderColor = t >= T_.drop ? 'rgba(255,255,255,.12)' : `rgba(57,255,136,${.16 + zn * .75})`; zone.style.borderStyle = t >= T_.drop ? 'solid' : 'dashed';
+  zone.style.boxShadow = `0 0 ${zn * 60}px rgba(57,255,136,${zn * .22})`; zone.style.background = t < T_.drop ? `rgba(57,255,136,${zn * .06})` : '#0a0e13';
+  $('zin').style.opacity = 1 - en(t, T_.drop, .2); $('fcard').style.opacity = en(t, T_.drop, .25); $('fcard').style.transform = `translateY(${(1 - en(t, T_.drop, .5, E.spr)) * 30}px) scale(${lerp(.9, 1, en(t, T_.drop, .5, E.spr))})`;
+  const pr = en(t, T_.up0, T_.up1 - T_.up0, E.io); $('pbar').style.width = (pr * 100) + '%'; $('ppc').textContent = Math.round(pr * 100) + ' %'; $('pst').textContent = pr >= 1 ? 'Subida completa' : 'Subiendo…';
+  CK.forEach((c, i) => { const k = en(t, CHK[i], .35, E.spr), spin = t >= CHK[i] - .6 && t < CHK[i]; c.style.background = k > 0 ? 'var(--g)' : 'transparent'; c.style.borderColor = k > 0 ? 'var(--g)' : (spin ? '#39FF88' : '#3a4452'); c.style.borderTopColor = spin ? 'transparent' : ''; c.style.transform = spin ? `rotate(${t * 540}deg)` : `scale(${lerp(.7, 1, k)})`; c.firstChild.style.opacity = k; CT[i].style.color = k > 0 ? 'var(--tx)' : 'var(--t3)'; });
+  const s1 = t >= 9.0;
+  $('s1a').className = 'st ' + (s1 ? 'ok' : 'on'); $('s1b').className = 'st ' + (s1 ? 'on' : '');
+  /* escena 2: escritura */
+  TY.forEach(y => { const n = y.ks.filter(k => t >= k).length; $('t' + y.id).textContent = y.txt.slice(0, n); $('p' + y.id).style.display = n || t > y.ks[0] - .3 ? 'none' : ''; $('c' + y.id).style.opacity = t > y.ks[0] - .35 && t < y.end + .6 ? (Math.floor(t * 2.4) % 2 ? .25 : 1) : 0; });
+  $('pt').textContent = $('t1').textContent; $('pd').textContent = $('t2').textContent;
+  const mo = Math.max(0, en(t, 16.0, .18) - en(t, 16.8, .15)), hov = t > 16.5 ? 1 : 0;
+  $('menu').style.opacity = mo; $('menu').style.transform = `translateY(${(1 - mo) * -8}px)`; [...$('menu').children].forEach((d, i) => { d.style.background = i === 1 && hov ? 'rgba(57,255,136,.12)' : ''; d.style.color = i === 1 && hov ? '#fff' : ''; });
+  const cat = t >= 16.75; $('t3').textContent = cat ? 'Carreras' : 'Elige una categoría'; $('t3').className = cat ? '' : 'ph'; $('pc').textContent = cat ? 'CARRERAS' : '';
+  const on1 = t >= 17.45, on2 = t >= 18.0, on3 = t >= 18.8;
+  $('ch1').className = 'chip' + (on1 ? ' on' : ''); $('ch2').className = 'chip' + (on2 ? ' on' : ''); setTg($('tg'), en(t, 18.8, .2));
+  $('pa').style.opacity = on1 ? 1 : 0; $('pp').style.opacity = on2 ? 1 : 0;
+  const sv = t >= 19.7; SW.forEach((s, i) => s.style.borderColor = (sv ? i === 1 : i === 2) && t > 19.0 ? '#fff' : 'transparent');
+  $('pcg').style.opacity = 1; $('pcg').style.background = COVERS[sv ? 1 : 2]; if (t < 11.5) $('pcg').style.opacity = 0;
+  $('f1').style.borderColor = t >= 11.55 && t < 13.62 ? 'rgba(57,255,136,.6)' : ''; $('f2').style.borderColor = t >= 13.62 && t < 16.0 ? 'rgba(57,255,136,.6)' : ''; $('f3').style.borderColor = t >= 16.0 && t < 16.75 ? 'rgba(57,255,136,.6)' : '';
+  /* escena 3: publicar */
+  const bl = $('bl'), bt = en(t, 21.0, .1, E.lin) - en(t, 22.0, .1, E.lin);
+  bl.innerHTML = t < 21.0 ? 'Publicar' : t < 22.0 ? `<svg width="30" height="30" viewBox="0 0 24 24" style="transform:rotate(${t * 480}deg)"><circle cx="12" cy="12" r="9" fill="none" stroke="#04140a" stroke-width="3.2" stroke-dasharray="40 20" stroke-linecap="round"/></svg>` : '✓ Publicado';
+  $('bpub').style.transform = `scale(${1 - (en(t, 21.0, .08) - en(t, 21.12, .15)) * .04})`;
+  $('pbd').style.opacity = en(t, T_.toast, .3); $('pbd').style.transform = `scale(${lerp(.6, 1, en(t, T_.toast, .5, E.spr))})`;
+  $('s2b').className = 'st ' + (t >= 22.0 ? 'ok' : 'on'); $('s2c').className = 'st ' + (t >= 22.0 ? 'on' : '');
+  const tk = Math.min(en(t, T_.toast, .5, E.spr), 1 - en(t, 24.9, .4)); $('toast').style.opacity = clamp(Math.min(en(t, T_.toast, .25), 1 - en(t, 24.9, .4))); $('toast').style.transform = `translateX(${(1 - tk) * 60}px) scale(${lerp(.92, 1, tk)})`;
+  const bc = TG.bpub; SPK.forEach((s, i) => { const a = i / SPK.length * 6.283, k = en(t, 22.0, 1.0, E.out), r = 70 + 90 * k + (i % 3) * 26; s.style.left = (bc[0] + Math.cos(a) * r) + 'px'; s.style.top = (bc[1] + Math.sin(a) * r * .7 - 10) + 'px'; s.style.opacity = t > 22.0 ? (1 - k) * .9 : 0; s.style.transform = `scale(${1 - k * .6})`; });
+  /* escena 4 */
+  [[0, 'k1', 18420, 26.3], [1, 'k2', 63150, 26.55], [2, 'k3', 41880, 26.8], [3, 'k4', 1284, 27.05]].forEach(([i, id, v, t0]) => $(id).textContent = fmt(v * en(t, t0, 2.2, E.io)));
+  $('clr').setAttribute('width', 60 + (CW - 60) * en(t, 27.0, 2.6, E.io));
+  const hv = win(t, HOV0 + .2, HOV1 + .2, .3, .3); $('hv').setAttribute('opacity', hv);
+  const cardX = cp[0] - ctr($('cc'), 0, 0)[0], idx = Math.round(clamp((cardX - X0) / (X1 - X0)) * 29), hx = px(idx), hy = py(PTS[idx]);
+  $('hl').setAttribute('x1', hx); $('hl').setAttribute('x2', hx); $('hd').setAttribute('cx', hx); $('hd').setAttribute('cy', hy);
+  $('hb').setAttribute('transform', `translate(${clamp(hx, 100, CW - 100)},${hy - 8})`); $('ht1').textContent = 'Día ' + (idx + 1); $('ht2').textContent = fmt(PTS[idx] * 3.2) + ' descargas';
+  /* escena 5 */
+  const bal = 62.82 * en(t, 35.4, 1.8, E.io); $('bal').textContent = 'US$ ' + bal.toFixed(2).replace('.', ','); $('r1').textContent = fmt(41880 * en(t, 35.4, 1.8, E.io));
+  $('rate').style.opacity = en(t, 36.4, .5); $('rate').style.transform = `translateY(${(1 - en(t, 36.4, .6, E.out5)) * 14}px)`;
+  const sl = t < 38.2 ? .08 : lerp(.08, SLV, E.io(clamp((t - 38.2) / 1.5))), amtv = 10 + sl * (62.82 - 10);
+  $('slf').style.width = (sl * 100) + '%'; $('slh').style.left = (sl * 100) + '%'; $('slh').style.transform = `scale(${t > 38.15 && t < 39.8 ? 1.2 : 1})`; $('amt').textContent = 'US$ ' + amtv.toFixed(2).replace('.', ',');
+  $('pay').className = 'chip' + (t >= 40.65 ? ' on' : ''); $('pay').style.marginBottom = '38px';
+  $('bwl').innerHTML = t < 41.62 ? 'Retirar' : t < 42.5 ? `<svg width="30" height="30" viewBox="0 0 24 24" style="transform:rotate(${t * 480}deg)"><circle cx="12" cy="12" r="9" fill="none" stroke="#04140a" stroke-width="3.2" stroke-dasharray="40 20" stroke-linecap="round"/></svg>` : '✓';
+  $('ok').style.opacity = en(t, 42.5, .35); $('ok').style.transform = `scale(${lerp(.96, 1, en(t, 42.5, .5, E.spr))})`; $('okm').textContent = 'US$ ' + amtv.toFixed(2).replace('.', ',') + ' llegarán a tu PayPal.';
+  /* cursor y clics */
+  const cvis = win(t, 3.2, 43.0, .3, .45) + (t > 47.9 ? en(t, 47.9, .3) : 0);
+  const cur = $('cur'); const down = CLK.some(c => t >= c && t < c + .1);
+  const sp = p => [960 - cx * z + p[0] * z, 540 - cy * z + p[1] * z], sc = sp(cp);
+  cur.style.opacity = clamp(cvis); cur.style.transform = `translate(${sc[0]}px, ${sc[1]}px) scale(${down ? .86 : 1})`;
+  ripples.forEach((r, i) => { const k = en(t, CLK[i], .55, E.out), cc = sp(curPosAt(CLK[i])); r.style.left = cc[0] + 'px'; r.style.top = cc[1] + 'px'; r.style.opacity = t >= CLK[i] ? (1 - k) * .85 : 0; r.style.transform = `scale(${1 + k * 3.4})`; });
+  /* titulares y nota */
+  const cp_ = CAPS.find(c => t >= c[0] - .1 && t <= c[1] + .1);
+  if (cp_) { $('cn').textContent = cp_[2]; $('ct').textContent = cp_[3]; const o = win(t, cp_[0], cp_[1], .4, .4); $('cap').firstChild.style.opacity = o; $('cap').firstChild.style.transform = `translateY(${(1 - o) * 14}px)`; } else $('cap').firstChild.style.opacity = 0;
+  $('nota').style.opacity = win(t, 26.2, 41.8, .5, .5) * .9;
+  /* cierre */
+  const e = $('end'); e.style.opacity = Math.min(en(t, T_.end, .6), 1); e.firstChild.style.opacity = en(t, T_.end, .6); e.firstChild.style.transform = `scale(${lerp(.9, 1, en(t, T_.end, 1.2, E.out5))})`;
+  WS.forEach((w, i) => { const q = en(t, 45.8 + i * .35, .8, E.out5); w.style.opacity = q; w.style.transform = `translateY(${(1 - q) * 40}px)`; w.style.filter = `blur(${(1 - q) * 10}px)`; });
+  const un = Math.round(en(t, UT0, URLT.length * .06, E.lin) * URLT.length); $('ut').textContent = URLT.slice(0, un); $('url').style.opacity = en(t, UT0 - .3, .4); $('url').style.transform = `translateY(${(1 - en(t, UT0 - .3, .6, E.out5)) * 24}px)`;
+  const cta = $('cta'), cq = en(t, 47.9, .6, E.spr), cd = en(t, END_CTA, .08) - en(t, END_CTA + .12, .2);
+  cta.style.opacity = en(t, 47.9, .3); cta.style.transform = `scale(${lerp(.7, 1, cq) * (1 - cd * .05)})`;
+}
+function curPosAt(tt) { return curPos(tt); }
+window.DURACION = DUR; window.SFX = SFX; window.render = render;
+window.listo = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => render(0));
+const q = new URLSearchParams(location.search);
+if (q.has('t')) window.listo.then(() => render(+q.get('t')));
+if (q.has('play')) window.listo.then(() => { const t0 = performance.now(); (function f() { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(f); })(); });
+</script>
+</body>
+</html>

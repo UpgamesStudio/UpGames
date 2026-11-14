@@ -1,0 +1,14 @@
+# Fuera del grafo: herramientas del agente, dependencias y salidas generadas
+plugins/
+.claude/
+node_modules/
+graphify-out/
+**/build/
+**/.gradle/
+**/android/app/src/main/assets/public/
+package-lock.json
+
+# Librerías de terceros incluidas (three.js, socket.io, mp4-muxer) y minificados: ensucian el grafo
+games/*/lib/
+**/*.min.js
+**/*.min.css
