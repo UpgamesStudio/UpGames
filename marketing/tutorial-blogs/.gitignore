@@ -1,0 +1,6 @@
+# Salidas generadas (se rehacen con narracion.py, grabar.js y render.js)
+*.mp4
+*.wav
+sfx.json
+previas/
+demo.json

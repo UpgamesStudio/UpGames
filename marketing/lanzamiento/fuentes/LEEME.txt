@@ -1,0 +1,2 @@
+Inter (Inter Display): SIL Open Font License 1.1 · © The Inter Project Authors (https://rsms.me/inter).
+Se incluyen aquí solo para que el render del film no dependa de las fuentes instaladas.

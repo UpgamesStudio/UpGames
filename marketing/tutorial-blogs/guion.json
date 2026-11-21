@@ -1,0 +1,23 @@
+{
+ "voz": "es_AR-daniela-high",
+ "pausa": 0.38,
+ "segmentos": [
+  { "id": "problema", "escena": "problema", "texto": "¿Quieres tu propio espacio en internet, pero no sabes programar? Con Lurveta Blogs creas tu sitio, escribes y publicas, sin tocar una línea de código." },
+  { "id": "entrar", "escena": "entrar", "texto": "Entra a Lurveta, abre el menú rápido y toca «Mi blog»." },
+  { "id": "nombre", "escena": "crear", "texto": "Ponle nombre a tu blog. La dirección se completa sola, y Lurveta te confirma si está disponible." },
+  { "id": "tema", "escena": "crear", "texto": "Agrega una frase que lo describa y elige uno de los temas listos." },
+  { "id": "acepto", "escena": "crear", "texto": "Acepta que eres responsable de lo que publicas, y toca «Crear mi blog»." },
+  { "id": "nexus1", "escena": "nexus", "texto": "Ahora, tu página de inicio. En «Páginas», toca el botón más y elige «Que Nexus la cree»." },
+  { "id": "nexus2", "escena": "nexus", "texto": "Cuéntale qué haces, para quién, y qué quieres que haga quien te visita." },
+  { "id": "nexus3", "escena": "nexus", "texto": "En unos segundos, Nexus arma la página por secciones: portada, beneficios, opiniones, preguntas frecuentes y una llamada a la acción." },
+  { "id": "previa", "escena": "nexus", "texto": "En la vista previa ves cómo quedará, en el celular o en la computadora." },
+  { "id": "editar", "escena": "editar", "texto": "Todo se edita por bloques. Nexus no inventa opiniones ni datos: lo que va entre corchetes lo completas tú, y si una sección no te sirve, la quitas." },
+  { "id": "revisar", "escena": "publicar", "texto": "Antes de publicar, «Revisar mi página» te dice qué falta, y Nexus te propone el título, el resumen y las etiquetas para Google y las redes." },
+  { "id": "publicar", "escena": "publicar", "texto": "Toca «Publicar». Tu página ya está en internet, y puedes usarla como inicio de tu sitio." },
+  { "id": "marca", "escena": "marca", "texto": "En «Tema», describe tu marca y Nexus te propone paletas de colores y letras. Eliges una, y la guardas." },
+  { "id": "entrada", "escena": "entrada", "texto": "Para tus artículos, escribe el borrador como te salga, toca el destello de Nexus y elige «Mejorar redacción»: corrige y ordena tu texto, sin cambiar lo que quieres decir." },
+  { "id": "resultado", "escena": "resultado", "texto": "Y este es el resultado: tu sitio, con tu página de inicio, tu blog y botones para compartir en WhatsApp, Telegram, X o Facebook." },
+  { "id": "extras", "escena": "resultado", "texto": "Cuando tengas tu dominio, lo conectas desde «Ajustes», y en «Estadísticas» ves cuántas personas te visitan." },
+  { "id": "cierre", "escena": "cierre", "texto": "Tu espacio. Tus ideas. Tu contenido. Empieza a construirlo en lurveta punto com." }
+ ]
+}

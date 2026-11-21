@@ -1,0 +1,5 @@
+# Salidas generadas (se rehacen con node render.js)
+*.mp4
+*.wav
+sfx.json
+previas/

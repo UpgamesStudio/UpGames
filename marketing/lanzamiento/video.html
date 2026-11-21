@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lurveta · Lanzamiento</title>
+<!--
+  Film de lanzamiento de Lurveta · 1920×1080 · 80 s · 120 BPM (1 tiempo = 0,5 s).
+  Cada fotograma lo dibuja window.render(t) de forma exacta (sin transiciones CSS ni relojes): render.js lo graba.
+  Vista previa: video.html?t=12.5 (un instante) · video.html?play (tiempo real).
+  Concepto «Convergencia»: la V del logotipo son dos caminos que se encuentran. Ver PREPRODUCCION.md.
+-->
+<style>
+@font-face { font-family: LvD; src: url(fuentes/InterDisplay-Black.otf); font-weight: 900; }
+@font-face { font-family: LvD; src: url(fuentes/InterDisplay-Bold.otf); font-weight: 700; }
+@font-face { font-family: LvT; src: url(fuentes/Inter-Medium.otf); font-weight: 500; }
+@font-face { font-family: LvT; src: url(fuentes/Inter-SemiBold.otf); font-weight: 600; }
+html, body { margin: 0; background: #000; overflow: hidden; }
+#s { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #070B0A; font-family: LvT, sans-serif; color: #F2F5F4; }
+.l { position: absolute; inset: 0; }
+.a { position: absolute; }
+.esc { position: absolute; inset: 0; display: none; }
+#cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+#gl { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+/* tipografía */
+.d { font-family: LvD; font-weight: 900; letter-spacing: -.045em; line-height: .9; white-space: nowrap; }
+.d7 { font-family: LvD; font-weight: 700; letter-spacing: -.03em; line-height: 1; white-space: nowrap; }
+.t { font-family: LvT; font-weight: 500; letter-spacing: -.01em; white-space: nowrap; }
+.etq { font-family: LvT; font-weight: 600; font-size: 31px; letter-spacing: .16em; text-transform: uppercase; color: #32D583; white-space: nowrap; }
+/* pantallas reales (sin carcasa: solo la pantalla con borde de cristal) */
+.pan { position: absolute; overflow: hidden; background: #0A0F0D; box-shadow: 0 70px 140px -40px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.13), inset 0 0 0 1px rgba(255,255,255,.04); transform-style: preserve-3d; backface-visibility: hidden; }
+.pan img { position: absolute; left: 0; top: 0; display: block; transform-origin: 0 0; }
+.pan::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(125deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.04) 100%); }
+.aro { position: absolute; border-radius: 999px; box-shadow: 0 0 0 3px #32D583, 0 0 34px 6px rgba(50,213,131,.55); pointer-events: none; }
+.linea { position: absolute; height: 3px; background: #32D583; box-shadow: 0 0 18px 2px rgba(50,213,131,.75); transform-origin: 0 50%; }
+#grano { position: absolute; inset: -60px; opacity: .085; mix-blend-mode: overlay; pointer-events: none; }
+#vin { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.62) 100%); }
+#flash { position: absolute; inset: 0; background: radial-gradient(60% 75% at 50% 52%, #fff 0%, rgba(205,255,228,.55) 38%, rgba(0,0,0,0) 78%); opacity: 0; pointer-events: none; mix-blend-mode: screen; }
+#negro { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="s">
+  <div id="cam">
+    <div id="fondo" class="l"></div>
+    <div id="dom" class="l"></div>
+    <canvas id="gl" width="1920" height="1080"></canvas>
+    <div id="sobre" class="l"></div>
+  </div>
+  <canvas id="grano" width="1040" height="600"></canvas>
+  <div id="vin"></div>
+  <div id="flash"></div>
+  <div id="negro"></div>
+</div>
+<script type="importmap">{ "imports": { "three": "../../games/studio/lib/three.module.min.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from '../../games/studio/lib/addons/environments/RoomEnvironment.js';
+
+// ═══ Constantes de marca (cambiar aquí si cambia algo) ═══
+const MARCA = 'Lurveta', TAGLINE = 'Donde todo converge.', DOMINIO = 'upgames.games', CTA = 'Explora gratis';
+const VERDE = '#32D583', BLANCO = '#F2F5F4', ORO = '#F4C451';
+const DURACION = 80, BPM = 120, TIEMPO = 60 / BPM;
+const C = 'capturas/';
+
+// ═══ Utilidades ═══
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const S = (t, a, b) => clamp((t - a) / (b - a));                       // rampa 0→1 entre a y b
+const lerp = (a, b, k) => a + (b - a) * k;
+const eo = k => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);                 // expo out
+const ei = k => k <= 0 ? 0 : Math.pow(2, 10 * k - 10);                 // expo in
+const eio = k => k < .5 ? 16 * k ** 5 : 1 - Math.pow(-2 * k + 2, 5) / 2; // quint in-out
+const co = k => 1 - Math.pow(1 - k, 3);                                 // cubic out
+const sio = k => -(Math.cos(Math.PI * k) - 1) / 2;                      // seno in-out
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const ruido = (t, f = 8) => { const i = Math.floor(t * f), u = t * f - i, s = u * u * (3 - 2 * u); return lerp(hash(i), hash(i + 1), s) * 2 - 1; };
+const $ = id => document.getElementById(id);
+function el(tag, cls, css, padre, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; (padre || $('dom')).appendChild(e); return e; }
+const st = (e, o) => { for (const k in o) e.style[k] = o[k]; };
+const precarga = src => new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.error('falta', src); ok(i); }; i.src = src; });
+
+// Cortes de sonido que pide cada escena (audio.js los sintetiza en su instante)
+const SFX = [];
+const sfx = (t, tipo, g = 1, p = 0) => SFX.push({ t, tipo, g, p });
+
+// ═══ Medidas reales de las capturas (capturar.js) ═══
+let M = {};
+
+// ═══ Ventana sobre una captura: muestra la región r=[x,y,w,h] (px de la captura) dentro de un panel w×h ═══
+function ventana(src, w, h, radio, padre) {
+  const p = el('div', 'pan', `width:${w}px;height:${h}px;border-radius:${radio}px`, padre);
+  const im = el('img', '', '', p); im.src = src;
+  const v = { p, im, w, h, src,
+    tam(a, b) { v.w = a; v.h = b; p.style.width = a + 'px'; p.style.height = b + 'px'; },
+    region(r) { const k = Math.max(v.w / r[2], v.h / r[3]); im.style.width = (IMGS[v.src].naturalWidth * k) + 'px'; im.style.transform = `translate(${-r[0] * k + (v.w - r[2] * k) / 2}px,${-r[1] * k + (v.h - r[3] * k) / 2}px)`; v.k = k; v.r = r; },
+    // punto de la captura → coordenadas dentro del panel
+    punto(x, y) { const r = v.r, k = v.k; return [(x - r[0]) * k + (v.w - r[2] * k) / 2, (y - r[1]) * k + (v.h - r[3] * k) / 2]; },
+  };
+  return v;
+}
+const mezclaR = (a, b, k) => a.map((x, i) => lerp(x, b[i], k));
+const COMPLETA = [0, 0, 1170, 2532];
+
+// ═══ Logo vectorial (las mismas rutas que public/icons/logo-lurveta.svg) ═══
+let LOGO = null;   // { vb, paths:[{fill,d}] }
+function svgLogo(css, partes = 'todo') {
+  const [x, y, w, h] = LOGO.vb;
+  const sel = LOGO.paths.filter((p, i) => partes === 'todo' || partes.includes(i));
+  return `<svg viewBox="${x} ${y} ${w} ${h}" style="${css || ''}" xmlns="http://www.w3.org/2000/svg">${sel.map(p => `<path fill="${p.fill}" d="${p.d}"/>`).join('')}</svg>`;
+}
+
+// ═══ Three.js: la V y el logotipo extruidos ═══
+let R3 = null;
+function rutaAShapePath(d) {   // M H V L C Q Z absolutos (lo que escribe fontTools)
+  const sp = new THREE.ShapePath(), tk = d.match(/[MHVLCQZ]|-?\d*\.?\d+(?:e-?\d+)?/gi); let i = 0, cx = 0, cy = 0, cmd = '';
+  const n = () => parseFloat(tk[i++]);
+  while (i < tk.length) {
+    if (/[A-Z]/i.test(tk[i])) cmd = tk[i++];
+    if (cmd === 'M') { cx = n(); cy = n(); sp.moveTo(cx, -cy); cmd = 'L'; }
+    else if (cmd === 'L') { cx = n(); cy = n(); sp.lineTo(cx, -cy); }
+    else if (cmd === 'H') { cx = n(); sp.lineTo(cx, -cy); }
+    else if (cmd === 'V') { cy = n(); sp.lineTo(cx, -cy); }
+    else if (cmd === 'C') { const a = n(), b = n(), c = n(), e = n(); cx = n(); cy = n(); sp.bezierCurveTo(a, -b, c, -e, cx, -cy); }
+    else if (cmd === 'Q') { const a = n(), b = n(); cx = n(); cy = n(); sp.quadraticCurveTo(a, -b, cx, -cy); }
+    else if (cmd === 'Z') { cmd = ''; }
+    else i++;
+  }
+  return sp;
+}
+function iniciar3D() {
+  const canvas = $('gl');
+  const rd = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  rd.setPixelRatio(1); rd.setSize(1920, 1080, false); rd.setClearColor(0x000000, 0);
+  rd.toneMapping = THREE.NeutralToneMapping; rd.toneMappingExposure = 1.0; rd.outputColorSpace = THREE.SRGBColorSpace;
+  const esc = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(rd); esc.environment = pm.fromScene(new RoomEnvironment(), .04).texture; esc.environmentIntensity = .42;
+  const cam = new THREE.PerspectiveCamera(24, 1920 / 1080, .1, 200);
+  const luz = new THREE.DirectionalLight(0xffffff, 1.6); luz.position.set(-4, 6, 8); esc.add(luz);
+  const borde = new THREE.DirectionalLight(0x9fffd0, 1.4); borde.position.set(6, -2, -6); esc.add(borde);
+  const barrido = new THREE.PointLight(0xffffff, 0, 30, 1.4); esc.add(barrido);
+  const grupo = new THREE.Group(); esc.add(grupo);
+  const ESC = 1 / 1000, CX = 4884, CY = 667;   // centro del logotipo en unidades de fuente
+  const matV = new THREE.MeshPhysicalMaterial({ color: VERDE, roughness: .38, metalness: 0, clearcoat: .7, clearcoatRoughness: .14, emissive: VERDE, emissiveIntensity: .12, transparent: true });
+  const matB = new THREE.MeshPhysicalMaterial({ color: 0xE9EEEC, roughness: .4, metalness: 0, clearcoat: .7, clearcoatRoughness: .16, transparent: true });
+  const piezas = LOGO.paths.map((p, idx) => {
+    const formas = rutaAShapePath(p.d).toShapes(true);
+    const geo = new THREE.ExtrudeGeometry(formas, { depth: 260, bevelEnabled: true, bevelThickness: 26, bevelSize: 16, bevelSegments: 3, curveSegments: 10 });
+    geo.translate(-CX, CY, -130); geo.scale(ESC, ESC, ESC);
+    const m = new THREE.Mesh(geo, (p.fill.toUpperCase() === VERDE ? matV : matB).clone());
+    const pv = new THREE.Group(); pv.add(m); grupo.add(pv);
+    return { pv, m, idx };
+  });
+  // 0-2: LUR · 3: V izquierda (verde) · 4: V derecha (blanca) · 5-7: ETA
+  R3 = { rd, esc, cam, grupo, piezas, barrido, luz, VX: (4781 - CX) * ESC, VY: -(1490 - CY) * ESC };
+}
+
+// ═══ Escenas ═══
+const ESCENAS = [];
+function escena(a, b, crear, dibujar) { const raiz = el('div', 'esc'); const o = { a, b, raiz }; o.ctx = crear(raiz, o) || {}; o.dibujar = dibujar; ESCENAS.push(o); return o; }
+let SACUDIDA = 0, FLASH = 0, NEGRO = 0, USA3D = false;
+
+function construir() {
+  const W = 1920, H = 1080;
+  $('fondo').style.background = 'radial-gradient(70% 60% at 50% 45%, rgba(50,213,131,.055), rgba(0,0,0,0) 70%), #070B0A';
+
+  // ─────────────── ACTO I · EVOLUCIÓN ───────────────
+  // 1 · Memoria: el logotipo de UpGames, como un recuerdo
+  escena(0, 4.4, r => {
+    const viejo = el('div', 'a', `left:${W / 2 - 520}px;top:${H / 2 - 167}px;width:1040px;height:334px`, r);
+    const up = el('div', 'a', `inset:0;background:url(recursos/upgames-logo-antiguo.png) 0 0/1040px 334px no-repeat;clip-path:inset(0 61% 0 0)`, viejo);
+    const tiras = [];
+    for (let k = 0; k < 14; k++) tiras.push(el('div', 'a', `left:0;top:${k * 334 / 14}px;width:1040px;height:${334 / 14 + .5}px;background:url(recursos/upgames-logo-antiguo.png) 0 ${-k * 334 / 14}px/1040px 334px no-repeat;clip-path:inset(0 0 0 39%)`, viejo));
+    return { viejo, up, tiras };
+  }, (t, c) => {
+    const ent = S(t, .5, 2.2), parp = t < 2.2 ? (hash(Math.floor(t * 30)) > .82 - ent * .5 ? 1 : .35) : 1;
+    const sal = S(t, 3.6, 4.4);
+    c.viejo.style.opacity = eo(ent) * parp * (1 - sal);
+    c.viejo.style.filter = `grayscale(${.75 - .35 * S(t, 2, 3.4)}) brightness(${.7 + .25 * S(t, 1, 3)}) blur(${(1 - eo(ent)) * 6}px)`;
+    c.viejo.style.transform = `scale(${1.04 - .04 * co(S(t, .5, 4))})`;
+    c.tiras.forEach((e, k) => { const d = S(t, 3.5 + k * .018, 4.15 + k * .018); e.style.transform = `translateX(${eo(d) * (hash(k + 3) > .5 ? 1 : -1) * (180 + hash(k) * 420)}px)`; e.style.opacity = 1 - d; });
+  });
+  sfx(.5, 'zumbido', .8); sfx(1.1, 'chispa', .5); sfx(1.65, 'chispa', .4); sfx(3.5, 'corte', .9);
+
+  // 2 · Ascenso: queda la flecha de «Up», sube; tres palabras al compás
+  escena(3.4, 8.15, r => {
+    const fl = el('div', 'a', `left:${W / 2 - 60}px;top:${H / 2 - 110}px;width:120px;height:220px`, r,
+      `<svg viewBox="0 0 120 220" width="120" height="220" style="overflow:visible;filter:drop-shadow(0 0 14px rgba(94,255,67,.7))">
+        <path d="M60 6 L112 62 L80 62 L80 214 L40 214 L40 62 L8 62 Z" fill="none" stroke="#5EFF43" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M60 70 V150 M60 150 L46 166 V196 M60 112 L74 126 V182" fill="none" stroke="#5EFF43" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="46" cy="200" r="5" fill="none" stroke="#5EFF43" stroke-width="3"/><circle cx="74" cy="186" r="5" fill="none" stroke="#5EFF43" stroke-width="3"/><circle cx="60" cy="70" r="5" fill="#5EFF43"/></svg>`);
+    const barra = el('div', 'a', `left:${W / 2 - 22}px;top:${H / 2 - 330}px;width:44px;height:660px;background:${BLANCO};border-radius:4px;box-shadow:0 0 60px rgba(255,255,255,.45)`, r);
+    const pal = ['Crecimos.', 'Cambiamos.', 'Evolucionamos.'].map((w, k) => el('div', 'd a', `font-size:${[150, 150, 150][k]}px;left:0;top:0;color:${BLANCO}`, r, w));
+    return { fl, barra, pal };
+  }, (t, c) => {
+    // la flecha aparece donde estaba en el logo (lado izquierdo) y sube al centro
+    const k1 = eio(S(t, 3.7, 5.2)), sube = eio(S(t, 4.4, 7.4));
+    const x = lerp(-300, 0, k1), y = lerp(10, -60, k1) - 90 * sube;
+    const rot = 18 * eio(S(t, 6.6, 7.6)), esc = 1.7 + 1.2 * eio(S(t, 6.2, 7.5));
+    const morf = S(t, 7.35, 7.75);
+    c.fl.style.opacity = S(t, 3.55, 3.9) * (1 - morf);
+    c.fl.style.transform = `translate(${x}px,${y}px) rotate(${rot}deg) scale(${esc})`;
+    c.barra.style.opacity = morf * (1 - S(t, 7.95, 8.02));   // le pasa el relevo al trazo 3D en el destello
+    c.barra.style.transform = `translate(${x + 40 * morf}px,${y + 60}px) rotate(${rot}deg) scaleY(${lerp(.35, 1, eo(morf))}) scaleX(${lerp(.6, 1, morf)})`;
+    c.barra.style.boxShadow = `0 0 ${60 + 80 * S(t, 7.6, 8)}px rgba(255,255,255,${.35 + .4 * S(t, 7.6, 8)})`;
+    // palabras: entran en su tiempo, se van empujadas por la siguiente
+    const T = [4.5, 5.5, 6.5], POS = [[180, 210], [990, 470], [300, 760]];
+    c.pal.forEach((e, k) => {
+      const e1 = S(t, T[k] - .06, T[k] + .35), e2 = S(t, T[k] + .82, T[k] + 1.02);
+      e.style.left = POS[k][0] + 'px'; e.style.top = POS[k][1] + 'px';
+      e.style.opacity = eo(e1) * (1 - e2) * .96;
+      e.style.transform = `translateY(${(1 - eo(e1)) * 70}px) skewX(${-8 * (1 - eo(e1))}deg)`;
+      e.style.filter = `blur(${(1 - eo(e1)) * 14 + e2 * 18}px)`;
+      e.style.clipPath = `inset(${(1 - eo(e1)) * 100}% 0 0 0)`;
+    });
+  });
+  sfx(4.5, 'golpeSeco', .8); sfx(5.5, 'golpeSeco', .85); sfx(6.5, 'golpeSeco', .9); sfx(6.0, 'riser', 1); sfx(7.4, 'brillo', .6);
+
+  // 3 · Encuentro y revelación (3D): el trazo verde llega; nacen la V y LURVETA
+  escena(7.75, 12.25, r => {
+    const halo = el('div', 'a', `left:${W / 2 - 700}px;top:${H / 2 - 700}px;width:1400px;height:1400px;border-radius:50%;background:radial-gradient(circle, rgba(50,213,131,.30), rgba(50,213,131,0) 60%)`, r);
+    const onda = el('div', 'a', `left:${W / 2}px;top:${H / 2}px;width:10px;height:10px;border-radius:50%;border:2px solid rgba(220,255,236,.9)`, r);
+    return { halo, onda };
+  }, (t, c, o) => {
+    USA3D = true;
+    const { cam, piezas, grupo, barrido } = R3;
+    const golpe = 8.0, k = S(t, golpe, golpe + 4.2);
+    // cámara: frente a la V, gira hacia el logotipo completo
+    const giro = lerp(-.62, .06, eio(S(t, 8.0, 11.2))), dist = lerp(9.2, 15.5, eio(S(t, 8.4, 11.6)));
+    cam.position.set(Math.sin(giro) * dist + R3.VX * (1 - S(t, 8.4, 11)), lerp(.2, .35, k), Math.cos(giro) * dist); cam.lookAt(lerp(R3.VX, 0, eio(S(t, 8.4, 11))), lerp(-.2, 0, eio(S(t, 8.4, 11))), 0);
+    grupo.rotation.set(0, 0, 0); grupo.position.set(0, 0, 0);
+    piezas.forEach(({ pv, m, idx }) => {
+      m.material.opacity = 1; pv.visible = true; pv.position.set(0, 0, 0); pv.rotation.set(0, 0, 0); pv.scale.set(1, 1, 1);
+      if (idx === 4) {                                   // trazo blanco: ya estaba (la flecha)
+        m.material.opacity = S(t, 7.93, 8.0);   // aparece bajo el destello del choque
+      } else if (idx === 3) {                            // trazo verde: entra desde abajo a la izquierda y choca
+        const e = ei(S(t, 7.82, golpe));
+        pv.position.set(lerp(-5.5, 0, e), lerp(-9, 0, e), 0); m.material.opacity = S(t, 7.93, 7.97);
+      } else {                                           // LUR y ETA salen de detrás de la V
+        const orden = idx < 3 ? 2 - idx : idx - 5, e = eo(S(t, 9.0 + orden * .16, 10.2 + orden * .16));
+        pv.position.set(0, -(1 - e) * 1.5, -(1 - e) * 1.6);   // suben desde abajo, de la V hacia fuera
+        m.material.opacity = S(t, 9.0 + orden * .16, 9.55 + orden * .16);
+      }
+    });
+    // barrido de luz por el logotipo
+    barrido.intensity = 26 * Math.sin(Math.PI * S(t, 10.4, 12.1)); barrido.position.set(lerp(-7, 7, sio(S(t, 10.4, 12.1))), 1.4, 3.2);
+    // destello y onda del choque
+    const ch = S(t, golpe, golpe + .9);
+    c.halo.style.opacity = (t >= golpe ? 1 - S(t, golpe, golpe + 2.4) : 0) * .9;
+    c.onda.style.opacity = t >= golpe ? (1 - ch) : 0;
+    const rad = eo(ch) * 1300; c.onda.style.transform = `translate(-50%,-50%) translate(${0}px,${150}px)`; c.onda.style.width = c.onda.style.height = rad + 'px'; c.onda.style.left = W / 2 - 40 + 'px'; c.onda.style.top = H / 2 + 60 + 'px'; c.onda.style.borderWidth = (3 * (1 - ch) + .5) + 'px';
+    FLASH = Math.max(FLASH, t >= 7.97 ? .5 * (1 - S(t, golpe, golpe + .28)) : 0);
+    SACUDIDA = Math.max(SACUDIDA, t >= golpe ? 14 * (1 - S(t, golpe, golpe + .5)) : 0);
+    // salida: el logotipo se aleja hacia el tipo de la siguiente escena
+    $('gl').style.opacity = 1 - S(t, 11.85, 12.15);
+  });
+  sfx(7.75, 'silencio', 1); sfx(8.0, 'impacto', 1.15); sfx(8.0, 'motivo', 1); sfx(9.0, 'whoosh', .6); sfx(10.4, 'brillo', .8);
+
+  // 4 · «UpGames ahora es» → LURVETA a pantalla completa → entrar por el vértice
+  escena(12.0, 16.08, r => {
+    const viejo = el('div', 'd a', `font-size:190px;color:rgba(242,245,244,.42);left:0;right:0;top:300px;text-align:center`, r, 'UpGames');
+    const tacha = el('div', 'linea', `left:${W / 2 - 470}px;top:398px;width:940px`, r);
+    const ahora = el('div', 't a', `font-size:46px;color:rgba(242,245,244,.8);left:0;right:0;top:560px;text-align:center`, r, 'ahora es');
+    const logo = el('div', 'a', `left:${W / 2 - 860}px;top:${H / 2 - 147}px;width:1720px;height:294px;transform-origin:${4810 / 9768 * 1720}px ${(900 + 179) / 1669 * 294}px`, r, svgLogo('width:1720px;height:294px;display:block'));
+    return { viejo, tacha, ahora, logo };
+  }, (t, c) => {
+    const e1 = eo(S(t, 12.0, 12.6));
+    c.viejo.style.opacity = e1 * (1 - S(t, 13.3, 13.6)); c.viejo.style.transform = `translateY(${(1 - e1) * 40}px)`;
+    const tk = eio(S(t, 12.5, 12.95)); c.tacha.style.transform = `rotate(-3deg) scaleX(${tk})`; c.tacha.style.opacity = 1 - S(t, 13.3, 13.6);
+    const e2 = eo(S(t, 12.95, 13.4)); c.ahora.style.opacity = e2 * (1 - S(t, 13.35, 13.6)); c.ahora.style.transform = `translateY(${(1 - e2) * 24}px)`;
+    // LURVETA: entra con fuerza en el 13.5 (tiempo fuerte); 14.9 la cámara entra por el vértice
+    const e3 = S(t, 13.5, 14.1), zoom = ei(S(t, 14.9, 16.2));
+    c.logo.style.opacity = S(t, 13.5, 13.62);
+    c.logo.style.transform = `scale(${lerp(1.25, 1, eo(e3)) * (1 + 60 * zoom)})`;
+    c.logo.style.filter = `blur(${(1 - eo(e3)) * 22}px)`;
+    NEGRO = Math.max(NEGRO, S(t, 15.72, 16.05));
+  });
+  sfx(12.5, 'trazo', .7); sfx(13.5, 'impactoMedio', 1); sfx(14.9, 'riser', .9); sfx(16.0, 'caida', 1);
+
+  // ─────────────── ACTO II · EL UNIVERSO LURVETA ───────────────
+  // Portada de capítulo: la pantalla se corta por la diagonal de la V
+  function capitulo(a, num, para, palabra, lado = 1) {
+    escena(a, a + 1.75, r => {
+      const tapa = el('div', 'a', `inset:0;background:#070B0A`, r);
+      const etq = el('div', 'etq a', `left:150px;top:362px;font-size:36px`, r, `${num} — ${para}`);
+      const pal = el('div', 'd a', `left:136px;top:430px;font-size:272px;color:${BLANCO}`, r, palabra);
+      const lin = el('div', 'linea', `left:0;top:0;width:2600px;height:4px`, r);
+      return { tapa, etq, pal, lin };
+    }, (t, c) => {
+      const w = eio(S(t, a, a + .55));                           // barrido diagonal (ángulo de la V)
+      const x = lerp(-700, W + 700, w);
+      c.tapa.style.clipPath = `polygon(-3000px 0, ${x + 200}px 0, ${x - 200}px ${H}px, -3000px ${H}px)`;
+      c.lin.style.transform = `translate(${x + 200}px,0) rotate(${90 + 20.3}deg)`; c.lin.style.opacity = w > 0 && w < 1 ? 1 : 0;
+      const e = eo(S(t, a + .25, a + .85)), s = S(t, a + 1.45, a + 1.75);
+      c.etq.style.opacity = eo(S(t, a + .2, a + .6)) * (1 - s); c.etq.style.transform = `translateX(${(1 - eo(S(t, a + .2, a + .7))) * -40}px)`;
+      c.pal.style.clipPath = `inset(${(1 - e) * 100}% -50px -50px -50px)`; c.pal.style.transform = `translateY(${(1 - e) * 120 - s * 40}px)`; c.pal.style.opacity = 1 - s;
+      c.pal.style.filter = `blur(${s * 16}px)`;
+    });
+    sfx(a, 'whoosh', 1); sfx(a + .25, 'golpeSeco', .7);
+  }
+
+  // Escena de pantalla real: crea una ventana y la anima con una función de encuadre
+  function toma(a, b, src, w, h, crear, dibujar) {
+    return escena(a, b, r => { const v = ventana(src, w, h, Math.round(w * .13), r); const extra = crear ? crear(r, v) : {}; return { v, ...extra }; }, dibujar);
+  }
+  const R = (n, k) => M[n] && M[n][k];
+
+  // ── Capítulo 1 · DESCUBRE ──
+  capitulo(16.0, '01', 'Para quienes juegan', 'DESCUBRE');
+  // Portada real + categorías al compás
+  toma(17.45, 21.25, C + 'm-home.webp', 450, 974, (r, v) => {
+    const pal = el('div', 'd a', `left:130px;top:462px;font-size:200px;color:${BLANCO}`, r);
+    const etq = el('div', 'etq a', `left:138px;top:410px`, r, 'Catálogo de la comunidad');
+    const imgs = ['m-home', 'm-cat-juegos', 'm-cat-mods', 'm-cat-apps', 'm-cat-herramientas'].map(n => C + n + '.webp');
+    return { pal, etq, imgs };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 17.45, 18.4));
+    const CAMB = [18.5, 19.5, 20.0, 20.5], NOM = ['JUEGOS', 'MODS', 'APPS', 'HERRAMIENTAS'];
+    let i = -1; CAMB.forEach((x, k) => { if (t >= x) i = k; });
+    const src = c.imgs[i + 1]; if (v.im.getAttribute('src') !== src) v.im.src = src;
+    v.region(COMPLETA);
+    v.p.style.left = '1150px'; v.p.style.top = (H / 2 - 487) + 'px';
+    const pulso = i >= 0 ? 1 - eo(S(t, CAMB[i], CAMB[i] + .3)) : 0;
+    v.p.style.transform = `perspective(2400px) translateY(${(1 - e) * 500}px) translateZ(${(1 - e) * -600 + pulso * 30}px) rotateY(${lerp(-38, -14, e) + ruido(t, .5) * 2}deg) rotateX(${lerp(16, 4, e)}deg) rotateZ(${lerp(-6, 0, e)}deg)`;
+    c.pal.textContent = i >= 0 ? NOM[i] : '';
+    c.pal.style.fontSize = (i === 3 ? 150 : 200) + 'px';
+    const ent = i >= 0 ? eo(S(t, CAMB[i], CAMB[i] + .28)) : 0;
+    c.pal.style.transform = `translateY(${(1 - ent) * 60}px)`; c.pal.style.opacity = ent * (1 - S(t, 21.0, 21.25));
+    c.pal.style.clipPath = `inset(${(1 - ent) * 100}% -40px -40px -40px)`;
+    c.etq.style.opacity = eo(S(t, 18.1, 18.5)) * (1 - S(t, 21.0, 21.25));
+  });
+  [18.5, 19.5, 20.0, 20.5].forEach(x => sfx(x, 'tic', .9));
+
+  // Búsqueda real con Nexus: macro de la barra, escritura, respuesta
+  toma(21.0, 24.85, C + 'm-busca-resultado.webp', 1500, 560, (r, v) => {
+    const tapa = el('div', 'a', `background:rgb(26,31,31)`, v.p);
+    const pildora = el('img', '', 'position:absolute;left:0;top:0;transform-origin:0 0', v.p); pildora.src = C + 'm-busca-0.webp';
+    const cursor = el('div', 'a', `width:4px;background:${VERDE};box-shadow:0 0 12px ${VERDE}`, v.p);
+    const etq = el('div', 'etq a', `left:142px;top:330px`, r, 'Nexus entiende lo que buscas');
+    const tit = el('div', 'd a', `color:${BLANCO}`, r, '');
+    return { tapa, cursor, etq, tit, pildora };
+  }, (t, c) => {
+    const { v } = c;
+    // 21.0–22.7: la barra muy de cerca mientras se escribe; 22.8: se abre a la respuesta real
+    const abre = eio(S(t, 22.75, 23.7));
+    const rB = R('m-busca-resultado', 'busca') || [36, 168, 1098, 156];
+    const r1 = [rB[0] - 22, rB[1] - 16, rB[2] + 44, rB[3] + 32], r2 = [0, 140, 1170, 1180];
+    const pw = lerp(1640, 680, abre), ph = lerp(1640 * r1[3] / r1[2], 680 * r2[3] / r2[2], abre);
+    v.tam(pw, ph); v.region(mezclaR(r1, r2, abre));
+    const e = eo(S(t, 21.0, 21.6));
+    v.p.style.left = lerp(W / 2 - 820, 1100, abre) + 'px'; v.p.style.top = (H / 2 - ph / 2) + 'px';
+    v.p.style.borderRadius = lerp(46, 56, abre) + 'px';
+    v.p.style.transform = `perspective(2600px) translateZ(${(1 - e) * -500}px) rotateX(${lerp(14, 2, e)}deg) rotateY(${abre * -12}deg)`;
+    v.p.style.opacity = e;
+    // escritura: «juegos de carreras para android» aparece letra a letra (los píxeles son los de la captura)
+    const X0 = 205, X1 = 795, ty = 205, th = 85, k = S(t, 21.35, 22.65);
+    const xr = lerp(X0, X1, k);
+    const [px, py] = v.punto(xr, ty), [qx, qy] = v.punto(X1 + 4, ty + th);
+    st(c.tapa, { left: px + 'px', top: py + 'px', width: Math.max(0, qx - px) + 'px', height: (qy - py) + 'px', opacity: 1 - S(t, 22.7, 22.8) });
+    const [cx0, cy0] = v.punto(xr + 4, ty + 6), [, cy1] = v.punto(xr, ty + th - 6);
+    st(c.cursor, { left: cx0 + 'px', top: cy0 + 'px', height: (cy1 - cy0) + 'px', opacity: (Math.floor(t * 4) % 2 || k < 1 ? 1 : 0) * (1 - S(t, 22.7, 22.8)) });
+    c.pildora.style.width = v.im.style.width; c.pildora.style.transform = v.im.style.transform;
+    c.pildora.style.clipPath = `inset(${185 * v.k}px calc(100% - ${1118 * v.k}px) calc(100% - ${312 * v.k}px) ${800 * v.k}px)`;
+    c.pildora.style.opacity = 1 - S(t, 22.72, 22.8);
+    c.etq.style.opacity = eo(S(t, 21.3, 21.8)) * (1 - S(t, 22.6, 22.8));
+    c.tit.style.opacity = eo(S(t, 23.35, 23.9)) * (1 - S(t, 24.55, 24.85)); c.tit.style.transform = `translateY(${(1 - eo(S(t, 23.35, 23.9))) * 40}px)`;
+    c.tit.style.left = '150px'; c.tit.style.top = '440px'; c.tit.style.fontSize = '120px'; c.tit.innerHTML = 'Pregúntale<br>a Nexus.';
+  });
+  for (let k = 0; k < 18; k++) sfx(21.35 + k * 1.3 / 18, 'tecla', .45, k);
+  sfx(22.8, 'nexus', 1);
+
+  // La tarjeta de LURVETA RACING se convierte en su ficha real: «Gratis»
+  toma(24.65, 28.2, C + 'm-ficha.webp', 440, 952, (r, v) => {
+    const aro = el('div', 'aro', '', v.p);
+    const g1 = el('div', 'd a', `left:150px;top:350px;font-size:210px;color:${BLANCO}`, r, 'Gratis.');
+    const g2 = el('div', 't a', `left:158px;top:580px;font-size:52px;color:rgba(242,245,244,.78)`, r, 'Sin registro para descargar.');
+    return { aro, g1, g2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 24.65, 25.5));
+    const macro = eio(S(t, 26.0, 26.9));
+    const rG = [40, 1250, 1090, 470];   // fila de datos («Gratis · sin tarjeta») y «Obtener link»
+    const pw = lerp(440, 860, macro), ph = lerp(952, 860 * rG[3] / rG[2], macro);
+    v.tam(pw, ph); v.region(mezclaR(COMPLETA, rG, macro));
+    v.p.style.left = lerp(1180, 960, macro) + 'px'; v.p.style.top = (H / 2 - ph / 2) + 'px';
+    v.p.style.transform = `perspective(2400px) translateZ(${(1 - e) * -900}px) rotateY(${lerp(10, -10, e) + macro * 6}deg) rotateX(${(1 - e) * 10}deg)`;
+    v.p.style.opacity = S(t, 24.65, 24.9);
+    v.p.style.borderRadius = lerp(52, 40, macro) + 'px';
+    const [ax, ay] = v.punto(880, 1290), [bx, by] = v.punto(1080, 1440);
+    st(c.aro, { left: ax + 'px', top: ay + 'px', width: (bx - ax) + 'px', height: (by - ay) + 'px', borderRadius: '26px', opacity: S(t, 26.9, 27.2) * (.75 + .25 * Math.sin(t * 9)) });
+    const t1 = eo(S(t, 25.2, 25.8)); c.g1.style.opacity = t1 * (1 - S(t, 27.85, 28.2)); c.g1.style.clipPath = `inset(${(1 - t1) * 100}% -40px -40px -40px)`; c.g1.style.transform = `translateY(${(1 - t1) * 80}px)`;
+    const t2 = eo(S(t, 25.6, 26.2)); c.g2.style.opacity = t2 * (1 - S(t, 27.85, 28.2)); c.g2.style.transform = `translateY(${(1 - t2) * 30}px)`;
+  });
+  sfx(26.0, 'whoosh', .5); sfx(26.9, 'pop', .8);
+
+  // ── Capítulo 2 · PUBLICA ──
+  capitulo(28.0, '02', 'Para quienes desarrollan', 'PUBLICA');
+  toma(29.45, 32.85, C + 'm-publicar.webp', 640, 1000, (r, v) => {
+    const aro = el('div', 'aro', 'border-radius:22px', v.p);
+    const t1 = el('div', 'd a', `left:960px;top:330px;font-size:120px;color:${BLANCO}`, r, 'Publica tu<br>proyecto.');
+    const t2 = el('div', 't a', `left:966px;top:600px;font-size:44px;color:rgba(242,245,244,.76);white-space:normal;width:820px;line-height:1.3`, r, 'Juegos, mods, apps, herramientas y software.<br>El equipo revisa cada publicación.');
+    return { aro, t1, t2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 29.45, 30.3));
+    v.region([150, 290, 870, 1360]);
+    v.p.style.left = '200px'; v.p.style.top = (H / 2 - 500) + 'px';
+    v.p.style.transform = `perspective(2600px) translateX(${(1 - e) * -300}px) translateZ(${(1 - e) * -500}px) rotateY(${lerp(30, 12, e)}deg) rotateX(${lerp(8, 3, e)}deg)`;
+    v.p.style.opacity = S(t, 29.45, 29.7);
+    const OPC = ['juego', 'mod', 'optimizacion', 'app', 'herramienta', 'software'], T0 = 30.0;
+    const i = Math.min(5, Math.floor((t - T0) / .5));
+    if (t >= T0 && R('m-publicar', OPC[Math.max(0, i)])) {
+      const b = R('m-publicar', OPC[i]); const [ax, ay] = v.punto(b[0], b[1]), [bx, by] = v.punto(b[0] + b[2], b[1] + b[3]);
+      st(c.aro, { left: ax + 'px', top: ay + 'px', width: (bx - ax) + 'px', height: (by - ay) + 'px', opacity: 1 - S(t, 32.6, 32.85) });
+    } else c.aro.style.opacity = 0;
+    const a1 = eo(S(t, 29.9, 30.5)); c.t1.style.opacity = a1 * (1 - S(t, 32.55, 32.85)); c.t1.style.clipPath = `inset(${(1 - a1) * 100}% -40px -40px -40px)`;
+    const a2 = eo(S(t, 30.6, 31.2)); c.t2.style.opacity = a2 * (1 - S(t, 32.55, 32.85)); c.t2.style.transform = `translateY(${(1 - a2) * 26}px)`;
+  });
+  for (let k = 0; k < 6; k++) sfx(30.0 + k * .5, 'tic', .7, k);
+
+  // Herramientas propias: Lurveta Studio y la pista de carreras atraviesan por las diagonales
+  escena(32.6, 35.35, r => {
+    const st1 = ventana(C + 'd-studio.webp', 1000, 563, 28, r), rc = ventana(C + 'd-racing.webp', 1000, 563, 28, r);
+    const l1 = el('div', 'etq a', '', r, 'Lurveta Studio'), l2 = el('div', 'etq a', '', r, 'Lurveta RACING');
+    const tt = el('div', 'd a', `left:0;right:0;top:70px;text-align:center;font-size:74px;color:${BLANCO}`, r, 'Modela en 3D desde el celular.');
+    return { st1, rc, l1, l2, tt };
+  }, (t, c) => {
+    const k = S(t, 32.6, 35.35);
+    c.st1.region([420, 420, 1060, 600]); c.rc.region([780, 300, 1140, 642]);
+    const a = eo(S(t, 32.6, 33.3)), b = eo(S(t, 33.2, 33.9));
+    c.st1.p.style.left = '110px'; c.st1.p.style.top = '250px';
+    c.st1.p.style.transform = `perspective(2800px) translate(${(1 - a) * -900 + k * 120}px,${(1 - a) * 330}px) rotateY(18deg) rotateZ(-2deg)`;
+    c.rc.p.style.left = '820px'; c.rc.p.style.top = '380px';
+    c.rc.p.style.transform = `perspective(2800px) translate(${(1 - b) * 900 - k * 120}px,${(1 - b) * -330}px) rotateY(-18deg) rotateZ(2deg) translateZ(80px)`;
+    c.st1.p.style.opacity = S(t, 32.6, 32.8) * (1 - S(t, 35.05, 35.35)); c.rc.p.style.opacity = S(t, 33.2, 33.4) * (1 - S(t, 35.05, 35.35));
+    st(c.l1, { left: '140px', top: '850px', opacity: a * (1 - S(t, 35.05, 35.35)) });
+    st(c.l2, { left: '1520px', top: '978px', opacity: b * (1 - S(t, 35.05, 35.35)) });
+    const tt = eo(S(t, 33.8, 34.4)); c.tt.style.opacity = tt * (1 - S(t, 35.05, 35.35)); c.tt.style.transform = `translateY(${(1 - tt) * 40}px)`;
+    c.tt.style.textShadow = '0 6px 40px rgba(0,0,0,.9)';
+  });
+  sfx(32.6, 'whoosh', .8); sfx(33.2, 'whoosh', .8, 1);
+
+  // Perfil real de un creador
+  toma(35.1, 38.2, C + 'm-perfil.webp', 404, 874, (r, v) => {
+    const aro1 = el('div', 'aro', 'border-radius:20px', v.p), aro2 = el('div', 'aro', 'border-radius:20px', v.p);
+    const t1 = el('div', 'd a', `left:150px;top:380px;font-size:150px;color:${BLANCO}`, r, 'Tu página.');
+    const t2 = el('div', 'd a', `left:150px;top:540px;font-size:150px;color:${VERDE}`, r, 'Tu comunidad.');
+    return { aro1, aro2, t1, t2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 35.1, 35.9));
+    v.region(COMPLETA); v.p.style.left = '1290px'; v.p.style.top = (H / 2 - 437) + 'px';
+    v.p.style.transform = `perspective(2400px) translateY(${(1 - e) * -400}px) rotateY(${lerp(-30, -12, e)}deg) rotateX(${lerp(-12, -2, e)}deg)`;
+    v.p.style.opacity = S(t, 35.1, 35.3);
+    [['seguir', c.aro1, 36.6], ['mensaje', c.aro2, 37.1]].forEach(([n, a, t0]) => { const b = R('m-perfil', n); if (!b) return; const [ax, ay] = v.punto(b[0], b[1]), [bx, by] = v.punto(b[0] + b[2], b[1] + b[3]); st(a, { left: ax + 'px', top: ay + 'px', width: (bx - ax) + 'px', height: (by - ay) + 'px', opacity: eo(S(t, t0, t0 + .2)) * (1 - S(t, 37.9, 38.2)) }); });
+    const a1 = eo(S(t, 35.6, 36.2)); c.t1.style.opacity = a1 * (1 - S(t, 37.9, 38.2)); c.t1.style.clipPath = `inset(${(1 - a1) * 100}% -40px -40px -40px)`;
+    const a2 = eo(S(t, 36.1, 36.7)); c.t2.style.opacity = a2 * (1 - S(t, 37.9, 38.2)); c.t2.style.clipPath = `inset(${(1 - a2) * 100}% -40px -40px -40px)`;
+  });
+  sfx(36.6, 'pop', .7); sfx(37.1, 'pop', .7, 1);
+
+  // ── Capítulo 3 · COMPARTE ──
+  capitulo(38.0, '03', 'Para quienes crean contenido', 'COMPARTE');
+  toma(39.45, 42.3, C + 'm-live.webp', 1240, 470, (r, v) => {
+    const t1 = el('div', 'd a', `left:0;right:0;top:250px;text-align:center;font-size:250px;color:${BLANCO}`, r, 'En vivo.');
+    const glow = el('div', 'a', `left:0;top:0;border-radius:999px;background:rgba(255,64,80,.55);filter:blur(30px);mix-blend-mode:screen`, v.p);
+    return { t1, glow };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 39.45, 40.3));
+    v.region([0, 0, 1170, 470]);
+    v.p.style.left = (W / 2 - 620) + 'px'; v.p.style.top = '560px';
+    v.p.style.transform = `perspective(2400px) translateY(${(1 - e) * 300}px) rotateX(${lerp(40, 14, e)}deg)`;
+    v.p.style.opacity = S(t, 39.45, 39.7);
+    const b = R('m-live', 'live') || [387, 60, 165, 60]; const [ax, ay] = v.punto(b[0], b[1]), [bx, by] = v.punto(b[0] + b[2], b[1] + b[3]);
+    const lat = Math.pow(Math.max(0, Math.cos(((t - 39.5) / TIEMPO) * Math.PI)), 8);
+    st(c.glow, { left: ax - 10 + 'px', top: ay - 10 + 'px', width: (bx - ax + 20) + 'px', height: (by - ay + 20) + 'px', opacity: .25 + .75 * lat });
+    const a = eo(S(t, 39.6, 40.2)); c.t1.style.opacity = a * (1 - S(t, 42.0, 42.3)); c.t1.style.transform = `translateY(${(1 - a) * 80}px) scale(${1 + .01 * lat})`;
+    c.t1.style.clipPath = `inset(${(1 - a) * 100}% -40px -40px -40px)`;
+  });
+
+  toma(42.05, 45.75, C + 'd-blog.webp', 1500, 844, (r, v) => ({}), (t, c) => {
+    const { v } = c, e = eo(S(t, 42.05, 42.9)), pan = eio(S(t, 43.3, 45.4));
+    v.region(mezclaR([560, 80, 800, 450], [470, 410, 1000, 563], pan));
+    v.p.style.left = (W / 2 - 750) + 'px'; v.p.style.top = (H / 2 - 422) + 'px';
+    v.p.style.transform = `perspective(2600px) translateZ(${(1 - e) * -700}px) rotateX(${lerp(18, 6, e)}deg) rotateY(${lerp(-10, 4, pan)}deg)`;
+    v.p.style.opacity = S(t, 42.05, 42.3) * (1 - S(t, 45.45, 45.75));
+  });
+  sfx(42.05, 'whoosh', .7); sfx(43.3, 'swish', .5);
+
+  toma(45.5, 48.2, C + 'm-publicar.webp', 720, 560, (r, v) => {
+    const aro = el('div', 'aro', 'border-radius:24px', v.p);
+    const t1 = el('div', 'd a', `left:150px;top:400px;font-size:120px;color:${BLANCO}`, r, 'Videos, guías<br>y reseñas.');
+    return { aro, t1 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 45.5, 46.3));
+    const b = R('m-publicar', 'video') || [186, 1571, 384, 289];
+    v.region(mezclaR([b[0] - 160, b[1] - 220, b[2] + 640, b[3] + 360], [b[0] - 60, b[1] - 60, b[2] + 120, b[3] + 120], eio(S(t, 46.0, 47.4))));
+    v.p.style.left = '1080px'; v.p.style.top = (H / 2 - 280) + 'px';
+    v.p.style.transform = `perspective(2400px) translateX(${(1 - e) * 400}px) rotateY(${lerp(-28, -10, e)}deg)`;
+    v.p.style.opacity = S(t, 45.5, 45.7);
+    const [ax, ay] = v.punto(b[0], b[1]), [bx, by] = v.punto(b[0] + b[2], b[1] + b[3]);
+    st(c.aro, { left: ax + 'px', top: ay + 'px', width: (bx - ax) + 'px', height: (by - ay) + 'px', opacity: S(t, 46.6, 46.9) * (1 - S(t, 47.9, 48.2)) });
+    const a = eo(S(t, 45.9, 46.5)); c.t1.style.opacity = a * (1 - S(t, 47.9, 48.2)); c.t1.style.clipPath = `inset(${(1 - a) * 100}% -40px -40px -40px)`;
+  });
+  sfx(46.6, 'pop', .7);
+
+  // ── Capítulo 4 · CONSTRUYE ──
+  capitulo(48.0, '04', 'Para quienes van por más', 'CONSTRUYE');
+  toma(49.45, 52.85, C + 'm-puente.webp', 1050, 330, (r, v) => {
+    const moneda = el('div', 'a', `left:${W / 2 - 75}px;top:150px;width:150px;height:150px;border-radius:50%;
+      background:radial-gradient(circle at 34% 30%, #FFF0B8 0 12%, #F8D162 34%, #D99A1E 74%, #A86F0C 100%);
+      box-shadow:inset 0 0 0 8px rgba(255,234,160,.55), inset 0 -10px 16px rgba(120,70,0,.45), 0 0 60px rgba(244,196,81,.5)`, r);
+    const t1 = el('div', 'd a', `left:0;right:0;top:340px;text-align:center;font-size:150px;color:${BLANCO}`, r, 'Gana <span style="color:' + ORO + '">UpCoins.</span>');
+    const t2 = el('div', 't a', `left:0;right:0;top:500px;text-align:center;font-size:46px;color:rgba(242,245,244,.78)`, r, 'Por la publicidad que ve quien descarga. Retíralos como dinero.');
+    return { moneda, t1, t2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 50.6, 51.4));
+    const b = R('m-puente', 'apoya') || [81, 691, 1008, 233];
+    v.region([b[0] - 20, b[1] - 50, b[2] + 40, b[3] + 100]);
+    v.p.style.left = (W / 2 - 525) + 'px'; v.p.style.top = '650px';
+    v.p.style.transform = `perspective(2400px) translateY(${(1 - e) * 200}px) rotateX(${lerp(30, 8, e)}deg)`;
+    v.p.style.opacity = S(t, 50.6, 50.85) * (1 - S(t, 52.55, 52.85));
+    const m = eo(S(t, 49.45, 50.2)); c.moneda.style.opacity = m * (1 - S(t, 52.55, 52.85));
+    c.moneda.style.transform = `translateY(${(1 - m) * -120}px) rotateY(${(t - 49.45) * 320}deg) scale(${lerp(.4, 1, m)})`;
+    const a = eo(S(t, 49.7, 50.3)); c.t1.style.opacity = a * (1 - S(t, 52.55, 52.85)); c.t1.style.clipPath = `inset(${(1 - a) * 100}% -40px -40px -40px)`;
+    const a2 = eo(S(t, 50.3, 50.9)); c.t2.style.opacity = a2 * (1 - S(t, 52.55, 52.85)); c.t2.style.transform = `translateY(${(1 - a2) * 24}px)`;
+  });
+  sfx(49.45, 'moneda', 1); sfx(50.6, 'swish', .5);
+
+  toma(52.6, 55.85, C + 'm-puente.webp', 860, 430, (r, v) => {
+    const t1 = el('div', 'd a', `left:150px;top:330px;font-size:170px;color:${ORO}`, r, 'Premium.');
+    const t2 = el('div', 't a', `left:158px;top:520px;font-size:52px;color:rgba(242,245,244,.78)`, r, 'Sin anuncios ni esperas.');
+    return { t1, t2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 52.6, 53.4));
+    const b = R('m-puente', 'esperas') || [81, 1184, 1008, 650];
+    v.region(mezclaR([b[0] - 30, b[1] - 30, b[2] + 60, (b[2] + 60) / 2], [b[0] - 10, b[1] - 30, b[2] + 20, (b[2] + 20) / 2], eio(S(t, 53.6, 55.3))));
+    v.p.style.left = '960px'; v.p.style.top = (H / 2 - 215) + 'px';
+    v.p.style.transform = `perspective(2600px) translateX(${(1 - e) * 500}px) rotateY(${lerp(-30, -12, e)}deg) rotateX(4deg)`;
+    v.p.style.opacity = S(t, 52.6, 52.85) * (1 - S(t, 55.55, 55.85));
+    v.p.style.boxShadow = `0 70px 140px -40px rgba(0,0,0,.95), 0 0 0 1px rgba(244,196,81,.35), 0 0 90px rgba(244,196,81,${.12 + .1 * Math.sin(t * 4)})`;
+    const a = eo(S(t, 52.9, 53.5)); c.t1.style.opacity = a * (1 - S(t, 55.55, 55.85)); c.t1.style.clipPath = `inset(${(1 - a) * 100}% -40px -40px -40px)`;
+    const a2 = eo(S(t, 53.4, 54)); c.t2.style.opacity = a2 * (1 - S(t, 55.55, 55.85)); c.t2.style.transform = `translateY(${(1 - a2) * 24}px)`;
+  });
+  sfx(52.6, 'whoosh', .7); sfx(53.0, 'brillo', .6);
+
+  // Nexus AI a pantalla completa: el orbe respira con la música
+  toma(55.6, 60.6, C + 'm-nexus.webp', 450, 974, (r, v) => {
+    const orbe = el('div', 'a', `border-radius:50%;background:radial-gradient(circle, rgba(120,255,200,.55), rgba(50,213,131,0) 65%)`, v.p);
+    const aro = el('div', 'aro', 'border-radius:16px', v.p);
+    const t1 = el('div', 'd a', `left:150px;top:380px;font-size:170px;color:${BLANCO}`, r, 'Nexus AI');
+    const t2 = el('div', 't a', `left:158px;top:570px;font-size:50px;color:rgba(242,245,244,.78)`, r, 'Tu inteligencia dentro de Lurveta.');
+    return { orbe, aro, t1, t2 };
+  }, (t, c) => {
+    const { v } = c, e = eo(S(t, 55.6, 56.5)), sal = eio(S(t, 59.4, 60.6));
+    v.region(COMPLETA);
+    v.p.style.left = lerp(1240, W / 2 - 225, sal) + 'px'; v.p.style.top = (H / 2 - 487) + 'px';
+    v.p.style.transform = `perspective(2400px) translateZ(${(1 - e) * -700 - sal * 1200}px) rotateY(${lerp(-24, -10, e) * (1 - sal)}deg)`;
+    v.p.style.opacity = S(t, 55.6, 55.85);
+    const b = R('m-nexus', 'orbe') || [411, 581, 348, 348]; const [ox, oy] = v.punto(b[0] + b[2] / 2, b[1] + b[3] / 2);
+    const lat = Math.pow(Math.max(0, Math.cos(((t - 56) / TIEMPO) * Math.PI)), 6), d = 150 + 40 * lat;
+    st(c.orbe, { left: ox - d / 2 + 'px', top: oy - d / 2 + 'px', width: d + 'px', height: d + 'px', opacity: .35 + .5 * lat });
+    const sg = (R('m-nexus', 'sugs') || [])[1];
+    if (sg) { const [ax, ay] = v.punto(sg[0], sg[1]), [bx, by] = v.punto(sg[0] + sg[2], sg[1] + sg[3]); st(c.aro, { left: ax + 'px', top: ay + 'px', width: (bx - ax) + 'px', height: (by - ay) + 'px', opacity: S(t, 57.6, 57.9) * (1 - S(t, 59.2, 59.5)) }); }
+    const a = eo(S(t, 56.0, 56.6)); c.t1.style.opacity = a * (1 - S(t, 59.2, 59.6)); c.t1.style.clipPath = `inset(${(1 - a) * 100}% -40px -40px -40px)`;
+    const a2 = eo(S(t, 56.5, 57.1)); c.t2.style.opacity = a2 * (1 - S(t, 59.2, 59.6)); c.t2.style.transform = `translateY(${(1 - a2) * 24}px)`;
+  });
+  sfx(55.6, 'nexus', 1); sfx(57.6, 'pop', .6);
+
+  // ─────────────── ACTO III · UNA NUEVA IDENTIDAD ───────────────
+  // Todas las tomas, ordenadas en la forma de la V, convergen en el vértice
+  escena(59.9, 64.05, r => {
+    const fuentes = ['m-home', 'm-cat-juegos', 'm-busca-resultado', 'm-ficha', 'm-cat-mods', 'm-publicar', 'm-perfil', 'm-live', 'm-cat-apps', 'm-puente', 'm-nexus', 'm-cat-herramientas', 'm-ficha-mod', 'm-novedades'];
+    const pan = fuentes.map((n, k) => { const v = ventana(C + n + '.webp', 150, 324, 20, r); v.region(COMPLETA); return v; });
+    const brazoI = el('div', 'a', `width:26px;height:820px;background:${VERDE};transform-origin:50% 100%;border-radius:3px;box-shadow:0 0 50px rgba(50,213,131,.7)`, r);
+    const brazoD = el('div', 'a', `width:26px;height:880px;background:${BLANCO};transform-origin:50% 100%;border-radius:3px;box-shadow:0 0 50px rgba(255,255,255,.5)`, r);
+    const punto = el('div', 'a', `width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 30px 10px rgba(50,213,131,.8)`, r);
+    return { pan, brazoI, brazoD, punto };
+  }, (t, c) => {
+    const VX = W / 2, VY = 930, n = c.pan.length;
+    const forma = eio(S(t, 59.9, 61.4)), cierra = ei(S(t, 62.2, 63.4));
+    c.pan.forEach((v, k) => {
+      const izq = k % 2 === 0, j = Math.floor(k / 2), m = n / 2;
+      const d = lerp(700, 0, cierra) * (1 - j / m * .8) + 90;        // distancia al vértice a lo largo del brazo
+      const ang = (izq ? -20.5 : 18.4) * Math.PI / 180;
+      const x = VX + Math.sin(ang) * d * 1.06 - 75, y = VY - Math.cos(ang) * d - 162;
+      const from = [VX - 75 + (hash(k) - .5) * 2400, VY - 162 + (hash(k + 9) - .5) * 1600];
+      v.p.style.left = lerp(from[0], x, forma) + 'px'; v.p.style.top = lerp(from[1], y, forma) + 'px';
+      v.p.style.transform = `perspective(2000px) rotateZ(${lerp((hash(k + 4) - .5) * 40, (izq ? -20.5 : 18.4), forma)}deg) rotateY(${(1 - forma) * 40}deg) scale(${lerp(1.3, .86, forma) * (1 - cierra * .7)})`;
+      v.p.style.opacity = S(t, 59.9 + k * .03, 60.3 + k * .03) * (1 - S(t, 62.9, 63.4));
+    });
+    // los brazos de la V se dibujan detrás de las tomas y quedan solos
+    const b = eo(S(t, 61.0, 62.2)), f = 1 - S(t, 63.35, 63.5);
+    st(c.brazoI, { left: VX - 13 - 6 + 'px', top: VY - 820 + 'px', transform: `rotate(${-20.5}deg) scaleY(${b * (1 - cierra * .985)})`, opacity: b * f });
+    st(c.brazoD, { left: VX - 13 + 6 + 'px', top: VY - 880 + 'px', transform: `rotate(${18.4}deg) scaleY(${b * (1 - cierra * .985)})`, opacity: b * f });
+    st(c.punto, { left: VX - 8 + 'px', top: VY - 8 + 'px', opacity: S(t, 62.8, 63.2) * (1 - S(t, 63.85, 64.0)), transform: `scale(${1 + 2 * S(t, 63.2, 63.95)})` });
+    $('cam').style.transform = `scale(${lerp(1.18, 1, eio(S(t, 59.9, 61.6)))})`;
+  });
+  sfx(59.9, 'whoosh', 1); sfx(61.6, 'riserFinal', 1); sfx(63.5, 'silencio', 1);
+
+  // Golpe final: el logotipo en 3D, eslogan; luego sube y deja dominio y llamada a la acción
+  escena(63.95, 80, r => {
+    const tag = el('div', 'd7 a', `left:0;right:0;top:735px;text-align:center;font-size:58px;color:${BLANCO};letter-spacing:-.01em`, r, TAGLINE);
+    const dom = el('div', 'd7 a', `left:0;right:0;top:575px;text-align:center;font-size:66px;color:${BLANCO}`, r, DOMINIO);
+    const cta = el('div', 'a', `left:${W / 2 - 170}px;top:690px;width:340px;height:84px;border-radius:999px;background:${VERDE};color:#04140B;font:600 34px/84px LvT;text-align:center;box-shadow:0 20px 50px -18px rgba(50,213,131,.9)`, r, CTA);
+    const nota = el('div', 't a', `left:0;right:0;top:845px;text-align:center;font-size:38px;color:rgba(242,245,244,.62)`, r, `UpGames ahora es ${MARCA}.`);
+    return { tag, dom, cta, nota };
+  }, (t, c) => {
+    USA3D = true; $('gl').style.opacity = 1;
+    const { cam, piezas, barrido } = R3;
+    const g = 64.0, e = eo(S(t, g, g + 1.2)), sube = eio(S(t, 70.6, 71.7));
+    // el logotipo sube en pantalla (la cámara baja y mira más abajo) para dejar sitio al dominio
+    const yc = -.15 - sube * 1.35;
+    cam.position.set(lerp(1.6, 0, e) + Math.sin((t - g) * .25) * .2, yc + lerp(-1.2, 0, e), lerp(10.5, 15.4, e) + (t - g) * .05 + sube * 1.2);
+    cam.lookAt(0, yc, 0);
+    piezas.forEach(({ pv, m, idx }) => {
+      pv.visible = true; m.material.opacity = 1; pv.rotation.set(0, 0, 0); pv.scale.set(1, 1, 1);
+      const k = eo(S(t, g + (idx === 3 || idx === 4 ? 0 : .05 + Math.abs(idx - 3.5) * .05), g + .9));
+      const d = idx < 3 ? -1 : idx > 4 ? 1 : 0;
+      pv.position.set(d * (1 - k) * 1.2, (idx === 3 ? -1 : idx === 4 ? 1 : 0) * (1 - k) * 1.4, (1 - k) * -2.5);
+      if (idx !== 3 && idx !== 4) m.material.opacity = S(t, g + .02, g + .3);
+    });
+    const b1 = S(t, 64.6, 66.8), b2 = S(t, 71.8, 74.0);
+    barrido.intensity = 28 * Math.sin(Math.PI * b1) + 14 * Math.sin(Math.PI * b2);
+    barrido.position.set(b2 > 0 ? lerp(-7, 7, sio(b2)) : lerp(-7, 7, sio(b1)), yc + 1.2, 3.4);
+    FLASH = Math.max(FLASH, t >= g ? .5 * (1 - S(t, g, g + .3)) : 0);
+    SACUDIDA = Math.max(SACUDIDA, t >= g ? 10 * (1 - S(t, g, g + .6)) : 0);
+    const a = eo(S(t, 66.0, 66.9)), af = S(t, 70.3, 70.8);
+    c.tag.style.opacity = a * (1 - af); c.tag.style.transform = `translateY(${(1 - a) * 30}px)`; c.tag.style.filter = `blur(${(1 - a) * 10 + af * 8}px)`;
+    const d1 = eo(S(t, 71.5, 72.2)); c.dom.style.opacity = d1; c.dom.style.transform = `translateY(${(1 - d1) * 30}px)`;
+    const c1 = eo(S(t, 72.0, 72.7)); c.cta.style.opacity = c1; c.cta.style.transform = `translateY(${(1 - c1) * 30}px) scale(${lerp(.92, 1, c1)})`;
+    const n1 = eo(S(t, 72.8, 73.5)); c.nota.style.opacity = n1; c.nota.style.transform = `translateY(${(1 - n1) * 20}px)`;
+    NEGRO = Math.max(NEGRO, sio(S(t, 77.3, 79.6)));
+  });
+  sfx(64.0, 'impactoFinal', 1.25); sfx(64.0, 'motivo', 1.2); sfx(64.6, 'brillo', .8); sfx(71.5, 'pop', .6); sfx(72.0, 'motivoCorto', .9);
+}
+
+// ═══ Grano de película (8 cuadros de ruido precalculados) ═══
+const GRANOS = [];
+function prepararGrano() {
+  for (let k = 0; k < 8; k++) {
+    const c = document.createElement('canvas'); c.width = 1040; c.height = 600; const x = c.getContext('2d'), d = x.createImageData(1040, 600);
+    let s = 1234 + k * 777; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    for (let i = 0; i < d.data.length; i += 4) { const v = 128 + (rnd() + rnd() + rnd() - 1.5) * 120; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    x.putImageData(d, 0, 0); GRANOS.push(c);
+  }
+}
+
+// ═══ Dibujar un instante ═══
+const IMGS = {};
+function render(t) {
+  SACUDIDA = 0; FLASH = 0; NEGRO = 0; USA3D = false;
+  $('cam').style.transform = 'none'; $('gl').style.opacity = 1;
+  for (const e of ESCENAS) {
+    const dentro = t >= e.a && t < e.b;
+    e.raiz.style.display = dentro ? 'block' : 'none';
+    if (dentro) e.dibujar(t, e.ctx, e);
+  }
+  if (R3) { R3.rd.domElement.style.display = USA3D ? 'block' : 'none'; if (USA3D) R3.rd.render(R3.esc, R3.cam); }
+  // cámara: sacudida de los golpes
+  if (SACUDIDA > 0) { const base = $('cam').style.transform === 'none' ? '' : $('cam').style.transform; $('cam').style.transform = `translate(${ruido(t, 40) * SACUDIDA}px,${ruido(t + 9, 40) * SACUDIDA}px) ${base}`; }
+  $('flash').style.opacity = FLASH; $('negro').style.opacity = clamp(NEGRO);
+  const g = $('grano').getContext('2d'), f = Math.floor(t * 30);
+  g.drawImage(GRANOS[f % 8], 0, 0); $('grano').style.transform = `translate(${(hash(f) - .5) * 60}px,${(hash(f + 3) - .5) * 60}px)`;
+}
+
+// ═══ Arranque ═══
+window.listo = (async () => {
+  const svg = await (await fetch('../../public/icons/logo-lurveta.svg')).text();
+  const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+  LOGO = { vb: doc.documentElement.getAttribute('viewBox').split(/\s+/).map(Number), paths: [...doc.querySelectorAll('path')].map(p => ({ fill: p.getAttribute('fill'), d: p.getAttribute('d') })) };
+  try { M = await (await fetch(C + 'medidas.json')).json(); } catch (_) {}
+  const lista = ['m-busca-0', 'm-home', 'm-cat-juegos', 'm-cat-mods', 'm-cat-apps', 'm-cat-herramientas', 'm-busca-resultado', 'm-ficha', 'm-ficha-mod', 'm-publicar', 'm-perfil', 'm-live', 'm-puente', 'm-nexus', 'm-novedades', 'd-studio', 'd-racing', 'd-blog'].map(n => C + n + '.webp');
+  await Promise.all(lista.map(async s => { IMGS[s] = await precarga(s); }));
+  await precarga('recursos/upgames-logo-antiguo.png');
+  await document.fonts.load('900 100px LvD'); await document.fonts.load('700 100px LvD'); await document.fonts.load('500 40px LvT'); await document.fonts.load('600 40px LvT');
+  prepararGrano(); iniciar3D(); construir();
+  window.DURACION = DURACION; window.SFX = SFX.sort((a, b) => a.t - b.t); window.render = render;
+  const q = new URLSearchParams(location.search);
+  if (q.has('t')) render(+q.get('t'));
+  if (q.has('play')) { const t0 = performance.now() - (+q.get('play') || 0) * 1000; const paso = () => { const t = (performance.now() - t0) / 1000; render(t % DURACION); requestAnimationFrame(paso); }; paso(); }
+  return true;
+})();
+</script>
+</body>
+</html>

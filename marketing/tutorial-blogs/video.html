@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lurveta Blogs · Tutorial</title>
+<!--
+  Tutorial «Crea tu propia página web con Lurveta» · 1920×1080 · 30 fps.
+  La línea de tiempo la manda la locución: tiempos.json (narracion.py) dice cuándo empieza y termina cada frase,
+  y cada escena se coloca sobre sus frases. render(t) dibuja cada fotograma de forma exacta (render.js lo graba).
+  Todas las interfaces son capturas del flujo real (grabar.js). Vista previa: video.html?t=30 · video.html?play
+-->
+<style>
+@font-face { font-family: LvD; src: url(../lanzamiento/fuentes/InterDisplay-Black.otf); font-weight: 900; }
+@font-face { font-family: LvD; src: url(../lanzamiento/fuentes/InterDisplay-Bold.otf); font-weight: 700; }
+@font-face { font-family: LvT; src: url(../lanzamiento/fuentes/Inter-Medium.otf); font-weight: 500; }
+@font-face { font-family: LvT; src: url(../lanzamiento/fuentes/Inter-SemiBold.otf); font-weight: 600; }
+:root { --papel: #F2F0EB; --tinta: #121715; --tinta2: #5B6561; --verde: #17A866; --verdeV: #32D583; --violeta: #7C5CFF; --violeta2: #B8A6FF; }
+html, body { margin: 0; background: #000; overflow: hidden; }
+#s { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--papel); font-family: LvT, sans-serif; color: var(--tinta); }
+#fondo { position: absolute; inset: 0;
+  background: radial-gradient(65% 60% at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%),
+              radial-gradient(circle, rgba(18,23,21,.075) 1.2px, transparent 1.4px) 0 0 / 28px 28px, var(--papel); }
+.esc { position: absolute; inset: 0; display: none; }
+.a { position: absolute; }
+.d { font-family: LvD; font-weight: 900; letter-spacing: -.04em; line-height: .95; white-space: nowrap; }
+.d7 { font-family: LvD; font-weight: 700; letter-spacing: -.025em; line-height: 1.05; }
+.t { font-family: LvT; font-weight: 500; letter-spacing: -.01em; }
+/* Panel con una captura real; la cámara elige qué región se ve */
+.pan { position: absolute; overflow: hidden; background: #0A0F0D; border-radius: 22px;
+  box-shadow: 0 50px 110px -40px rgba(18,23,21,.55), 0 18px 40px -20px rgba(18,23,21,.35), 0 0 0 1px rgba(18,23,21,.10); }
+.pan img { position: absolute; left: 0; top: 0; display: block; transform-origin: 0 0; }
+.aro { position: absolute; border-radius: 16px; box-shadow: 0 0 0 3px var(--verdeV), 0 0 0 9px rgba(50,213,131,.22), 0 0 40px rgba(50,213,131,.55); pointer-events: none; }
+.aro.nx { box-shadow: 0 0 0 3px var(--violeta2), 0 0 0 9px rgba(124,92,255,.25), 0 0 46px rgba(124,92,255,.6); }
+.globo { position: absolute; padding: 12px 20px; border-radius: 14px; background: var(--tinta); color: #fff; font: 600 26px/1.2 LvT; white-space: nowrap; box-shadow: 0 16px 34px -14px rgba(0,0,0,.5); }
+.globo.v { background: var(--verde); }
+.globo.nx { background: var(--violeta); }
+.globo.lado::after { display: none; }
+.globo::after { content: ''; position: absolute; left: 26px; bottom: -9px; border: 10px solid transparent; border-bottom: 0; border-top-color: inherit; border-top-color: var(--c, var(--tinta)); }
+/* Paso actual */
+#paso { position: absolute; left: 64px; top: 52px; display: flex; align-items: center; gap: 16px; opacity: 0; }
+#paso .n { width: 52px; height: 52px; border-radius: 16px; background: var(--tinta); color: #fff; display: grid; place-items: center; font: 900 26px/1 LvD; }
+#paso .tx b { display: block; font: 700 30px/1.1 LvD; letter-spacing: -.02em; color: var(--tinta); }
+#paso .tx small { font: 600 18px/1.2 LvT; color: var(--tinta2); letter-spacing: .08em; text-transform: uppercase; }
+#puntos { position: absolute; right: 64px; top: 72px; display: flex; gap: 8px; opacity: 0; }
+#puntos i { width: 34px; height: 6px; border-radius: 6px; background: rgba(18,23,21,.15); }
+#puntos i.on { background: var(--verde); }
+/* Subtítulos */
+#sub { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); max-width: 1500px; padding: 14px 28px 16px; border-radius: 18px;
+  background: rgba(18,23,21,.88); color: #fff; font: 600 34px/1.32 LvT; letter-spacing: -.005em; text-align: center; opacity: 0;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 18px 40px -18px rgba(0,0,0,.5); }
+/* Cursor */
+#cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; pointer-events: none; z-index: 50; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+#clic { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 3px solid var(--verdeV); opacity: 0; z-index: 49; pointer-events: none; }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+#negro { position: absolute; inset: 0; background: #0A0F0D; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="s">
+  <div id="fondo"></div>
+  <div id="dom" class="a" style="inset:0"></div>
+  <div id="paso"><div class="n">1</div><div class="tx"><small>Paso 1 de 7</small><b>Crea tu blog</b></div></div>
+  <div id="puntos"></div>
+  <div id="clic"></div>
+  <svg id="cursor" viewBox="0 0 32 32"><path d="M6 3 L6 25 L11.5 19.6 L15.4 28.4 L19 26.8 L15.2 18.2 L23 18.2 Z" fill="#fff" stroke="#121715" stroke-width="1.8" stroke-linejoin="round"/></svg>
+  <div id="sub"></div>
+  <div id="flash"></div>
+  <div id="negro"></div>
+</div>
+<script>
+// ═══ Constantes (cambiar aquí) ═══
+const DOMINIO = 'lurveta.com', LEMA = ['Tu espacio.', 'Tus ideas.', 'Tu contenido.'];
+const C = 'capturas/';
+// ═══ Utilidades ═══
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const S = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eo = k => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);
+const eio = k => k < .5 ? 16 * k ** 5 : 1 - Math.pow(-2 * k + 2, 5) / 2;
+const sio = k => -(Math.cos(Math.PI * k) - 1) / 2;
+const co = k => 1 - Math.pow(1 - k, 3);
+const $ = id => document.getElementById(id);
+function el(tag, cls, css, padre, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; (padre || $('dom')).appendChild(e); return e; }
+const st = (e, o) => { for (const k in o) e.style[k] = o[k]; };
+const mezclaR = (a, b, k) => a.map((x, i) => lerp(x, b[i], k));
+const IMGS = {};
+let M = {}, T = {}, DUR = 100;
+
+// Panel con una captura: region(r) = qué parte (px de la captura) se ve; punto(x,y) = de la captura a la pantalla
+function panel(src, padre) {
+  const p = el('div', 'pan', '', padre), im = el('img', '', '', p); im.src = src;
+  const v = { p, im, src, x: 0, y: 0, w: 100, h: 100, k: 1, r: [0, 0, 1, 1],
+    pon(x, y, w, h) { v.x = x; v.y = y; v.w = w; v.h = h; st(p, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); },
+    cambia(s) { if (v.src !== s) { v.src = s; im.src = s; } },
+    region(r) { const k = Math.max(v.w / r[2], v.h / r[3]); im.style.width = IMGS[v.src].naturalWidth * k + 'px'; v.k = k; v.r = r;
+      im.style.transform = `translate(${-r[0] * k + (v.w - r[2] * k) / 2}px,${-r[1] * k + (v.h - r[3] * k) / 2}px)`; },
+    punto(x, y) { const r = v.r, k = v.k; return [v.x + (x - r[0]) * k + (v.w - r[2] * k) / 2, v.y + (y - r[1]) * k + (v.h - r[3] * k) / 2]; },
+    caja(b) { const [x, y] = v.punto(b[0], b[1]), [x2, y2] = v.punto(b[0] + b[2], b[1] + b[3]); return [x, y, x2 - x, y2 - y]; },
+  };
+  return v;
+}
+const PANT = [0, 0, 2880, 1800];
+const m = (cap, k) => M[cap]?.[k];
+const centro = b => [b[0] + b[2] / 2, b[1] + b[3] / 2];
+
+// Aro de resaltado en coordenadas de pantalla
+function aro(e, b, vis, pad = 10, radio = 16) { if (!b) { e.style.opacity = 0; return; } st(e, { left: b[0] - pad + 'px', top: b[1] - pad + 'px', width: b[2] + pad * 2 + 'px', height: b[3] + pad * 2 + 'px', borderRadius: radio + 'px', opacity: vis }); }
+function globo(e, x, y, vis) { st(e, { left: x + 'px', top: y - 70 + 'px', opacity: vis, transform: `translateY(${(1 - vis) * 12}px)` }); }
+
+// ═══ Cursor: recorrido por puntos { t, x, y, clic } ═══
+let CURSOR = null, CLIC = null;
+function cursor(t, pts) {
+  if (!pts.length) return;
+  let a = pts[0], b = pts[0];
+  for (let i = 0; i < pts.length; i++) { if (pts[i].t <= t) { a = pts[i]; b = pts[i + 1] || pts[i]; } }
+  if (t < pts[0].t) b = a;
+  const k = b === a ? 1 : eio(S(t, a.t, b.t - .05));
+  CURSOR = [lerp(a.x, b.x, k), lerp(a.y, b.y, k), Math.min(1, S(t, pts[0].t - .3, pts[0].t))];
+  for (const p of pts) if (p.clic && t >= p.t && t < p.t + .5) CLIC = [p.x, p.y, S(t, p.t, p.t + .5)];
+}
+
+// ═══ Escenas ═══
+const ESCENAS = [];
+function escena(nombre, a, b, crear, dibujar) { const raiz = el('div', 'esc'); const o = { nombre, a, b, raiz }; o.c = crear(raiz) || {}; o.dibujar = dibujar; ESCENAS.push(o); return o; }
+const PASOS = { crear: [1, 'Crea tu blog'], nexus: [2, 'Tu página con Nexus'], editar: [3, 'Edita y completa'], publicar: [4, 'Revisa y publica'], marca: [5, 'Tu marca'], entrada: [6, 'Escribe con ayuda'], resultado: [7, 'Comparte tu sitio'] };
+// Sonidos que pide la imagen (audio.js): clics, teclas, transiciones…
+const SFX = []; const sfx = (t, tipo, g = 1) => SFX.push({ t: +t.toFixed(3), tipo, g });
+let FLASH = 0, NEGRO = 0;
+
+function construir() {
+  const W = 1920, H = 1080;
+  const ini = id => T[id].inicio, fin = id => T[id].fin;
+  const PX = 240, PY = 128, PW = 1440, PH = 742;   // panel estándar (16:10, como las capturas)
+
+  // ── 1 · El problema ──
+  const b1 = ini('entrar') - .3;
+  escena('problema', 0, b1, r => {
+    const codigo = ['<!DOCTYPE html>', '<head><meta name="viewport"…', '.hero { display: grid; }', 'npm install', 'git push origin main', 'DNS · registro A', '@media (max-width: 768px)', 'const app = express()', 'SSL · certificado', '</html>'];
+    const cod = codigo.map((c, i) => el('div', 'a t', `font:500 30px/1 'DejaVu Sans Mono',monospace;color:rgba(18,23,21,.55);white-space:nowrap`, r, c));
+    const q = el('div', 'd a', `left:0;right:0;top:330px;text-align:center;font-size:118px;color:var(--tinta)`, r, '¿Tu propio espacio<br>en internet?');
+    const sin = el('div', 'd a', `left:0;right:0;top:600px;text-align:center;font-size:76px;color:var(--verde)`, r, 'Sin programar.');
+    const pg = panel('../lanzamiento/capturas/d-blog.webp', r);
+    return { cod, q, sin, pg };
+  }, (t, c) => {
+    const POS = [[150, 170], [1290, 150], [220, 820], [1430, 820], [90, 500], [1500, 480], [480, 120], [1080, 900], [260, 650], [1300, 650]];
+    const disper = eio(S(t, 4.3, 5.6));
+    c.cod.forEach((e, i) => {
+      const ap = eo(S(t, .3 + i * .18, .9 + i * .18)), [x, y] = POS[i];
+      const dx = (x - W / 2) * disper * 1.6, dy = (y - H / 2) * disper * 1.6;
+      st(e, { left: x + dx + 'px', top: y + dy + Math.sin(t * 1.3 + i) * 6 + 'px', opacity: ap * (1 - disper), filter: `blur(${disper * 6}px)` });
+    });
+    const q = eo(S(t, .9, 1.7)); st(c.q, { opacity: q * (1 - S(t, 5.4, 5.9)), transform: `translateY(${(1 - q) * 40 - S(t, 5.4, 5.9) * 30}px)` });
+    const s = eo(S(t, 4.4, 5.0)); st(c.sin, { opacity: s * (1 - S(t, 5.4, 5.9)), transform: `scale(${lerp(.9, 1, s)})` });
+    // la herramienta real: Lurveta Blogs
+    const e = eo(S(t, 5.6, 6.6)); c.pg.pon(PX, PY, PW, PH); c.pg.region([0, 0, 1920, 1080]);
+    st(c.pg.p, { opacity: S(t, 5.6, 5.9), transform: `translateY(${(1 - e) * 120}px) scale(${lerp(.94, 1, e)})` });
+  });
+  sfx(.9, 'entrada', .7); sfx(4.4, 'swoosh', .8); sfx(5.6, 'aparece', .9);
+
+  // ── 2 · Entrar a Blogs ──
+  const b2 = ini('nombre') - .35;
+  escena('entrar', b1, b2, r => {
+    const pt = panel(C + '00-portada.webp', r); const a1 = el('div', 'aro', '', r); const g = el('div', 'globo v', '--c:var(--verde)', r, 'Mi blog');
+    return { pt, a1, g };
+  }, (t, c) => {
+    const t0 = b1, clicOrbe = t0 + 1.0, clicBlog = t0 + 2.1;
+    c.pt.cambia(C + (t < clicOrbe + .15 ? '00-portada.webp' : '00-menu.webp'));
+    const z = eio(S(t, t0 + .2, clicOrbe));   // la cámara se acerca a la esquina del menú
+    c.pt.pon(PX, PY, PW, PH); c.pt.region(mezclaR(PANT, [1500, 0, 1380, 862], z));
+    st(c.pt.p, { opacity: S(t, t0, t0 + .25) });
+    const orbe = c.pt.caja(m('00-menu', 'orbe')), blog = c.pt.caja(m('00-menu', 'blog'));
+    cursor(t, [{ t: t0 + .2, x: 1100, y: 700 }, { t: clicOrbe, x: centro(orbe)[0], y: centro(orbe)[1], clic: 1 }, { t: clicBlog, x: centro(blog)[0], y: centro(blog)[1], clic: 1 }, { t: b2, x: centro(blog)[0], y: centro(blog)[1] }]);
+    aro(c.a1, blog, S(t, clicBlog - .35, clicBlog - .1), 8, 999);
+    globo(c.g, blog[0] - 40, blog[1] - 10, S(t, clicBlog - .35, clicBlog - .1));
+    FLASH = Math.max(FLASH, .7 * S(t, b2 - .25, b2));
+  });
+  sfx(b1 + 1.0, 'clic'); sfx(b1 + 1.05, 'abre', .7); sfx(b1 + 2.1, 'clic');
+
+  // ── 3 · Crear el blog ──
+  const b3 = ini('nexus1') - .35;
+  escena('crear', b2, b3, r => {
+    const pa = panel(C + '01-asistente.webp', r), a1 = el('div', 'aro', '', r), g1 = el('div', 'globo v lado', '--c:var(--verde)', r, '✓ Dirección disponible');
+    const tapa = el('div', 'a', 'background:#1B2020', pa.p);
+    return { pa, a1, g1, tapa };
+  }, (t, c) => {
+    const tN = ini('nombre'), tT = ini('tema'), tA = ini('acepto');
+    // fotogramas reales del asistente según el momento
+    const src = t < tN + .2 ? '01-asistente' : t < tN + 2.6 ? '02-nombre' : t < tT + 1.2 ? '03-descripcion' : t < tA ? '04-tema' : t < tA + 2.6 ? '05-acepto' : '06-panel';
+    c.pa.cambia(C + src + '.webp');
+    c.pa.pon(PX, PY, PW, PH);
+    // cámara: formulario de cerca mientras se escribe; temas; aceptar; panel
+    const rForm = [700, 300, 1480, 925], rTemas = [800, 1060, 1280, 800], rAcep = [800, 1180, 1280, 800];
+    let r = rForm;
+    if (src === '04-tema') r = mezclaR(rForm, rTemas, eio(S(t, tT + 1.2, tT + 2.0)));
+    if (src === '05-acepto') r = rAcep;
+    if (src === '06-panel') r = mezclaR(rAcep, PANT, eio(S(t, tA + 2.6, tA + 3.2)));
+    c.pa.region(r); st(c.pa.p, { opacity: S(t, b2, b2 + .25) });
+    // escritura del nombre: la captura con el nombre se revela de izquierda a derecha
+    const nom = m('02-nombre', 'nombre'), kN = S(t, tN + .25, tN + 1.8);
+    if (src === '02-nombre' && kN < 1) { const [x, y] = [ (nom[0] + 40 + kN * 700 - c.pa.r[0]) * c.pa.k + (c.pa.w - c.pa.r[2] * c.pa.k) / 2, (nom[1] + 10 - c.pa.r[1]) * c.pa.k + (c.pa.h - c.pa.r[3] * c.pa.k) / 2 ];
+      st(c.tapa, { left: x + 'px', top: y + 'px', width: Math.max(0, (nom[0] + nom[2] - 20 - (nom[0] + 40 + kN * 700))) * c.pa.k + 'px', height: (nom[3] - 20) * c.pa.k + 'px', opacity: 1 }); } else c.tapa.style.opacity = 0;
+    const nota = c.pa.caja(m('02-nombre', 'nota'));
+    const gv = S(t, tN + 2.0, tN + 2.3) * (1 - S(t, tN + 4.6, tN + 4.9));
+    aro(c.a1, [nota[0], nota[1], 250, nota[3]], gv, 8, 12); globo(c.g1, nota[0] + 300, nota[1] + nota[3] / 2 + 42, gv);
+    // cursor: campo nombre → descripción → tema Gamer → aceptar → Crear mi blog
+    const P = (cap, k) => { const b = c.pa.caja(m(cap, k)); return centro(b); };
+    const pts = [{ t: tN - .2, x: 900, y: 760 }, { t: tN + .15, x: P('02-nombre', 'nombre')[0] - 300, y: P('02-nombre', 'nombre')[1], clic: 1 }];
+    if (t > tT - .3) pts.push({ t: tT, x: P('03-descripcion', 'desc')[0] - 300, y: P('03-descripcion', 'desc')[1], clic: 1 });
+    if (src === '04-tema' || t >= tA) { const g = c.pa.caja(m('04-tema', 'gamer')); pts.push({ t: tT + 2.2, x: centro(g)[0], y: centro(g)[1], clic: 1 }); }
+    if (t >= tA) { pts.push({ t: tA + .6, x: c.pa.caja(m('05-acepto', 'acepto'))[0] + 24, y: c.pa.caja(m('05-acepto', 'acepto'))[1] + 26, clic: 1 }); pts.push({ t: tA + 2.2, x: P('05-acepto', 'crear')[0], y: P('05-acepto', 'crear')[1], clic: 1 }); }
+    cursor(t, pts);
+  });
+  sfx(ini('nombre') + .15, 'clic'); for (let k = 0; k < 14; k++) sfx(ini('nombre') + .25 + k * .11, 'tecla', .5);
+  sfx(ini('nombre') + 2.0, 'ok', .8); sfx(ini('tema'), 'clic'); for (let k = 0; k < 10; k++) sfx(ini('tema') + .1 + k * .1, 'tecla', .45);
+  sfx(ini('tema') + 2.2, 'clic'); sfx(ini('acepto') + .6, 'clic'); sfx(ini('acepto') + 2.2, 'clic'); sfx(ini('acepto') + 2.6, 'exito', .8);
+
+  // ── 4 · Página con Nexus ──
+  const b4 = ini('editar') - .35;
+  escena('nexus', b3, b4, r => {
+    const pa = panel(C + '06-panel.webp', r), a1 = el('div', 'aro', '', r), a2 = el('div', 'aro nx', '', r), g2 = el('div', 'globo nx', '--c:var(--violeta)', r, '✦ Que Nexus la cree');
+    const etqs = ['Portada', 'Beneficios', 'Opiniones', 'Preguntas frecuentes', 'Llamada a la acción'].map(n => el('div', 'globo nx', '--c:var(--violeta)', r, n));
+    const cel = panel(C + '14-previa-landing.webp', r), comp = panel(C + '15-previa-computador.webp', r);
+    const tapa = el('div', 'a', 'background:#1B2020', pa.p);
+    return { pa, a1, a2, g2, etqs, cel, comp, tapa };
+  }, (t, c) => {
+    const t1 = ini('nexus1'), t2 = ini('nexus2'), t3 = ini('nexus3'), tP = ini('previa');
+    const src = t < t1 + 1.1 ? '07-paginas' : t < t1 + 2.6 ? '08-como-empezar' : t < t2 + .3 ? '09-nexus-vacio' : t < t2 + 2.5 ? '10-nexus-lleno' : t < t3 + .7 ? '11-nexus-pensando' : '13-landing-completa';
+    c.pa.cambia(C + src + '.webp'); c.pa.pon(PX, PY, PW, PH);
+    // cámara
+    let r = PANT;
+    if (src === '08-como-empezar') r = mezclaR(PANT, [700, 420, 1480, 925], eio(S(t, t1 + 1.1, t1 + 1.5)));
+    if (src === '09-nexus-vacio' || src === '10-nexus-lleno' || src === '11-nexus-pensando') r = [700, 420, 1480, 925];
+    if (src === '13-landing-completa') { const k = sio(S(t, t3 + 1.0, tP - .2)); r = [560, lerp(140, 4900, k), 1760, 1100]; }
+    c.pa.region(r); st(c.pa.p, { opacity: tP > t ? 1 : 1 - S(t, tP, tP + .35) });
+    // nueva página (+) y «Que Nexus la cree»
+    const nueva = c.pa.caja(m('07-paginas', 'nueva')), nx = c.pa.caja(m('08-como-empezar', 'nexus'));
+    aro(c.a1, nueva, src === '07-paginas' ? S(t, t1 + .3, t1 + .5) : 0, 8, 999);
+    aro(c.a2, src === '08-como-empezar' ? nx : null, S(t, t1 + 1.4, t1 + 1.7), 6, 18); globo(c.g2, nx[0] + 30, nx[1] - 6, src === '08-como-empezar' ? S(t, t1 + 1.4, t1 + 1.7) : 0);
+    // escritura de la idea: se revela el texto real del campo
+    const idea = m('10-nexus-lleno', 'idea'), kI = S(t, t2 + .35, t2 + 2.0);
+    if (src === '10-nexus-lleno' && kI < 1) { const b = c.pa.caja([idea[0] + 20, idea[1] + 20, idea[2] - 40, idea[3] - 40]); const corte = kI * b[3];
+      st(c.tapa, { left: b[0] - c.pa.x + 'px', top: b[1] - c.pa.y + corte + 'px', width: b[2] + 'px', height: b[3] - corte + 'px', opacity: 1 }); } else c.tapa.style.opacity = 0;
+    // etiquetas de las secciones mientras la cámara baja por la landing
+    const SEC = ['heroe', 'columnas', 'testimonios', 'faq', 'cta'];
+    c.etqs.forEach((e, i) => { const b = m('13-landing-completa', SEC[i]); if (src !== '13-landing-completa') return e.style.opacity = 0;
+      const [x, y] = c.pa.punto(b[0] + 30, b[1] + 60); const vis = clamp(1 - Math.abs(y - 460) / 340) * S(t, t3 + .8, t3 + 1.1);
+      st(e, { left: x + 'px', top: y - 70 + 'px', opacity: vis, transform: `translateX(${(1 - vis) * 30}px)` }); });
+    // vista previa: computador y celular reales
+    const e = eo(S(t, tP, tP + .7));
+    c.comp.pon(170, 150, 1170, 720); c.comp.region([470, 180, 1940, 1220]); st(c.comp.p, { opacity: S(t, tP, tP + .3), transform: `translateX(${(1 - e) * -80}px)` });
+    c.cel.pon(1400, 150, 400, 720); c.cel.region([480, 190, 780, 1390]); st(c.cel.p, { opacity: S(t, tP + .2, tP + .5), transform: `translateX(${(1 - e) * 80}px)`, borderRadius: '30px' });
+    if (t < tP) { c.comp.p.style.opacity = 0; c.cel.p.style.opacity = 0; }
+    // cursor
+    const P = (cap, k) => centro(c.pa.caja(m(cap, k)));
+    const pts = [{ t: t1 + .1, x: 1300, y: 700 }, { t: t1 + .7, x: centro(nueva)[0], y: centro(nueva)[1], clic: 1 }, { t: t1 + 2.0, x: centro(nx)[0] - 200, y: centro(nx)[1], clic: 1 }];
+    if (t > t2) { pts.push({ t: t2 + .25, x: P('10-nexus-lleno', 'idea')[0] - 260, y: P('10-nexus-lleno', 'idea')[1] - 20, clic: 1 }); pts.push({ t: t2 + 2.3, x: P('10-nexus-lleno', 'ok')[0], y: P('10-nexus-lleno', 'ok')[1], clic: 1 }); pts.push({ t: t3 + .6, x: P('10-nexus-lleno', 'ok')[0] + 60, y: P('10-nexus-lleno', 'ok')[1] + 220 }); }
+    if (src !== '13-landing-completa' || t < t3 + 1) cursor(t, pts);
+  });
+  sfx(ini('nexus1') + .7, 'clic'); sfx(ini('nexus1') + 2.0, 'clic'); sfx(ini('nexus1') + 2.0, 'nexus', .8);
+  for (let k = 0; k < 16; k++) sfx(ini('nexus2') + .35 + k * .1, 'tecla', .45); sfx(ini('nexus2') + 2.3, 'clic');
+  sfx(ini('nexus2') + 2.5, 'pensando', .7); sfx(ini('nexus3') + .7, 'magia', 1); sfx(ini('previa'), 'swoosh', .7);
+
+  // ── 5 · Editar y completar ──
+  const b5 = ini('revisar') - .35;
+  escena('editar', b4, b5, r => {
+    const pa = panel(C + '17-testimonios-activo.webp', r), a1 = el('div', 'aro', '', r), a2 = el('div', 'aro', '', r), g1 = el('div', 'globo', '', r, 'Esto lo completas tú');
+    const borrar = el('div', 'globo', '', r, 'Quitar sección');
+    return { pa, a1, a2, g1, borrar };
+  }, (t, c) => {
+    const t0 = ini('editar');
+    const tBorra = t0 + 3.0;
+    const src = t < tBorra + .1 ? '17-testimonios-activo' : t < t0 + 5.6 ? '18-faq-antes' : t < t0 + 6.8 ? '19-faq-despues' : '20-enlace-boton';
+    c.pa.cambia(C + src + '.webp'); c.pa.pon(PX, PY, PW, PH);
+    c.pa.region(src === '20-enlace-boton' ? [560, 240, 1760, 1100] : [560, 200, 1760, 1100]);
+    st(c.pa.p, { opacity: S(t, b4, b4 + .25), transform: src === '17-testimonios-activo' && t > tBorra - .25 ? `scaleY(${1 - .06 * S(t, tBorra - .25, tBorra)})` : 'none' });
+    // corchetes de los testimonios
+    const ts = m('17-testimonios-activo', 'testimonios');
+    const corchete = c.pa.caja([ts[0] + 24, ts[1] + 170, ts[2] - 48, 110]);
+    const vis1 = src === '17-testimonios-activo' ? S(t, t0 + .6, t0 + .9) : 0;
+    aro(c.a1, corchete, vis1, 6, 12); globo(c.g1, corchete[0] + 20, corchete[1] - 4, vis1);
+    const bb = c.pa.caja(m('17-testimonios-activo', 'borrar'));
+    aro(c.a2, src === '17-testimonios-activo' ? bb : null, S(t, tBorra - .9, tBorra - .6), 6, 12); globo(c.borrar, bb[0] - 200, bb[1] - 6, src === '17-testimonios-activo' ? S(t, tBorra - .9, tBorra - .6) : 0);
+    const pts = [{ t: t0 + .2, x: 1100, y: 600 }, { t: tBorra, x: centro(bb)[0], y: centro(bb)[1], clic: 1 }];
+    if (t > tBorra) { const f = c.pa.caja(m('19-faq-despues', 'faq')); pts.push({ t: t0 + 4.4, x: f[0] + 420, y: f[1] + 150, clic: 1 }); }
+    if (src === '20-enlace-boton') { const e = c.pa.caja(m('20-enlace-boton', 'enlace')); pts.push({ t: t0 + 7.1, x: e[0] + 360, y: e[1] + e[3] / 2, clic: 1 }); }
+    cursor(t, pts);
+    FLASH = Math.max(FLASH, .35 * (1 - S(t, tBorra, tBorra + .3)) * (t >= tBorra ? 1 : 0));
+  });
+  sfx(ini('editar') + 3.0, 'clic'); sfx(ini('editar') + 3.05, 'borra', .8); sfx(ini('editar') + 4.4, 'clic'); for (let k = 0; k < 8; k++) sfx(ini('editar') + 4.6 + k * .1, 'tecla', .4); sfx(ini('editar') + 7.1, 'clic');
+
+  // ── 6 · Revisar, SEO y publicar ──
+  const b6 = ini('marca') - .35;
+  escena('publicar', b5, b6, r => {
+    const pa = panel(C + '21-menu-nexus.webp', r), a1 = el('div', 'aro nx', '', r), a2 = el('div', 'aro', '', r);
+    // cómo te verán en Google (con los datos reales que propuso Nexus)
+    const goo = el('div', 'a', `left:1110px;top:250px;width:640px;padding:30px 34px;border-radius:22px;background:#fff;box-shadow:0 40px 80px -30px rgba(18,23,21,.45),0 0 0 1px rgba(18,23,21,.08);opacity:0`, r,
+      `<div style="font:600 17px/1.2 LvT;color:#5B6561;letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px">Así te verán en buscadores</div>
+       <div style="font:500 20px/1.3 LvT;color:#3c4043">${DOMINIO} › b › diario-de-un-dev-indie</div>
+       <div style="font:600 30px/1.25 LvT;color:#1a0dab;margin:8px 0 10px">Devlog indie: creando un juego de plataformas en pixel art</div>
+       <div style="font:500 21px/1.45 LvT;color:#4d5156">Sigue cada semana cómo nace un juego de plataformas en pixel art: avances, errores y lecciones prácticas para devs que empiezan. Entra al devlog.</div>`);
+    return { pa, a1, a2, goo };
+  }, (t, c) => {
+    const tR = ini('revisar'), tP = ini('publicar');
+    const src = t < tR + 1.1 ? '21-menu-nexus' : t < tR + 3.6 ? '22-revision' : t < tP - .2 ? '24-seo' : t < tP + 2.5 ? '25-publicada' : '26-inicio-ok';
+    c.pa.cambia(C + src + '.webp');
+    const lado = src === '24-seo';   // con la ficha de Google al lado, el panel se corre a la izquierda
+    const k = eio(S(t, tR + 3.6, tR + 4.2)) * (1 - eio(S(t, tP - .4, tP)));
+    c.pa.pon(lerp(PX, 120, k), PY, lerp(PW, 960, k), lerp(PH, 600, k));
+    c.pa.region(src === '24-seo' ? [860, 560, 1160, 725] : [760, 380, 1360, 850]);
+    st(c.pa.p, { opacity: S(t, b5, b5 + .25), top: lerp(PY, 260, k) + 'px' }); c.pa.y = lerp(PY, 260, k);
+    c.pa.region(src === '24-seo' ? [860, 560, 1160, 725] : [760, 380, 1360, 850]);
+    st(c.goo, { opacity: lado ? S(t, tR + 4.0, tR + 4.4) : 0, transform: `translateY(${(1 - eo(S(t, tR + 4.0, tR + 4.5))) * 30}px)` });
+    const rev = c.pa.caja(m('21-menu-nexus', 'revisar'));
+    aro(c.a1, src === '21-menu-nexus' ? rev : null, S(t, tR + .5, tR + .8), 6, 16);
+    const ini2 = c.pa.caja(m('25-publicada', 'inicio')), url = c.pa.caja(m('25-publicada', 'url'));
+    aro(c.a2, src === '25-publicada' ? (t < tP + 1.5 ? url : ini2) : null, S(t, tP + .4, tP + .7), 6, 14);
+    const pts = [{ t: tR + .1, x: 1000, y: 700 }, { t: tR + .9, x: centro(rev)[0], y: centro(rev)[1], clic: 1 }];
+    if (src === '25-publicada' || src === '26-inicio-ok') { pts.push({ t: tP + .2, x: centro(url)[0], y: centro(url)[1] + 150 }); pts.push({ t: tP + 2.3, x: centro(ini2)[0], y: centro(ini2)[1], clic: 1 }); }
+    if (!lado) cursor(t, pts);
+  });
+  sfx(ini('revisar') + .9, 'clic'); sfx(ini('revisar') + 1.15, 'lista', .7); sfx(ini('revisar') + 4.0, 'aparece', .7);
+  sfx(ini('publicar') - .2, 'clic'); sfx(ini('publicar'), 'exito', 1); sfx(ini('publicar') + 2.3, 'clic');
+
+  // ── 7 · Tu marca: tema y paleta de Nexus ──
+  const b7 = ini('entrada') - .35;
+  escena('marca', b6, b7, r => {
+    const pa = panel(C + '29-kit.webp', r), a1 = el('div', 'aro nx', '', r);
+    const antes = panel(C + '15-previa-computador.webp', r), despues = panel(C + '90-sitio.webp', r);
+    return { pa, a1, antes, despues };
+  }, (t, c) => {
+    const t0 = ini('marca');
+    const src = t < t0 + .9 ? '29-kit' : t < t0 + 1.9 ? '30-colores-idea' : t < t0 + 3.0 ? '31-paletas' : '32-kit-nuevo';
+    c.pa.cambia(C + src + '.webp'); c.pa.pon(PX, PY, PW, PH);
+    c.pa.region(src === '29-kit' || src === '32-kit-nuevo' ? [460, 380, 1760, 1100] : [760, 480, 1360, 850]);
+    const sal = eio(S(t, t0 + 4.0, t0 + 4.6));
+    st(c.pa.p, { opacity: S(t, b6, b6 + .25) * (1 - sal) });
+    const pal = c.pa.caja(m('31-paletas', 'paletas'));
+    aro(c.a1, src === '31-paletas' ? [pal[0], pal[1] + 60 * c.pa.k / 1.6, pal[2], pal[3] / 3.2] : null, S(t, t0 + 2.2, t0 + 2.5), 4, 16);
+    if (src !== '31-paletas') c.a1.style.opacity = 0;
+    // antes y después: la misma página con el tema Gamer y con la paleta de Nexus
+    c.antes.pon(150, 250, 790, 500); c.antes.region([470, 180, 1940, 1220]); c.despues.pon(980, 250, 790, 500); c.despues.region([0, 0, 2880, 1800]);
+    st(c.antes.p, { opacity: sal, transform: `translateX(${(1 - sal) * -60}px)` }); st(c.despues.p, { opacity: S(t, t0 + 4.3, t0 + 4.8), transform: `translateX(${(1 - eo(S(t, t0 + 4.3, t0 + 4.9))) * 60}px)` });
+    const kx = c.pa.caja(m('29-kit', 'kitnx'));
+    if (sal < .5) cursor(t, [{ t: t0, x: 1000, y: 700 }, { t: t0 + .7, x: centro(kx)[0], y: centro(kx)[1], clic: 1 }, { t: t0 + 2.6, x: centro(pal)[0], y: pal[1] + 70, clic: 1 }]);
+  });
+  sfx(ini('marca') + .7, 'clic'); sfx(ini('marca') + .9, 'nexus', .7); sfx(ini('marca') + 1.9, 'magia', .8); sfx(ini('marca') + 2.6, 'clic'); sfx(ini('marca') + 4.0, 'swoosh', .7);
+
+  // ── 8 · Escribir con ayuda: «Mejorar redacción» ──
+  const b8 = ini('resultado') - .35;
+  escena('entrada', b7, b8, r => {
+    const pa = panel(C + '34-entrada-borrador.webp', r), a1 = el('div', 'aro nx', '', r);
+    const tarjeta = (titulo, cuerpo, color) => el('div', 'a', `width:700px;padding:30px 34px;border-radius:22px;background:#fff;box-shadow:0 40px 80px -30px rgba(18,23,21,.45),0 0 0 1px rgba(18,23,21,.08);opacity:0`, r,
+      `<div style="font:700 19px/1 LvT;letter-spacing:.1em;text-transform:uppercase;color:${color};margin-bottom:18px">${titulo}</div><div style="font:500 27px/1.5 LvT;color:#121715">${cuerpo}</div>`);
+    const antes = tarjeta('Tu borrador', 'esta semana termine el primer nivel del juego. me costo mucho que el salto se sintiera bien, lo probe muchas veces hasta que quedo. ahora sigo con los enemigos', '#5B6561');
+    const desp = tarjeta('✦ Con Nexus', 'Esta semana terminé el primer nivel del juego. Lo más difícil fue lograr que el salto se sintiera bien: lo probé muchas veces hasta dar con el punto justo.<br><br>Ahora sigo con los enemigos.', '#7C5CFF');
+    return { pa, a1, antes, desp };
+  }, (t, c) => {
+    const t0 = ini('entrada');
+    const src = t < t0 + 2.2 ? '34-entrada-borrador' : t < t0 + 3.4 ? '35-modos-texto' : t < t0 + 4.4 ? '36-texto-pensando' : '37-texto-propuesta';
+    c.pa.cambia(C + src + '.webp'); c.pa.pon(PX, PY, PW, PH);
+    c.pa.region(src === '34-entrada-borrador' ? [560, 100, 1760, 1100] : [760, 480, 1360, 850]);
+    const comp = eio(S(t, t0 + 5.0, t0 + 5.7));
+    st(c.pa.p, { opacity: S(t, b7, b7 + .25) * (1 - comp) });
+    const nx = c.pa.caja(m('34-entrada-borrador', 'nx')), mej = c.pa.caja(m('35-modos-texto', 'mejorar'));
+    aro(c.a1, src === '35-modos-texto' ? mej : src === '34-entrada-borrador' ? nx : null, src === '34-entrada-borrador' ? S(t, t0 + 1.3, t0 + 1.6) : S(t, t0 + 2.5, t0 + 2.8), 6, 14);
+    if (comp < .5) cursor(t, [{ t: t0, x: 1000, y: 650 }, { t: t0 + 1.9, x: centro(nx)[0], y: centro(nx)[1], clic: 1 }, { t: t0 + 3.1, x: centro(mej)[0], y: centro(mej)[1], clic: 1 }]);
+    // antes / después con los textos reales
+    st(c.antes, { left: '170px', top: '300px', opacity: S(t, t0 + 5.2, t0 + 5.6), transform: `translateY(${(1 - eo(S(t, t0 + 5.2, t0 + 5.8))) * 40}px)` });
+    st(c.desp, { left: '1050px', top: '300px', opacity: S(t, t0 + 5.6, t0 + 6.0), transform: `translateY(${(1 - eo(S(t, t0 + 5.6, t0 + 6.2))) * 40}px)` });
+  });
+  sfx(ini('entrada') + 1.9, 'clic'); sfx(ini('entrada') + 3.1, 'clic'); sfx(ini('entrada') + 3.4, 'pensando', .6); sfx(ini('entrada') + 4.4, 'magia', .8); sfx(ini('entrada') + 5.2, 'aparece', .6);
+
+  // ── 9 · El resultado ──
+  const b9 = ini('cierre') - .35;
+  escena('resultado', b8, b9, r => {
+    const marco = el('div', 'a', `left:200px;top:110px;width:1240px;height:760px;border-radius:24px;background:#fff;box-shadow:0 50px 110px -40px rgba(18,23,21,.55),0 0 0 1px rgba(18,23,21,.1);overflow:hidden`, r);
+    const barra = el('div', 'a', `left:0;right:0;top:0;height:64px;background:#ECEAE5;display:flex;align-items:center;gap:10px;padding:0 22px`, marco,
+      `<i style="width:14px;height:14px;border-radius:50%;background:#D6D3CC"></i><i style="width:14px;height:14px;border-radius:50%;background:#D6D3CC"></i><i style="width:14px;height:14px;border-radius:50%;background:#D6D3CC"></i>
+       <div style="flex:1;margin:0 18px;height:38px;border-radius:12px;background:#fff;display:flex;align-items:center;padding:0 18px;font:600 21px/1 LvT;color:#3c4043">🔒&nbsp; ${DOMINIO}/b/diario-de-un-dev-indie</div>`);
+    const sitio = panel(C + '91-sitio-completo.webp', marco); sitio.p.style.borderRadius = '0'; sitio.p.style.boxShadow = 'none';
+    const movil = panel(C + '93-sitio-movil.webp', r); movil.p.style.borderRadius = '40px';
+    const entrada = panel(C + '94-entrada.webp', r), a1 = el('div', 'aro', '', r);
+    const dom = panel(C + '27-dominio.webp', r), est = panel(C + '40-estadisticas.webp', r), a2 = el('div', 'aro', '', r);
+    return { marco, sitio, movil, entrada, a1, dom, est, a2 };
+  }, (t, c) => {
+    const t0 = ini('resultado'), tE = ini('extras');
+    const e = eo(S(t, b8, b8 + .8));
+    st(c.marco, { opacity: S(t, b8, b8 + .3) * (1 - S(t, t0 + 3.6, t0 + 3.9)), transform: `translateY(${(1 - e) * 80}px)` });
+    c.sitio.pon(0, 64, 1240, 696); const k = sio(S(t, t0 + .4, t0 + 3.6)); c.sitio.region([0, lerp(0, 1660, k), 2880, 1616]);
+    c.movil.pon(1500, 150, 330, 714); c.movil.region([0, 0, 780, 1688]); st(c.movil.p, { opacity: S(t, t0 + .8, t0 + 1.2) * (1 - S(t, t0 + 3.6, t0 + 3.9)), transform: `translateY(${(1 - eo(S(t, t0 + .8, t0 + 1.4))) * 60}px)` });
+    // botones para compartir (entrada publicada)
+    c.entrada.pon(410, 150, 1100, 564); c.entrada.region([600, 60, 1720, 880]);
+    st(c.entrada.p, { opacity: S(t, t0 + 3.9, t0 + 4.2) * (1 - S(t, tE - .3, tE)) });
+    aro(c.a1, c.entrada.caja([660, 676, 820, 56]), S(t, t0 + 4.6, t0 + 4.9) * (1 - S(t, tE - .3, tE)), 10, 14);
+    // dominio propio y estadísticas
+    c.dom.pon(140, 230, 820, 520); c.dom.region([480, 1000, 1560, 990]); c.est.pon(1000, 230, 780, 600); c.est.region([480, 120, 2000, 1540]);
+    st(c.dom.p, { opacity: S(t, tE, tE + .35) }); st(c.est.p, { opacity: S(t, tE + 1.7, tE + 2.1), transform: `translateY(${(1 - eo(S(t, tE + 1.7, tE + 2.3))) * 40}px)` });
+    const d = c.dom.caja(m('27-dominio', 'dominio')); aro(c.a2, d, S(t, tE + .5, tE + .8), 6, 12);
+  });
+  sfx(b8, 'aparece', .8); sfx(ini('resultado') + 4.6, 'ok', .6); sfx(ini('extras'), 'swoosh', .6);
+
+  // ── 10 · Cierre ──
+  escena('cierre', b9, DUR + 1, r => {
+    const logo = el('div', 'a', `left:${W / 2 - 360}px;top:300px;width:720px;height:123px`, r);
+    fetch('../../public/icons/logo-lurveta.svg').then(x => x.text()).then(s => { logo.innerHTML = s.replace('<svg ', '<svg style="width:720px;height:123px;display:block" '); });
+    const lema = LEMA.map((w, i) => el('div', 'd a', `top:500px;font-size:84px;color:var(--tinta)`, r, w));
+    const dom = el('div', 'd7 a', `left:0;right:0;top:700px;text-align:center;font-size:58px;color:var(--verde)`, r, DOMINIO);
+    const fondo = el('div', 'a', 'inset:0;background:#0A0F0D', r); r.insertBefore(fondo, r.firstChild);
+    return { logo, lema, dom, fondo };
+  }, (t, c) => {
+    const t0 = b9, e = eo(S(t, t0, t0 + .6));
+    st(c.fondo, { opacity: S(t, t0, t0 + .4) });
+    st(c.logo, { opacity: e, transform: `translateY(${(1 - e) * 30}px) scale(${lerp(.94, 1, e)})` });
+    const tc = ini('cierre'), X = [380, 830, 1250];
+    c.lema.forEach((w, i) => { const a = eo(S(t, tc + i * .85, tc + i * .85 + .5)); st(w, { left: X[i] + 'px', opacity: a, color: '#F2F5F4', transform: `translateY(${(1 - a) * 40}px)` }); });
+    const d = eo(S(t, tc + 3.0, tc + 3.6)); st(c.dom, { opacity: d, transform: `translateY(${(1 - d) * 20}px)` });
+    NEGRO = Math.max(NEGRO, S(t, DUR - 1.4, DUR - .2));
+  });
+  sfx(b9, 'final', 1); [0, .85, 1.7].forEach(x => sfx(ini('cierre') + x, 'aparece', .5)); sfx(ini('cierre') + 3.0, 'exito', .7);
+}
+
+// ═══ Dibujar un instante ═══
+function render(t) {
+  FLASH = 0; NEGRO = 0; CURSOR = null; CLIC = null;
+  let actual = null;
+  for (const e of ESCENAS) { const dentro = t >= e.a && t < e.b; e.raiz.style.display = dentro ? 'block' : 'none'; if (dentro) { e.dibujar(t, e.c, e); actual = e; } }
+  // paso
+  const ps = actual && PASOS[actual.nombre], pv = ps ? clamp(Math.min(S(t, actual.a, actual.a + .4), 1 - S(t, actual.b - .25, actual.b))) : 0;
+  if (ps) { $('paso').querySelector('.n').textContent = ps[0]; $('paso').querySelector('small').textContent = `Paso ${ps[0]} de 7`; $('paso').querySelector('b').textContent = ps[1];
+    [...$('puntos').children].forEach((d, i) => d.classList.toggle('on', i < ps[0])); }
+  st($('paso'), { opacity: ps ? 1 : 0, transform: `translateY(${ps ? 0 : -10}px)` }); $('puntos').style.opacity = ps ? 1 : 0;
+  // subtítulo de la frase actual
+  const seg = Object.values(T).find(s => t >= s.inicio - .12 && t < s.fin + .3);
+  if (seg) { const sub = $('sub'); if (sub.dataset.id !== seg.id) { sub.dataset.id = seg.id; sub.textContent = seg.texto; } sub.style.opacity = Math.min(S(t, seg.inicio - .12, seg.inicio + .08), 1 - S(t, seg.fin + .1, seg.fin + .3)); }
+  else $('sub').style.opacity = 0;
+  if (actual?.nombre === 'cierre') $('sub').style.opacity = 0;
+  // cursor y clic
+  if (CURSOR) st($('cursor'), { opacity: CURSOR[2], transform: `translate(${CURSOR[0] - 8}px,${CURSOR[1] - 4}px)` }); else $('cursor').style.opacity = 0;
+  if (CLIC) { const k = CLIC[2]; st($('clic'), { left: CLIC[0] + 'px', top: CLIC[1] + 'px', opacity: 1 - k, transform: `scale(${1 + k * 3})` }); } else $('clic').style.opacity = 0;
+  $('flash').style.opacity = FLASH; $('negro').style.opacity = clamp(NEGRO);
+}
+
+// ═══ Arranque ═══
+window.listo = (async () => {
+  M = await (await fetch(C + 'medidas.json')).json();
+  const tj = await (await fetch('tiempos.json')).json(); DUR = tj.duracion; tj.segmentos.forEach(s => { T[s.id] = s; });
+  const lista = ['00-portada', '00-menu', '01-asistente', '02-nombre', '03-descripcion', '04-tema', '05-acepto', '06-panel', '07-paginas', '08-como-empezar', '09-nexus-vacio', '10-nexus-lleno', '11-nexus-pensando', '13-landing-completa', '14-previa-landing', '15-previa-computador',
+    '17-testimonios-activo', '18-faq-antes', '19-faq-despues', '20-enlace-boton', '21-menu-nexus', '22-revision', '24-seo', '25-publicada', '26-inicio-ok', '27-dominio', '29-kit', '30-colores-idea', '31-paletas', '32-kit-nuevo',
+    '34-entrada-borrador', '35-modos-texto', '36-texto-pensando', '37-texto-propuesta', '40-estadisticas', '90-sitio', '91-sitio-completo', '93-sitio-movil', '94-entrada'].map(n => C + n + '.webp').concat('../lanzamiento/capturas/d-blog.webp');
+  await Promise.all(lista.map(s => new Promise(ok => { const i = new Image(); i.onload = () => { IMGS[s] = i; ok(); }; i.onerror = () => { console.error('falta', s); IMGS[s] = i; ok(); }; i.src = s; })));
+  for (let k = 0; k < 7; k++) el('i', '', '', $('puntos'));
+  await document.fonts.load('900 100px LvD'); await document.fonts.load('700 100px LvD'); await document.fonts.load('500 40px LvT'); await document.fonts.load('600 40px LvT');
+  construir();
+  window.DURACION = DUR; window.SFX = SFX.sort((a, b) => a.t - b.t); window.render = render;
+  const q = new URLSearchParams(location.search);
+  if (q.has('t')) render(+q.get('t'));
+  if (q.has('play')) { const t0 = performance.now(); const paso = () => { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(paso); }; paso(); }
+  return true;
+})();
+</script>
+</body>
+</html>

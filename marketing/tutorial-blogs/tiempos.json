@@ -1,0 +1,124 @@
+{
+ "duracion": 101.395,
+ "segmentos": [
+  {
+   "id": "problema",
+   "escena": "problema",
+   "texto": "¿Quieres tu propio espacio en internet, pero no sabes programar? Con Lurveta Blogs creas tu sitio, escribes y publicas, sin tocar una línea de código.",
+   "inicio": 1.2,
+   "fin": 8.652
+  },
+  {
+   "id": "entrar",
+   "escena": "entrar",
+   "texto": "Entra a Lurveta, abre el menú rápido y toca «Mi blog».",
+   "inicio": 9.382,
+   "fin": 12.001
+  },
+  {
+   "id": "nombre",
+   "escena": "crear",
+   "texto": "Ponle nombre a tu blog. La dirección se completa sola, y Lurveta te confirma si está disponible.",
+   "inicio": 12.731,
+   "fin": 17.977
+  },
+  {
+   "id": "tema",
+   "escena": "crear",
+   "texto": "Agrega una frase que lo describa y elige uno de los temas listos.",
+   "inicio": 18.357,
+   "fin": 21.456
+  },
+  {
+   "id": "acepto",
+   "escena": "crear",
+   "texto": "Acepta que eres responsable de lo que publicas, y toca «Crear mi blog».",
+   "inicio": 21.836,
+   "fin": 25.022
+  },
+  {
+   "id": "nexus1",
+   "escena": "nexus",
+   "texto": "Ahora, tu página de inicio. En «Páginas», toca el botón más y elige «Que Nexus la cree».",
+   "inicio": 25.752,
+   "fin": 30.115
+  },
+  {
+   "id": "nexus2",
+   "escena": "nexus",
+   "texto": "Cuéntale qué haces, para quién, y qué quieres que haga quien te visita.",
+   "inicio": 30.495,
+   "fin": 33.369
+  },
+  {
+   "id": "nexus3",
+   "escena": "nexus",
+   "texto": "En unos segundos, Nexus arma la página por secciones: portada, beneficios, opiniones, preguntas frecuentes y una llamada a la acción.",
+   "inicio": 33.749,
+   "fin": 40.861
+  },
+  {
+   "id": "previa",
+   "escena": "nexus",
+   "texto": "En la vista previa ves cómo quedará, en el celular o en la computadora.",
+   "inicio": 41.241,
+   "fin": 44.621
+  },
+  {
+   "id": "editar",
+   "escena": "editar",
+   "texto": "Todo se edita por bloques. Nexus no inventa opiniones ni datos: lo que va entre corchetes lo completas tú, y si una sección no te sirve, la quitas.",
+   "inicio": 45.351,
+   "fin": 52.97
+  },
+  {
+   "id": "revisar",
+   "escena": "publicar",
+   "texto": "Antes de publicar, «Revisar mi página» te dice qué falta, y Nexus te propone el título, el resumen y las etiquetas para Google y las redes.",
+   "inicio": 53.7,
+   "fin": 60.416
+  },
+  {
+   "id": "publicar",
+   "escena": "publicar",
+   "texto": "Toca «Publicar». Tu página ya está en internet, y puedes usarla como inicio de tu sitio.",
+   "inicio": 60.796,
+   "fin": 65.294
+  },
+  {
+   "id": "marca",
+   "escena": "marca",
+   "texto": "En «Tema», describe tu marca y Nexus te propone paletas de colores y letras. Eliges una, y la guardas.",
+   "inicio": 66.024,
+   "fin": 71.455
+  },
+  {
+   "id": "entrada",
+   "escena": "entrada",
+   "texto": "Para tus artículos, escribe el borrador como te salga, toca el destello de Nexus y elige «Mejorar redacción»: corrige y ordena tu texto, sin cambiar lo que quieres decir.",
+   "inicio": 72.185,
+   "fin": 80.071
+  },
+  {
+   "id": "resultado",
+   "escena": "resultado",
+   "texto": "Y este es el resultado: tu sitio, con tu página de inicio, tu blog y botones para compartir en WhatsApp, Telegram, X o Facebook.",
+   "inicio": 80.801,
+   "fin": 87.274
+  },
+  {
+   "id": "extras",
+   "escena": "resultado",
+   "texto": "Cuando tengas tu dominio, lo conectas desde «Ajustes», y en «Estadísticas» ves cuántas personas te visitan.",
+   "inicio": 87.654,
+   "fin": 92.415
+  },
+  {
+   "id": "cierre",
+   "escena": "cierre",
+   "texto": "Tu espacio. Tus ideas. Tu contenido. Empieza a construirlo en lurveta punto com.",
+   "inicio": 93.145,
+   "fin": 98.415
+  }
+ ]
+}
